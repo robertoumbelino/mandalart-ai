@@ -17,17 +17,28 @@ export const MandalartView: React.FC<MandalartViewProps> = ({ data, onReset, onD
   const handleDownload = async () => {
     if (printRef.current) {
       try {
+        // Capture dimensions to ensure consistency
+        const width = printRef.current.offsetWidth;
+        const height = printRef.current.offsetHeight;
+
         const canvas = await html2canvas(printRef.current, {
           scale: 3,
           backgroundColor: "#f8fafc",
           useCORS: true,
           logging: false,
+          width: width,
+          height: height,
           onclone: (clonedDoc) => {
             const element = clonedDoc.getElementById('mandalart-print-area');
             if (element) {
+              // Lock dimensions to prevent reflow
+              element.style.width = `${width}px`;
+              element.style.height = `${height}px`;
+              
+              // Only modify visual styles that don't affect layout
               element.style.boxShadow = 'none';
-              element.style.padding = '40px';
               element.style.background = '#ffffff'; 
+              // Removed padding override to prevent text reflow/cutoff
             }
           }
         });
