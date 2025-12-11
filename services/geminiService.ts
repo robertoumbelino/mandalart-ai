@@ -54,12 +54,11 @@ export const generateMandalartData = async (
     Crie uma estrutura de Mandalart (Matriz 9x9).
 
     REGRAS ESTRITAS:
-    1. **mainGoal (IMPORTANTE)**: NÃO use a frase inteira do usuário. Crie um TÍTULO CURTO, RESUMIDO e PROFISSIONAL (máximo 3-4 palavras) que represente o objetivo final.
-       - Exemplo: Se o usuário digitou "Sou tech lead e quero virar um staff engineer", o mainGoal deve ser apenas "Staff Engineer".
-       - Exemplo: Se o usuário digitou "Quero perder peso para o verão", o mainGoal deve ser "Emagrecimento Saudável".
-    2. Identifique exatamente 8 sub-objetivos (áreas chave) para alcançar esse objetivo principal.
-    3. Para CADA um dos 8 sub-objetivos, liste exatamente 8 tarefas ou comportamentos acionáveis.
-    4. Seja conciso. Use palavras-chave ou frases curtas (máximo 4-5 palavras por item).
+    1. **mainGoal**: Título curto (máx 4 palavras).
+    2. **subGoals**: Exatamente 8 áreas chave.
+       - **description**: Uma frase curta explicando O QUE é e POR QUE é importante.
+       - **advice**: Uma dica prática ou conselho de "ouro" sobre como melhorar nessa área específica.
+    3. **tasks**: Exatamente 8 ações práticas para cada sub-objetivo.
     
     A saída deve seguir estritamente o schema JSON fornecido.
   `;
@@ -67,21 +66,23 @@ export const generateMandalartData = async (
   const schema: Schema = {
     type: Type.OBJECT,
     properties: {
-      mainGoal: { type: Type.STRING, description: "Um título curto e resumido (máx 4 palavras) do objetivo principal, extraído da entrada do usuário." },
+      mainGoal: { type: Type.STRING, description: "Título curto do objetivo principal." },
       subGoals: {
         type: Type.ARRAY,
-        description: "Exatamente 8 sub-objetivos que cercam o objetivo principal",
+        description: "Exatamente 8 sub-objetivos",
         items: {
           type: Type.OBJECT,
           properties: {
             title: { type: Type.STRING, description: "Título curto do sub-objetivo" },
+            description: { type: Type.STRING, description: "Explicação breve do sub-objetivo" },
+            advice: { type: Type.STRING, description: "Uma sugestão ou dica de como melhorar" },
             tasks: {
               type: Type.ARRAY,
-              description: "Exatamente 8 ações para este sub-objetivo",
+              description: "Exatamente 8 ações",
               items: { type: Type.STRING }
             }
           },
-          required: ["title", "tasks"]
+          required: ["title", "description", "advice", "tasks"]
         }
       }
     },
@@ -102,17 +103,23 @@ export const generateMandalartData = async (
 
   const data = JSON.parse(text) as MandalartData;
 
-  // Validation fallback: Ensure we have exactly 8 subgoals and 8 tasks each to avoid grid breakage
+  // Validation fallback
   if (data.subGoals.length < 8) {
-    // Fill with empty placeholders if AI fails to generate enough
     while (data.subGoals.length < 8) {
-        data.subGoals.push({ title: "...", tasks: Array(8).fill("...") });
+        data.subGoals.push({ 
+          title: "...", 
+          description: "...",
+          advice: "...",
+          tasks: Array(8).fill("...") 
+        });
     }
   }
   
-  data.subGoals = data.subGoals.slice(0, 8); // Trim if too many
+  data.subGoals = data.subGoals.slice(0, 8);
   
   data.subGoals.forEach(sg => {
+      if (!sg.description) sg.description = `Foco em ${sg.title}`;
+      if (!sg.advice) sg.advice = "Mantenha a constância.";
       if (sg.tasks.length < 8) {
           while(sg.tasks.length < 8) sg.tasks.push("...");
       }

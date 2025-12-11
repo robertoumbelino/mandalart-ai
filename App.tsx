@@ -25,27 +25,41 @@ export default function App() {
         setHistory(JSON.parse(savedHistory));
       } catch (e) {
         console.error("Failed to parse history", e);
+        // If parse fails, clear invalid data
+        localStorage.removeItem('mandalart_history');
       }
     }
   }, []);
 
-  // Save history helper
+  // Save history helper (using functional updates for safety)
   const saveToHistory = (data: MandalartData) => {
     const newItem: HistoryItem = {
       id: Date.now().toString(),
       timestamp: Date.now(),
       data: data
     };
-    const updatedHistory = [newItem, ...history];
-    setHistory(updatedHistory);
-    localStorage.setItem('mandalart_history', JSON.stringify(updatedHistory));
+    
+    setHistory(prevHistory => {
+      const updatedHistory = [newItem, ...prevHistory];
+      localStorage.setItem('mandalart_history', JSON.stringify(updatedHistory));
+      return updatedHistory;
+    });
   };
 
   const deleteHistoryItem = (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
-    const updatedHistory = history.filter(item => item.id !== id);
-    setHistory(updatedHistory);
-    localStorage.setItem('mandalart_history', JSON.stringify(updatedHistory));
+    setHistory(prevHistory => {
+      const updatedHistory = prevHistory.filter(item => item.id !== id);
+      localStorage.setItem('mandalart_history', JSON.stringify(updatedHistory));
+      return updatedHistory;
+    });
+  };
+
+  const clearAllHistory = () => {
+    if (window.confirm("Tem certeza que deseja apagar todo o histórico?")) {
+      setHistory([]);
+      localStorage.removeItem('mandalart_history');
+    }
   };
 
   const loadHistoryItem = (item: HistoryItem) => {
@@ -129,7 +143,7 @@ export default function App() {
       <div className="space-y-6">
         <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white border border-indigo-100 text-indigo-600 text-xs font-semibold uppercase tracking-wider shadow-sm mb-4">
           <Sparkles size={14} />
-          <span>Powered by AI</span>
+          <span>Powered by Gemini 2.5</span>
         </div>
         
         <h1 className="text-5xl sm:text-7xl font-extrabold tracking-tighter text-gray-900 leading-[1.1]">
@@ -261,12 +275,23 @@ export default function App() {
               <History className="w-5 h-5 text-indigo-600" />
               <h2 className="font-bold text-gray-800">Histórico</h2>
             </div>
-            <button 
-              onClick={() => setIsHistoryOpen(false)}
-              className="p-1 hover:bg-gray-200 rounded-full transition"
-            >
-              <X className="w-5 h-5 text-gray-500" />
-            </button>
+            <div className="flex gap-1">
+              {history.length > 0 && (
+                <button 
+                  onClick={clearAllHistory}
+                  className="p-1 hover:bg-red-50 hover:text-red-600 rounded-full transition text-gray-400"
+                  title="Apagar tudo"
+                >
+                  <Trash2 className="w-5 h-5" />
+                </button>
+              )}
+              <button 
+                onClick={() => setIsHistoryOpen(false)}
+                className="p-1 hover:bg-gray-200 rounded-full transition"
+              >
+                <X className="w-5 h-5 text-gray-500" />
+              </button>
+            </div>
           </div>
           
           <div className="flex-1 overflow-y-auto p-4 space-y-3">
