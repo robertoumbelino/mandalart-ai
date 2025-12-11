@@ -129,7 +129,7 @@ export default function App() {
       <div className="space-y-6">
         <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white border border-indigo-100 text-indigo-600 text-xs font-semibold uppercase tracking-wider shadow-sm mb-4">
           <Sparkles size={14} />
-          <span>Powered by Gemini 2.5</span>
+          <span>Powered by AI</span>
         </div>
         
         <h1 className="text-5xl sm:text-7xl font-extrabold tracking-tighter text-gray-900 leading-[1.1]">
@@ -143,7 +143,7 @@ export default function App() {
 
       {/* Input Section */}
       <div className="max-w-xl mx-auto bg-white p-2 rounded-3xl shadow-xl border border-gray-100/50">
-        <form onSubmit={handleStart} className="flex flex-col sm:flex-row gap-2 items-center">
+        <form onSubmit={handleStart} className="flex flex-col sm:flex-row gap-2 items-center mb-0">
           <input
             type="text"
             value={mainGoal}
