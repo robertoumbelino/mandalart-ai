@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Target, ArrowRight, Sparkles, BrainCircuit, Loader2, History, X, Trash2, Calendar } from 'lucide-react';
+import { ArrowRight, Sparkles, BrainCircuit, Loader2, History, X, Trash2, Calendar, LayoutGrid } from 'lucide-react';
 import { generateQuestions, generateMandalartData } from './services/geminiService';
 import { MandalartData, Question, AppStep, InterviewAnswer, HistoryItem } from './types';
 import { MandalartView } from './components/MandalartView';
@@ -115,47 +115,84 @@ export default function App() {
     setError(null);
   };
 
+  const goToHome = () => {
+    if (window.confirm("Voltar para o início? O progresso atual será perdido.")) {
+      handleReset();
+    }
+  };
+
   // Render Helpers
   const renderInputStep = () => (
-    <div className="w-full max-w-xl mx-auto text-center space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
-      <div className="space-y-4">
-        <div className="bg-indigo-100 p-4 rounded-full inline-block">
-            <Target className="w-12 h-12 text-indigo-600" />
+    <div className="w-full max-w-3xl mx-auto text-center space-y-10 animate-in fade-in slide-in-from-bottom-8 duration-1000">
+      
+      {/* Hero Section */}
+      <div className="space-y-6">
+        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white border border-indigo-100 text-indigo-600 text-xs font-semibold uppercase tracking-wider shadow-sm mb-4">
+          <Sparkles size={14} />
+          <span>Powered by Gemini 2.5</span>
         </div>
-        <h1 className="text-4xl font-extrabold text-gray-900 tracking-tight">
-          Defina seu Objetivo
+        
+        <h1 className="text-5xl sm:text-7xl font-extrabold tracking-tighter text-gray-900 leading-[1.1]">
+          Mandalart<span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-purple-600">.AI</span>
         </h1>
-        <p className="text-lg text-gray-600">
-          Vamos construir um mapa detalhado (Mandalart) para te ajudar a alcançar suas metas.
-          Comece nos dizendo qual é o seu objetivo principal.
+        
+        <p className="text-xl sm:text-2xl text-gray-500 max-w-2xl mx-auto font-light leading-relaxed">
+          Transforme sonhos vagos em planos de ação concretos. Nossa IA cria uma <span className="text-gray-900 font-medium">matriz 9x9</span> estratégica para guiar seu sucesso.
         </p>
       </div>
 
-      <form onSubmit={handleStart} className="space-y-4">
-        <div className="relative">
-            <input
-              type="text"
-              value={mainGoal}
-              onChange={(e) => setMainGoal(e.target.value)}
-              placeholder="Ex: Correr uma maratona em 2025"
-              className="w-full px-6 py-4 text-lg border-2 border-gray-200 rounded-2xl focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100 outline-none transition-all shadow-sm placeholder:text-gray-400 bg-white text-gray-900"
-              autoFocus
-            />
-        </div>
-        <button
-          type="submit"
-          disabled={loading || !mainGoal.trim()}
-          className="w-full py-4 bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-300 text-white font-bold rounded-2xl transition-all shadow-lg hover:shadow-xl flex items-center justify-center gap-2 text-lg"
-        >
-          {loading ? <Loader2 className="animate-spin" /> : <>Continuar <ArrowRight /></>}
-        </button>
-      </form>
-      {error && <p className="text-red-500 bg-red-50 p-3 rounded-lg">{error}</p>}
+      {/* Input Section */}
+      <div className="max-w-xl mx-auto bg-white p-2 rounded-3xl shadow-xl border border-gray-100/50">
+        <form onSubmit={handleStart} className="flex flex-col sm:flex-row gap-2 items-center">
+          <input
+            type="text"
+            value={mainGoal}
+            onChange={(e) => setMainGoal(e.target.value)}
+            placeholder="Qual é o seu objetivo principal?"
+            className="w-full sm:flex-grow px-6 py-4 text-lg bg-transparent outline-none text-gray-900 placeholder:text-gray-400"
+            autoFocus
+          />
+          <button
+            type="submit"
+            disabled={loading || !mainGoal.trim()}
+            className="w-full sm:w-auto px-8 py-4 bg-gray-900 hover:bg-black disabled:bg-gray-400 text-white font-bold rounded-2xl transition-all shadow-lg flex items-center justify-center gap-2 text-lg whitespace-nowrap"
+          >
+            {loading ? <Loader2 className="animate-spin" /> : <>Iniciar <ArrowRight size={20} /></>}
+          </button>
+        </form>
+      </div>
+      
+      {error && <p className="text-red-500 bg-red-50 p-3 rounded-lg inline-block">{error}</p>}
+
+      {/* Social Proof / Examples */}
+      <div className="pt-8 grid grid-cols-1 sm:grid-cols-3 gap-4 max-w-3xl mx-auto w-full px-4">
+         <div 
+           onClick={() => setMainGoal("Correr uma maratona")}
+           className="flex flex-col items-center gap-3 p-4 bg-white/80 backdrop-blur-sm rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-all cursor-pointer group"
+         >
+            <span className="bg-orange-50 p-3 rounded-xl text-2xl group-hover:scale-110 transition-transform">🏃</span>
+            <span className="font-medium text-gray-700">"Correr uma maratona"</span>
+         </div>
+         <div 
+           onClick={() => setMainGoal("Virar Tech Lead")}
+           className="flex flex-col items-center gap-3 p-4 bg-white/80 backdrop-blur-sm rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-all cursor-pointer group"
+         >
+            <span className="bg-blue-50 p-3 rounded-xl text-2xl group-hover:scale-110 transition-transform">💼</span>
+            <span className="font-medium text-gray-700">"Virar Tech Lead"</span>
+         </div>
+         <div 
+           onClick={() => setMainGoal("Morar no exterior")}
+           className="flex flex-col items-center gap-3 p-4 bg-white/80 backdrop-blur-sm rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-all cursor-pointer group"
+         >
+            <span className="bg-purple-50 p-3 rounded-xl text-2xl group-hover:scale-110 transition-transform">✈️</span>
+            <span className="font-medium text-gray-700">"Morar no exterior"</span>
+         </div>
+      </div>
     </div>
   );
 
   const renderInterviewStep = () => (
-    <div className="w-full max-w-2xl mx-auto space-y-8 animate-in fade-in slide-in-from-right-8 duration-500">
+    <div className="w-full max-w-2xl mx-auto space-y-8 animate-in fade-in slide-in-from-right-8 duration-500 relative z-10">
       <div className="text-center space-y-2">
          <div className="bg-purple-100 p-3 rounded-full inline-block">
             <BrainCircuit className="w-8 h-8 text-purple-600" />
@@ -166,7 +203,7 @@ export default function App() {
 
       <div className="space-y-6">
         {questions.map((q, idx) => (
-          <div key={q.id} className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+          <div key={q.id} className="bg-white/80 backdrop-blur-sm p-6 rounded-2xl shadow-sm border border-gray-200/60">
             <label className="block text-sm font-semibold text-gray-700 mb-2 uppercase tracking-wide">
               Pergunta {idx + 1} de {questions.length}
             </label>
@@ -186,7 +223,7 @@ export default function App() {
       <button
         onClick={handleGenerate}
         disabled={loading}
-        className="w-full py-4 bg-gray-900 hover:bg-black disabled:bg-gray-400 text-white font-bold rounded-2xl transition-all shadow-lg flex items-center justify-center gap-2 text-lg"
+        className="w-full py-4 bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-300 text-white font-bold rounded-2xl transition-all shadow-lg flex items-center justify-center gap-2 text-lg"
       >
         {loading ? <Loader2 className="animate-spin" /> : <>Gerar Plano Mandalart <Sparkles /></>}
       </button>
@@ -217,9 +254,9 @@ export default function App() {
       )}
       
       {/* Sidebar */}
-      <div className={`fixed inset-y-0 right-0 w-80 bg-white shadow-2xl z-50 transform transition-transform duration-300 ease-in-out ${isHistoryOpen ? 'translate-x-0' : 'translate-x-full'}`}>
+      <div className={`fixed inset-y-0 right-0 w-80 bg-white/95 backdrop-blur-md shadow-2xl z-50 transform transition-transform duration-300 ease-in-out ${isHistoryOpen ? 'translate-x-0' : 'translate-x-full'}`}>
         <div className="flex flex-col h-full">
-          <div className="p-5 border-b border-gray-100 flex items-center justify-between bg-gray-50">
+          <div className="p-5 border-b border-gray-100 flex items-center justify-between">
             <div className="flex items-center gap-2">
               <History className="w-5 h-5 text-indigo-600" />
               <h2 className="font-bold text-gray-800">Histórico</h2>
@@ -273,29 +310,39 @@ export default function App() {
   );
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col font-sans text-gray-900">
-      {/* Header */}
-      <header className="bg-white border-b border-gray-100 py-4 px-6 flex items-center justify-between sticky top-0 z-40">
-        <div className="w-10"></div> {/* Spacer for centering */}
-        <span className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-indigo-600 to-purple-600">
-          Mandalart.AI
-        </span>
+    <div className="min-h-screen relative flex flex-col font-sans text-gray-900 overflow-x-hidden">
+      
+      {/* Absolute Header Controls */}
+      <div className="absolute top-0 left-0 right-0 p-6 flex justify-between items-start pointer-events-none z-40">
+        
+        {/* Logo/Home Button - Only visible if NOT in input step */}
+        {step !== 'input' ? (
+          <button 
+            onClick={goToHome}
+            className="pointer-events-auto flex items-center gap-2 bg-white/80 backdrop-blur shadow-sm px-4 py-2 rounded-full border border-gray-100 hover:bg-white transition group"
+          >
+            <LayoutGrid size={18} className="text-indigo-600 group-hover:rotate-90 transition-transform" />
+            <span className="font-bold text-gray-800 text-sm">Mandalart.AI</span>
+          </button>
+        ) : <div></div>}
+
+        {/* Floating History Button */}
         <button 
           onClick={() => setIsHistoryOpen(true)}
-          className="p-2 text-gray-600 hover:bg-gray-100 rounded-full transition relative group"
+          className="pointer-events-auto bg-white hover:bg-gray-50 text-gray-600 hover:text-indigo-600 shadow-md border border-gray-100 p-3 rounded-full transition-all duration-300 relative group"
           title="Histórico"
         >
-          <History className="w-5 h-5" />
+          <History className="w-6 h-6" />
           {history.length > 0 && (
-            <span className="absolute top-1 right-1 w-2.5 h-2.5 bg-indigo-500 rounded-full border-2 border-white"></span>
+            <span className="absolute top-0 right-0 w-3 h-3 bg-indigo-500 rounded-full border-2 border-white transform translate-x-1 -translate-y-1"></span>
           )}
         </button>
-      </header>
+      </div>
 
       {renderHistorySidebar()}
 
       {/* Main Content */}
-      <main className="flex-grow flex items-center justify-center p-4 sm:p-8">
+      <main className="flex-grow flex flex-col items-center justify-center p-4 sm:p-8 w-full">
         {step === 'input' && renderInputStep()}
         {step === 'interview' && renderInterviewStep()}
         {step === 'generating' && renderGeneratingStep()}
@@ -304,10 +351,12 @@ export default function App() {
         )}
       </main>
 
-      {/* Footer */}
-      <footer className="py-6 text-center text-gray-400 text-sm">
-        <p>Desenvolvido com Google Gemini</p>
-      </footer>
+      {/* Footer - Only show on Input step or if unobtrusive */}
+      {step === 'input' && (
+        <footer className="py-6 text-center text-gray-400 text-sm animate-fade-in">
+          <p>Experimente o poder do planejamento estruturado.</p>
+        </footer>
+      )}
     </div>
   );
 }
