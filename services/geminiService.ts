@@ -40,21 +40,24 @@ export const generateQuestions = async (mainGoal: string): Promise<Question[]> =
 };
 
 export const generateMandalartData = async (
-  mainGoal: string,
+  rawInput: string,
   answers: InterviewAnswer[]
 ): Promise<MandalartData> => {
   
   const context = answers.map(a => `P: ${a.questionText}\nR: ${a.answer}`).join('\n');
 
   const prompt = `
-    Crie uma estrutura de Mandalart (Matriz 9x9) para o objetivo principal: "${mainGoal}".
-    
-    Considere o contexto fornecido pelo usuário:
+    O usuário digitou o seguinte desejo/objetivo: "${rawInput}".
+    Contexto adicional da entrevista:
     ${context}
 
+    Crie uma estrutura de Mandalart (Matriz 9x9).
+
     REGRAS ESTRITAS:
-    1. O objetivo principal é o centro.
-    2. Identifique exatamente 8 sub-objetivos (áreas chave) para alcançar o objetivo principal.
+    1. **mainGoal (IMPORTANTE)**: NÃO use a frase inteira do usuário. Crie um TÍTULO CURTO, RESUMIDO e PROFISSIONAL (máximo 3-4 palavras) que represente o objetivo final.
+       - Exemplo: Se o usuário digitou "Sou tech lead e quero virar um staff engineer", o mainGoal deve ser apenas "Staff Engineer".
+       - Exemplo: Se o usuário digitou "Quero perder peso para o verão", o mainGoal deve ser "Emagrecimento Saudável".
+    2. Identifique exatamente 8 sub-objetivos (áreas chave) para alcançar esse objetivo principal.
     3. Para CADA um dos 8 sub-objetivos, liste exatamente 8 tarefas ou comportamentos acionáveis.
     4. Seja conciso. Use palavras-chave ou frases curtas (máximo 4-5 palavras por item).
     
@@ -64,7 +67,7 @@ export const generateMandalartData = async (
   const schema: Schema = {
     type: Type.OBJECT,
     properties: {
-      mainGoal: { type: Type.STRING, description: "O objetivo central definido pelo usuário" },
+      mainGoal: { type: Type.STRING, description: "Um título curto e resumido (máx 4 palavras) do objetivo principal, extraído da entrada do usuário." },
       subGoals: {
         type: Type.ARRAY,
         description: "Exatamente 8 sub-objetivos que cercam o objetivo principal",

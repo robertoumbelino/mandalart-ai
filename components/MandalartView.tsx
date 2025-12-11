@@ -17,18 +17,16 @@ export const MandalartView: React.FC<MandalartViewProps> = ({ data, onReset }) =
       try {
         const canvas = await html2canvas(printRef.current, {
           scale: 3, // Higher resolution
-          backgroundColor: "#ffffff",
+          backgroundColor: "#f8fafc", // Match the page bg color or white
           useCORS: true,
-          // Manipulate the cloned document to ensure perfect capture without clipping
+          logging: false,
           onclone: (clonedDoc) => {
             const element = clonedDoc.getElementById('mandalart-print-area');
             if (element) {
-              // Remove shadows/borders that might get clipped
               element.style.boxShadow = 'none';
-              element.style.borderRadius = '0';
-              element.style.padding = '20px'; // Add safe padding for export
-              element.style.width = 'auto';
-              element.style.height = 'auto';
+              element.style.padding = '40px';
+              // Ensure background pattern renders if desired, or set to white
+              element.style.background = '#ffffff'; 
             }
           }
         });
@@ -46,31 +44,29 @@ export const MandalartView: React.FC<MandalartViewProps> = ({ data, onReset }) =
   };
 
   /**
-   * The Mandalart consists of 9 zones (3x3 big grid).
-   * Zone 4 (Center) is the Main Goal + 8 Sub Goals.
-   * Other Zones (0-3, 5-8) are the tasks for those Sub Goals.
+   * Layout Strategy:
+   * 9 Blocks separated by a larger gap.
+   * Each Block is a 3x3 grid separated by a 1px gap (creating the border effect).
    */
   
-  // Helper to map a flat index (0-8) of a 3x3 grid to what content it should hold
-  // Returns the SubGoal index (0-7) or 'CENTER'
   const getZoneContentIndex = (zoneIndex: number): number | 'CENTER' => {
     if (zoneIndex === 4) return 'CENTER';
     return zoneIndex < 4 ? zoneIndex : zoneIndex - 1;
   };
 
-  // Helper to render a 3x3 grid for a specific zone
   const renderZone = (zoneIndex: number) => {
     const contentIndex = getZoneContentIndex(zoneIndex);
+    const isCenterZone = contentIndex === 'CENTER';
 
-    // If it's the Center Zone (The 'Overview' Grid)
-    if (contentIndex === 'CENTER') {
-      // This 3x3 grid contains the 8 Sub-Goal Titles + Main Goal in center
+    // The container for a 3x3 block. 
+    // bg-slate-200 + gap-px creates the thin border lines between cells.
+    const gridContainerClass = "grid grid-cols-3 grid-rows-3 w-full h-full gap-px bg-slate-200 border border-slate-200 overflow-hidden rounded-lg shadow-sm";
+
+    if (isCenterZone) {
+      // Center Zone: Contains Main Goal + 8 Sub Goals
       return (
-        <div key={zoneIndex} className="grid grid-cols-3 grid-rows-3 w-full h-full border-2 border-gray-800">
+        <div key={zoneIndex} className={`${gridContainerClass} ring-4 ring-indigo-50`}>
           {[0, 1, 2, 3, 4, 5, 6, 7, 8].map((cellIndex) => {
-             // Inside Center Zone:
-             // Cell 4 is Main Goal.
-             // Others are SubGoal Titles.
              if (cellIndex === 4) {
                return <GridCell key={cellIndex} text={data.mainGoal} type="main" />;
              }
@@ -81,14 +77,13 @@ export const MandalartView: React.FC<MandalartViewProps> = ({ data, onReset }) =
       );
     }
 
-    // If it's an Outer Zone (Task Grid)
+    // Outer Zones: Contains Sub Goal Title + 8 Tasks
     const subGoal = data.subGoals[contentIndex];
-    // This 3x3 grid contains 8 Tasks + The Sub-Goal Title in center
     return (
-      <div key={zoneIndex} className="grid grid-cols-3 grid-rows-3 w-full h-full border border-gray-400">
+      <div key={zoneIndex} className={gridContainerClass}>
         {[0, 1, 2, 3, 4, 5, 6, 7, 8].map((cellIndex) => {
           if (cellIndex === 4) {
-             // Center of an outer zone is the Sub-Goal Title itself
+             // Center of an outer zone is the Sub-Goal Title
              return <GridCell key={cellIndex} text={subGoal.title} type="sub-main" />;
           }
           const taskIdx = cellIndex < 4 ? cellIndex : cellIndex - 1;
@@ -99,47 +94,51 @@ export const MandalartView: React.FC<MandalartViewProps> = ({ data, onReset }) =
   };
 
   return (
-    <div className="flex flex-col items-center w-full max-w-5xl animate-fade-in">
-      <div className="flex gap-4 mb-6">
+    <div className="flex flex-col items-center w-full max-w-[1200px] animate-fade-in pb-12">
+      <div className="flex gap-4 mb-8">
         <button
           onClick={handleDownload}
-          className="flex items-center gap-2 px-6 py-2 bg-indigo-600 text-white rounded-full hover:bg-indigo-700 transition shadow-lg font-medium"
+          className="flex items-center gap-2 px-6 py-2.5 bg-gray-900 text-white rounded-xl hover:bg-black transition shadow-lg font-medium text-sm"
         >
-          <Download size={18} />
-          Exportar PNG
+          <Download size={16} />
+          Salvar Imagem
         </button>
         <button
           onClick={onReset}
-          className="flex items-center gap-2 px-6 py-2 bg-white text-gray-700 border border-gray-300 rounded-full hover:bg-gray-50 transition shadow-sm font-medium"
+          className="flex items-center gap-2 px-6 py-2.5 bg-white text-gray-700 border border-gray-200 rounded-xl hover:bg-gray-50 transition shadow-sm font-medium text-sm"
         >
-          <RefreshCcw size={18} />
-          Novo Objetivo
+          <RefreshCcw size={16} />
+          Novo
         </button>
       </div>
 
       {/* The Printable Area Wrapper */}
-      {/* Removed overflow-hidden to prevent clipping during capture */}
       <div 
         ref={printRef} 
         id="mandalart-print-area"
-        className="p-8 bg-white shadow-2xl rounded-xl mb-8 flex flex-col items-center"
+        className="p-4 sm:p-10 bg-white/50 backdrop-blur-sm shadow-xl border border-white/50 rounded-3xl flex flex-col items-center"
       >
-         <div className="text-center mb-6">
-            <h2 className="text-2xl font-bold text-gray-800">{data.mainGoal}</h2>
-            <p className="text-sm text-gray-500 mt-1">Plano Mandalart</p>
+         <div className="text-center mb-8">
+            <h2 className="text-3xl font-extrabold tracking-tight text-gray-900">{data.mainGoal}</h2>
+            <p className="text-sm text-gray-500 mt-2 uppercase tracking-widest font-semibold">Plano de Ação Mandalart</p>
          </div>
          
          {/* The 9x9 Master Grid */}
-         {/* Use explicit widths for better consistency */}
+         {/* Using gap-3 or gap-4 creates separation between the 9 distinct blocks */}
          <div 
-           className="grid grid-cols-3 gap-1 bg-gray-900 border-4 border-gray-900" 
-           style={{ width: 'min(95vw, 900px)', height: 'min(95vw, 900px)', aspectRatio: '1/1' }}
+           className="grid grid-cols-3 gap-3 sm:gap-6 p-2" 
+           style={{ 
+             width: 'min(95vw, 900px)', 
+             height: 'min(95vw, 900px)', 
+             aspectRatio: '1/1' 
+           }}
          >
            {[0, 1, 2, 3, 4, 5, 6, 7, 8].map((zoneIndex) => renderZone(zoneIndex))}
          </div>
 
-         <div className="w-full text-right mt-2">
-            <p className="text-xs text-gray-400">Gerado por IA</p>
+         <div className="w-full flex justify-between items-center mt-6 px-4">
+            <div className="text-xs text-gray-400 font-medium">Mandalart.AI</div>
+            <div className="text-xs text-gray-400">Gerado com Google Gemini</div>
          </div>
       </div>
     </div>

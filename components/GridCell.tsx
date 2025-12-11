@@ -7,24 +7,27 @@ interface GridCellProps {
 }
 
 export const GridCell: React.FC<GridCellProps> = ({ text, type, className = '' }) => {
-  const baseClasses = "flex items-center justify-center p-1 text-center text-xs sm:text-sm border border-gray-300 break-words overflow-hidden h-full w-full select-none transition-colors duration-200";
+  const baseClasses = "flex items-center justify-center p-2 text-center break-words overflow-hidden h-full w-full select-none transition-all duration-200 leading-snug";
   
   let typeClasses = "";
   switch (type) {
     case 'main':
-      typeClasses = "bg-yellow-300 font-bold text-gray-900 shadow-inner";
+      // Center Goal: Gradient, White Text, Shadow, Slightly Larger
+      typeClasses = "bg-gradient-to-br from-indigo-600 to-purple-600 text-white font-bold text-xs sm:text-sm shadow-md z-10";
       break;
     case 'sub-main':
-      typeClasses = "bg-gray-200 font-semibold text-gray-800";
+      // Sub-Goals: Soft Indigo background, Darker text
+      typeClasses = "bg-indigo-50 text-indigo-900 font-semibold text-[10px] sm:text-xs";
       break;
     case 'task':
-      typeClasses = "bg-white text-gray-600 hover:bg-gray-50";
+      // Tasks: Clean White, Soft Gray text
+      typeClasses = "bg-white text-slate-600 hover:text-slate-900 hover:bg-slate-50 text-[9px] sm:text-[10px] font-medium";
       break;
   }
 
   return (
     <div className={`${baseClasses} ${typeClasses} ${className}`}>
-      <span className="line-clamp-3">{text}</span>
+      <span className="line-clamp-4">{text}</span>
     </div>
   );
 };
