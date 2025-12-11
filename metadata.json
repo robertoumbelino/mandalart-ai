@@ -1,0 +1,5 @@
+{
+  "name": "Mandalart AI Goal Planner",
+  "description": "An AI-powered goal visualization tool that generates a Mandalart chart (9x9 grid) to break down complex objectives into actionable sub-goals and tasks. Supports PNG export.",
+  "requestFramePermissions": []
+}
