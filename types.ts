@@ -1,13 +1,27 @@
+export interface TaskItem {
+  id: string;
+  text: string;
+  checked: boolean;
+}
+
+export interface Task {
+  title: string;
+  description: string;
+  advice: string;
+  checklist: TaskItem[];
+  isCompleted: boolean;
+}
+
 export interface SubGoal {
   title: string;
-  description: string; // Brief explanation of why this sub-goal matters
-  advice: string; // A specific tip on how to improve or start
-  tasks: string[]; // Should be exactly 8 items
+  description: string; 
+  advice: string; 
+  tasks: Task[]; // Now an array of Task objects, not strings
 }
 
 export interface MandalartData {
   mainGoal: string;
-  subGoals: SubGoal[]; // Should be exactly 8 items
+  subGoals: SubGoal[]; 
 }
 
 export interface Question {

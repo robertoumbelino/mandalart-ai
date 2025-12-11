@@ -25,13 +25,12 @@ export default function App() {
         setHistory(JSON.parse(savedHistory));
       } catch (e) {
         console.error("Failed to parse history", e);
-        // If parse fails, clear invalid data
         localStorage.removeItem('mandalart_history');
       }
     }
   }, []);
 
-  // Save history helper (using functional updates for safety)
+  // Save history helper
   const saveToHistory = (data: MandalartData) => {
     const newItem: HistoryItem = {
       id: Date.now().toString(),
@@ -43,6 +42,24 @@ export default function App() {
       const updatedHistory = [newItem, ...prevHistory];
       localStorage.setItem('mandalart_history', JSON.stringify(updatedHistory));
       return updatedHistory;
+    });
+  };
+
+  // Update Data Handler (for checklist toggles)
+  const handleDataUpdate = (newData: MandalartData) => {
+    setMandalartData(newData);
+    
+    // Also update this specific item in history if it exists
+    // Note: In a real app we might track the "current history ID" to update the correct one
+    // For now we just update state. If the user wants to "save" progress they can re-generate or we could auto-update the latest history item.
+    // Let's simple update the most recent history item if it matches the main goal to emulate "autosave"
+    setHistory(prev => {
+        const copy = [...prev];
+        if (copy.length > 0 && copy[0].data.mainGoal === newData.mainGoal) {
+            copy[0].data = newData;
+            localStorage.setItem('mandalart_history', JSON.stringify(copy));
+        }
+        return copy;
     });
   };
 
@@ -96,7 +113,6 @@ export default function App() {
   };
 
   const handleGenerate = async () => {
-    // Basic validation
     if (answers.some(a => !a.answer.trim())) {
       setError("Por favor, responda todas as perguntas para obter o melhor resultado.");
       return;
@@ -109,11 +125,11 @@ export default function App() {
     try {
       const data = await generateMandalartData(mainGoal, answers);
       setMandalartData(data);
-      saveToHistory(data); // Auto-save
+      saveToHistory(data); 
       setStep('result');
     } catch (err) {
       setError("Erro ao criar o Mandalart. Tente novamente mais tarde.");
-      setStep('interview'); // Go back so they don't lose answers
+      setStep('interview'); 
       console.error(err);
     } finally {
       setLoading(false);
@@ -259,7 +275,6 @@ export default function App() {
 
   const renderHistorySidebar = () => (
     <>
-      {/* Backdrop */}
       {isHistoryOpen && (
         <div 
           className="fixed inset-0 bg-black/20 backdrop-blur-sm z-50 transition-opacity"
@@ -267,7 +282,6 @@ export default function App() {
         />
       )}
       
-      {/* Sidebar */}
       <div className={`fixed inset-y-0 right-0 w-80 bg-white/95 backdrop-blur-md shadow-2xl z-50 transform transition-transform duration-300 ease-in-out ${isHistoryOpen ? 'translate-x-0' : 'translate-x-full'}`}>
         <div className="flex flex-col h-full">
           <div className="p-5 border-b border-gray-100 flex items-center justify-between">
@@ -337,10 +351,8 @@ export default function App() {
   return (
     <div className="min-h-screen relative flex flex-col font-sans text-gray-900 overflow-x-hidden">
       
-      {/* Absolute Header Controls */}
       <div className="absolute top-0 left-0 right-0 p-6 flex justify-between items-start pointer-events-none z-40">
         
-        {/* Logo/Home Button - Only visible if NOT in input step */}
         {step !== 'input' ? (
           <button 
             onClick={goToHome}
@@ -351,7 +363,6 @@ export default function App() {
           </button>
         ) : <div></div>}
 
-        {/* Floating History Button */}
         <button 
           onClick={() => setIsHistoryOpen(true)}
           className="pointer-events-auto bg-white hover:bg-gray-50 text-gray-600 hover:text-indigo-600 shadow-md border border-gray-100 p-3 rounded-full transition-all duration-300 relative group"
@@ -366,17 +377,19 @@ export default function App() {
 
       {renderHistorySidebar()}
 
-      {/* Main Content */}
       <main className="flex-grow flex flex-col items-center justify-center p-4 sm:p-8 w-full">
         {step === 'input' && renderInputStep()}
         {step === 'interview' && renderInterviewStep()}
         {step === 'generating' && renderGeneratingStep()}
         {step === 'result' && mandalartData && (
-          <MandalartView data={mandalartData} onReset={handleReset} />
+          <MandalartView 
+            data={mandalartData} 
+            onReset={handleReset} 
+            onDataUpdate={handleDataUpdate}
+          />
         )}
       </main>
 
-      {/* Footer - Only show on Input step or if unobtrusive */}
       {step === 'input' && (
         <footer className="py-6 text-center text-gray-400 text-sm animate-fade-in">
           <p>Experimente o poder do planejamento estruturado.</p>
