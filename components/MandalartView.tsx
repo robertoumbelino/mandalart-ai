@@ -17,28 +17,46 @@ export const MandalartView: React.FC<MandalartViewProps> = ({ data, onReset, onD
   const handleDownload = async () => {
     if (printRef.current) {
       try {
-        // Capture dimensions to ensure consistency
-        const width = printRef.current.offsetWidth;
-        const height = printRef.current.offsetHeight;
-
         const canvas = await html2canvas(printRef.current, {
-          scale: 3,
-          backgroundColor: "#f8fafc",
+          scale: 2, 
+          backgroundColor: "#ffffff",
           useCORS: true,
           logging: false,
-          width: width,
-          height: height,
+          windowWidth: 1920,
           onclone: (clonedDoc) => {
-            const element = clonedDoc.getElementById('mandalart-print-area');
-            if (element) {
-              // Lock dimensions to prevent reflow
-              element.style.width = `${width}px`;
-              element.style.height = `${height}px`;
-              
-              // Only modify visual styles that don't affect layout
-              element.style.boxShadow = 'none';
-              element.style.background = '#ffffff'; 
-              // Removed padding override to prevent text reflow/cutoff
+            const wrapper = clonedDoc.getElementById('mandalart-print-area');
+            const gridContainer = clonedDoc.getElementById('mandalart-grid-container');
+            
+            if (wrapper && gridContainer) {
+              // 1. Force a very large, fixed wrapper size
+              wrapper.style.width = '1600px';
+              wrapper.style.height = 'auto';
+              wrapper.style.padding = '60px';
+              wrapper.style.boxShadow = 'none';
+              wrapper.style.background = '#ffffff';
+
+              // 2. Force the grid to be large (1400px)
+              // This gives each cell ~155px width/height.
+              gridContainer.style.width = '1400px';
+              gridContainer.style.height = '1400px';
+              gridContainer.style.maxWidth = 'none';
+              gridContainer.style.maxHeight = 'none';
+
+              // 3. IMPORTANT: Disable line-clamping on all text spans in the clone
+              // This ensures that even if text is long, it prints fully (given the large cell size).
+              const textSpans = gridContainer.querySelectorAll('span');
+              textSpans.forEach((span: HTMLSpanElement) => {
+                 // Remove line-clamp classes logic if possible, or override styles
+                 span.style.webkitLineClamp = 'unset';
+                 span.style.display = 'block'; // often needed to reset -webkit-box
+                 span.style.overflow = 'visible';
+                 
+                 // Optional: ensure font size is consistent if needed, 
+                 // but typically the large cell with default font size is enough.
+                 // We can force a slightly larger font for the huge resolution if it looks too small.
+                 span.style.fontSize = '12px'; 
+                 span.style.lineHeight = '1.3';
+              });
             }
           }
         });
@@ -105,8 +123,6 @@ export const MandalartView: React.FC<MandalartViewProps> = ({ data, onReset, onD
                  key={cellIndex} 
                  text={subGoal.title} 
                  type="sub-main"
-                 // No onClick for center zone sub-main cells in this specific design requested, 
-                 // users click the outer zones to interact with tasks.
                />
              );
           })}
@@ -292,6 +308,7 @@ export const MandalartView: React.FC<MandalartViewProps> = ({ data, onReset, onD
          </div>
          
          <div 
+           id="mandalart-grid-container"
            className="grid grid-cols-3 gap-3 sm:gap-6 p-2" 
            style={{ 
              width: 'min(95vw, 900px)', 

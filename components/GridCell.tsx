@@ -10,7 +10,7 @@ interface GridCellProps {
 }
 
 export const GridCell: React.FC<GridCellProps> = ({ text, type, className = '', onClick, isCompleted }) => {
-  const baseClasses = "relative flex items-center justify-center p-2 text-center break-words overflow-hidden h-full w-full select-none transition-all duration-300 leading-snug";
+  const baseClasses = "relative flex items-center justify-center p-2 text-center break-words overflow-hidden h-full w-full select-none transition-all duration-300 leading-tight";
   
   let typeClasses = "";
   let interactiveClasses = "";
