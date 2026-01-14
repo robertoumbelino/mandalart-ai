@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { ArrowRight, Sparkles, BrainCircuit, Loader2, History, X, Trash2, Calendar, LayoutGrid, LogOut, User as UserIcon } from 'lucide-react';
-import { generateQuestions, generateMandalartData } from './services/geminiService';
+import { generateQuestions, generateMandalartData } from './services/openRouterService';
 import { MandalartData, Question, AppStep, InterviewAnswer, HistoryItem, User } from './types';
 import { MandalartView } from './components/MandalartView';
 import { Auth } from './components/Auth';
@@ -294,7 +294,7 @@ export default function App() {
         )}
 
         {step === 'result' && mandalartData && (
-          <div className="pt-24 w-full">
+          <div className="pt-24 w-full flex justify-center">
             <MandalartView 
               data={mandalartData} 
               onReset={handleReset} 
