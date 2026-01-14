@@ -1,3 +1,10 @@
+export interface User {
+  id: string;
+  name: string;
+  email: string;
+  avatar?: string;
+}
+
 export interface TaskItem {
   id: string;
   text: string;
@@ -16,7 +23,7 @@ export interface SubGoal {
   title: string;
   description: string; 
   advice: string; 
-  tasks: Task[]; // Now an array of Task objects, not strings
+  tasks: Task[];
 }
 
 export interface MandalartData {
@@ -39,6 +46,7 @@ export interface InterviewAnswer {
 
 export interface HistoryItem {
   id: string;
+  userId: string;
   timestamp: number;
   data: MandalartData;
 }
