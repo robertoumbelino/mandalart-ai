@@ -1,11 +1,10 @@
 import { generateText } from 'ai'
 import { createOpenRouter } from '@openrouter/ai-sdk-provider'
 import { z } from 'zod'
-import { MandalartData, Question, InterviewAnswer } from '../types'
-import { env } from '../config/env'
+import { MandalartData, Question, InterviewAnswer } from '@/types'
 
 const openrouter = createOpenRouter({
-  apiKey: env.OPENROUTER_API_KEY
+  apiKey: process.env.OPENROUTER_API_KEY
 })
 
 const questionsSchema = z.object({
@@ -46,10 +45,10 @@ const extractJson = (text: string): string => {
 export const generateQuestions = async (
   mainGoal: string
 ): Promise<Question[]> => {
-  console.log('[OpenRouter] Gerando perguntas para:', mainGoal)
+  const modelName = process.env.OPENROUTER_MODEL_NAME || 'z-ai/glm-4.5-air:free';
 
   const { text } = await generateText({
-    model: openrouter(env.OPENROUTER_MODEL_NAME),
+    model: openrouter(modelName),
     prompt: `Você é um assistente que ajuda pessoas a planejar seus objetivos.
 Sempre responda APENAS com JSON válido, sem texto adicional.
 
@@ -61,13 +60,9 @@ Responda APENAS com JSON neste formato:
 {"questions":[{"id":"1","text":"Pergunta 1?"},{"id":"2","text":"Pergunta 2?"},{"id":"3","text":"Pergunta 3?"}]}`
   })
 
-  console.log('[OpenRouter] Resposta recebida:', text.substring(0, 200))
-
   const jsonString = extractJson(text)
   const parsed = JSON.parse(jsonString)
   const validated = questionsSchema.parse(parsed)
-
-  console.log('[OpenRouter] Perguntas validadas:', validated.questions)
 
   return validated.questions
 }
@@ -80,10 +75,10 @@ export const generateMandalartData = async (
     .map(answer => `P: ${answer.questionText}\nR: ${answer.answer}`)
     .join('\n')
 
-  console.log('[OpenRouter] Gerando Mandalart para:', rawInput)
+  const modelName = process.env.OPENROUTER_MODEL_NAME || 'z-ai/glm-4.5-air:free';
 
   const { text } = await generateText({
-    model: openrouter(env.OPENROUTER_MODEL_NAME),
+    model: openrouter(modelName),
     prompt: `Você é um especialista em planejamento de metas usando a técnica Mandalart.
 Sempre responda APENAS com JSON válido, sem texto adicional.
 
@@ -99,13 +94,9 @@ Responda APENAS com JSON:
 `
   })
 
-  console.log('[OpenRouter] Resposta recebida:', text.substring(0, 300))
-
   const jsonString = extractJson(text)
   const parsed = JSON.parse(jsonString)
   const validated = mandalartSchema.parse(parsed)
-
-  console.log('[OpenRouter] Mandalart validado:', validated.mainGoal)
 
   const defaultChecklist = ['Planejar', 'Executar', 'Revisar']
 

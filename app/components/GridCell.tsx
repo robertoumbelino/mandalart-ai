@@ -21,7 +21,6 @@ export const GridCell: React.FC<GridCellProps> = ({ text, type, className = '', 
       break;
     case 'sub-main':
       typeClasses = "bg-indigo-50 text-indigo-900 font-semibold text-[10px] sm:text-xs z-10";
-      // Sub-mains are static headers in this new version, interaction is on tasks
       break;
     case 'task':
       if (isCompleted) {
@@ -43,7 +42,6 @@ export const GridCell: React.FC<GridCellProps> = ({ text, type, className = '', 
     >
       <span className="line-clamp-4 relative z-10">{text}</span>
       
-      {/* Completion Badge */}
       {isCompleted && type === 'task' && (
         <div className="absolute top-1 right-1 text-emerald-600 opacity-50">
           <Check size={10} strokeWidth={4} />

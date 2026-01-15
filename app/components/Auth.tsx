@@ -1,10 +1,12 @@
+'use client';
+
 import React, { useState } from 'react';
 import { Mail, Lock, LogIn, UserPlus, Sparkles, Loader2 } from 'lucide-react';
-import { authService } from '../services/authService';
-import { User } from '../types';
+import { login, loginWithGoogle } from '@/actions/auth';
+import { User } from '@/types';
 
 interface AuthProps {
-  onLogin: (user: User) => void;
+  onLogin: (user: User) => Promise<void>;
 }
 
 export const Auth: React.FC<AuthProps> = ({ onLogin }) => {
@@ -17,8 +19,10 @@ export const Auth: React.FC<AuthProps> = ({ onLogin }) => {
     e.preventDefault();
     setLoading(true);
     try {
-      const user = await authService.login(email, password);
-      onLogin(user);
+      const user = await login(email, password);
+      await onLogin(user);
+    } catch (error) {
+      alert('Erro ao fazer login. Tente novamente.');
     } finally {
       setLoading(false);
     }
@@ -27,8 +31,8 @@ export const Auth: React.FC<AuthProps> = ({ onLogin }) => {
   const handleGoogleLogin = async () => {
     setLoading(true);
     try {
-      const user = await authService.loginWithGoogle();
-      onLogin(user);
+      const user = await loginWithGoogle();
+      await onLogin(user);
     } finally {
       setLoading(false);
     }

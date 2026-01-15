@@ -1,3 +1,5 @@
+'use client';
+
 import React, { useRef, useState } from 'react'
 import html2canvas from 'html2canvas'
 import {
@@ -10,8 +12,8 @@ import {
   Lightbulb,
   CheckSquare
 } from 'lucide-react'
-import { MandalartData, SubGoal, Task } from '../types'
-import { GridCell } from './GridCell'
+import { MandalartData, Task } from '@/types'
+import { GridCell } from '@/app/components/GridCell'
 
 interface MandalartViewProps {
   data: MandalartData
@@ -47,32 +49,22 @@ export const MandalartView: React.FC<MandalartViewProps> = ({
             )
 
             if (wrapper && gridContainer) {
-              // 1. Force a very large, fixed wrapper size
               wrapper.style.width = '1600px'
               wrapper.style.height = 'auto'
               wrapper.style.padding = '60px'
               wrapper.style.boxShadow = 'none'
               wrapper.style.background = '#ffffff'
 
-              // 2. Force the grid to be large (1400px)
-              // This gives each cell ~155px width/height.
               gridContainer.style.width = '1400px'
               gridContainer.style.height = '1400px'
               gridContainer.style.maxWidth = 'none'
               gridContainer.style.maxHeight = 'none'
 
-              // 3. IMPORTANT: Disable line-clamping on all text spans in the clone
-              // This ensures that even if text is long, it prints fully (given the large cell size).
               const textSpans = gridContainer.querySelectorAll('span')
               textSpans.forEach((span: HTMLSpanElement) => {
-                // Remove line-clamp classes logic if possible, or override styles
                 span.style.webkitLineClamp = 'unset'
-                span.style.display = 'block' // often needed to reset -webkit-box
+                span.style.display = 'block'
                 span.style.overflow = 'visible'
-
-                // Optional: ensure font size is consistent if needed,
-                // but typically the large cell with default font size is enough.
-                // We can force a slightly larger font for the huge resolution if it looks too small.
                 span.style.fontSize = '12px'
                 span.style.lineHeight = '1.3'
               })
@@ -101,19 +93,15 @@ export const MandalartView: React.FC<MandalartViewProps> = ({
     const task =
       newData.subGoals[selectedTask.subGoalIndex].tasks[selectedTask.taskIndex]
 
-    // Toggle the specific item
     task.checklist = task.checklist.map(item =>
       item.id === checkItemId ? { ...item, checked: !item.checked } : item
     )
 
-    // Check if ALL items are checked
     const allChecked = task.checklist.every(item => item.checked)
     task.isCompleted = allChecked
 
-    // Update state
     onDataUpdate(newData)
 
-    // Update local selected task to reflect changes in UI immediately
     setSelectedTask({
       ...selectedTask,
       task: { ...task }
@@ -188,7 +176,6 @@ export const MandalartView: React.FC<MandalartViewProps> = ({
     )
   }
 
-  // Sheet Component Content
   const renderSheet = () => {
     if (!selectedTask) return null
     const { task } = selectedTask
@@ -204,7 +191,6 @@ export const MandalartView: React.FC<MandalartViewProps> = ({
           onClick={() => setSelectedTask(null)}
         />
         <div className="fixed inset-y-0 right-0 w-full sm:w-[400px] bg-white shadow-2xl z-50 animate-in slide-in-from-right duration-300 flex flex-col">
-          {/* Header */}
           <div
             className={`p-6 border-b border-gray-100 flex items-start justify-between transition-colors ${
               task.isCompleted ? 'bg-emerald-50' : 'bg-gray-50/50'
@@ -233,9 +219,7 @@ export const MandalartView: React.FC<MandalartViewProps> = ({
             </button>
           </div>
 
-          {/* Scrollable Content */}
           <div className="flex-1 overflow-y-auto p-6 space-y-8">
-            {/* Description */}
             <div className="space-y-3">
               <div className="flex items-center gap-2 text-gray-800 font-semibold">
                 <Info size={18} className="text-indigo-500" />
@@ -246,7 +230,6 @@ export const MandalartView: React.FC<MandalartViewProps> = ({
               </p>
             </div>
 
-            {/* Checklist */}
             <div className="space-y-4">
               <div className="flex items-center justify-between text-gray-800 font-semibold">
                 <div className="flex items-center gap-2">
@@ -294,7 +277,6 @@ export const MandalartView: React.FC<MandalartViewProps> = ({
               </ul>
             </div>
 
-            {/* Progress Scale */}
             <div className="space-y-3">
               <div className="flex items-center gap-2 text-gray-800 font-semibold">
                 <TrendingUp size={18} className="text-blue-500" />
@@ -312,7 +294,6 @@ export const MandalartView: React.FC<MandalartViewProps> = ({
               </div>
             </div>
 
-            {/* Advice */}
             <div className="space-y-3 pb-6">
               <div className="flex items-center gap-2 text-gray-800 font-semibold">
                 <Lightbulb size={18} className="text-amber-500" />
@@ -324,7 +305,6 @@ export const MandalartView: React.FC<MandalartViewProps> = ({
             </div>
           </div>
 
-          {/* Footer */}
           <div className="p-4 border-t border-gray-100 bg-gray-50 text-center text-xs text-gray-400">
             Complete o checklist para marcar a tarefa como concluída.
           </div>
@@ -352,7 +332,6 @@ export const MandalartView: React.FC<MandalartViewProps> = ({
         </button>
       </div>
 
-      {/* The Printable Area Wrapper */}
       <div
         ref={printRef}
         id="mandalart-print-area"
@@ -385,7 +364,6 @@ export const MandalartView: React.FC<MandalartViewProps> = ({
         </div>
       </div>
 
-      {/* Render the Sheet */}
       {renderSheet()}
     </div>
   )

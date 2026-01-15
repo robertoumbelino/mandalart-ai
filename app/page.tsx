@@ -1,66 +1,72 @@
-import React, { useState, useEffect } from 'react';
-import { ArrowRight, Sparkles, BrainCircuit, Loader2, History, X, Trash2, Calendar, LayoutGrid, LogOut, User as UserIcon } from 'lucide-react';
-import { generateQuestions, generateMandalartData } from './services/openRouterService';
-import { MandalartData, Question, AppStep, InterviewAnswer, HistoryItem, User } from './types';
-import { MandalartView } from './components/MandalartView';
-import { Auth } from './components/Auth';
-import { authService } from './services/authService';
-import { db } from './services/databaseService';
+'use client';
 
-export default function App() {
+import React, { useState, useEffect } from 'react';
+import { ArrowRight, Sparkles, BrainCircuit, Loader2, History, X, Trash2, Calendar, LayoutGrid, LogOut } from 'lucide-react';
+import { generateQuestions, generateMandalartData } from '@/lib/openRouterService';
+import { MandalartData, Question, AppStep, InterviewAnswer, HistoryItem, User } from '@/types';
+import { MandalartView } from '@/app/components/MandalartView';
+import { Auth } from '@/app/components/Auth';
+import { getCurrentUser, logout } from '@/actions/auth';
+import { getHistory, saveMandalart, updateMandalart, deleteMandalart } from '@/actions/mandalarts';
+
+export default function Home() {
   const [user, setUser] = useState<User | null>(null);
+  const [loading, setLoading] = useState(true);
   const [step, setStep] = useState<AppStep>('input');
   const [mainGoal, setMainGoal] = useState('');
   const [questions, setQuestions] = useState<Question[]>([]);
   const [answers, setAnswers] = useState<InterviewAnswer[]>([]);
   const [mandalartData, setMandalartData] = useState<MandalartData | null>(null);
   const [currentMandalartId, setCurrentMandalartId] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
+  const [processing, setProcessing] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // History State
   const [history, setHistory] = useState<HistoryItem[]>([]);
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
 
-  // Load user session and history on mount
   useEffect(() => {
-    const currentUser = authService.getCurrentUser();
-    if (currentUser) {
-      setUser(currentUser);
-      const userHistory = db.getHistory(currentUser.id);
-      setHistory(userHistory);
-    }
+    loadUserAndHistory();
   }, []);
 
-  const refreshHistory = (userId: string) => {
-    setHistory(db.getHistory(userId));
+  const loadUserAndHistory = async () => {
+    const currentUser = await getCurrentUser();
+    if (currentUser) {
+      setUser(currentUser);
+      const userHistory = await getHistory();
+      setHistory(userHistory);
+    }
+    setLoading(false);
   };
 
-  const handleLogin = (newUser: User) => {
+  const refreshHistory = async () => {
+    const userHistory = await getHistory();
+    setHistory(userHistory);
+  };
+
+  const handleLogin = async (newUser: User) => {
     setUser(newUser);
-    refreshHistory(newUser.id);
+    await refreshHistory();
   };
 
-  const handleLogout = () => {
-    authService.logout();
+  const handleLogout = async () => {
+    await logout();
     setUser(null);
     setHistory([]);
     setStep('input');
   };
 
-  const handleDataUpdate = (newData: MandalartData) => {
+  const handleDataUpdate = async (newData: MandalartData) => {
     setMandalartData(newData);
-    // Auto-update the current item in DB if we are viewing one
     if (currentMandalartId) {
-      db.updateMandalart(currentMandalartId, newData);
-      if (user) refreshHistory(user.id);
+      await updateMandalart(currentMandalartId, newData);
+      await refreshHistory();
     }
   };
 
-  const deleteHistoryItem = (id: string, e: React.MouseEvent) => {
+  const deleteHistoryItem = async (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
-    db.deleteMandalart(id);
-    if (user) refreshHistory(user.id);
+    await deleteMandalart(id);
+    await refreshHistory();
   };
 
   const loadHistoryItem = (item: HistoryItem) => {
@@ -74,7 +80,7 @@ export default function App() {
   const handleStart = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!mainGoal.trim()) return;
-    setLoading(true);
+    setProcessing(true);
     setError(null);
     try {
       const q = await generateQuestions(mainGoal);
@@ -85,7 +91,7 @@ export default function App() {
       setError("Erro ao gerar perguntas.");
       console.error(err);
     } finally {
-      setLoading(false);
+      setProcessing(false);
     }
   };
 
@@ -101,21 +107,21 @@ export default function App() {
       return;
     }
     setStep('generating');
-    setLoading(true);
+    setProcessing(true);
     try {
       const data = await generateMandalartData(mainGoal, answers);
       setMandalartData(data);
       if (user) {
-        const newItem = db.saveMandalart(user.id, data);
+        const newItem = await saveMandalart(data);
         setCurrentMandalartId(newItem.id);
-        refreshHistory(user.id);
+        await refreshHistory();
       }
       setStep('result');
     } catch (err) {
       setError("Erro ao criar o Mandalart.");
       setStep('interview');
     } finally {
-      setLoading(false);
+      setProcessing(false);
     }
   };
 
@@ -128,15 +134,20 @@ export default function App() {
     setStep('input');
   };
 
-  // Se não estiver logado, mostramos a tela de Auth
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <Loader2 className="animate-spin" size={48} />
+      </div>
+    );
+  }
+
   if (!user) {
     return <Auth onLogin={handleLogin} />;
   }
 
   return (
-    <div className="min-h-screen relative flex flex-col font-sans text-gray-900 overflow-x-hidden">
-      
-      {/* Header com Faixa de Usuário */}
+    <div className="min-h-screen relative flex flex-col text-gray-900 overflow-x-hidden">
       <div className="fixed top-0 left-0 right-0 p-6 flex justify-between items-start z-40">
         <div className="flex flex-col gap-3">
           {step !== 'input' && (
@@ -149,7 +160,6 @@ export default function App() {
             </button>
           )}
 
-          {/* Faixa de Usuário Logado */}
           <div className="flex items-center gap-2 bg-white/90 backdrop-blur-sm border border-gray-100 p-1.5 rounded-2xl pr-4 shadow-md animate-in slide-in-from-left duration-500">
              <img 
                src={user.avatar || `https://api.dicebear.com/7.x/initials/svg?seed=${user.name}`} 
@@ -181,7 +191,6 @@ export default function App() {
         </button>
       </div>
 
-      {/* History Sidebar */}
       {isHistoryOpen && (
         <div className="fixed inset-0 bg-black/20 backdrop-blur-sm z-50 transition-opacity" onClick={() => setIsHistoryOpen(false)} />
       )}
@@ -209,7 +218,6 @@ export default function App() {
 
       <main className="flex-grow flex flex-col items-center justify-center p-4 sm:p-8 w-full">
         {step === 'input' && (
-          /* MANTIDA A INTERFACE ORIGINAL EXATAMENTE COMO SOLICITADO */
           <div className="w-full max-w-3xl mx-auto text-center space-y-10 animate-in fade-in slide-in-from-bottom-8 duration-1000">
             <div className="space-y-6">
               <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white border border-indigo-100 text-indigo-600 text-xs font-semibold uppercase tracking-wider shadow-sm mb-4">
@@ -235,10 +243,10 @@ export default function App() {
                 />
                 <button
                   type="submit"
-                  disabled={loading || !mainGoal.trim()}
+                  disabled={processing || !mainGoal.trim()}
                   className="w-full sm:w-auto px-8 py-4 bg-gray-900 hover:bg-black disabled:bg-gray-400 text-white font-bold rounded-2xl transition-all shadow-lg flex items-center justify-center gap-2 text-lg whitespace-nowrap"
                 >
-                  {loading ? <Loader2 className="animate-spin" /> : <>Iniciar <ArrowRight size={20} /></>}
+                  {processing ? <Loader2 className="animate-spin" /> : <>Iniciar <ArrowRight size={20} /></>}
                 </button>
               </form>
             </div>
@@ -280,8 +288,8 @@ export default function App() {
                 </div>
               ))}
             </div>
-            <button onClick={handleGenerate} disabled={loading} className="w-full py-4 bg-indigo-600 text-white font-bold rounded-2xl shadow-lg flex items-center justify-center gap-2 text-lg">
-              {loading ? <Loader2 className="animate-spin" /> : <>Gerar Plano Mandalart <Sparkles /></>}
+            <button onClick={handleGenerate} disabled={processing} className="w-full py-4 bg-indigo-600 text-white font-bold rounded-2xl shadow-lg flex items-center justify-center gap-2 text-lg">
+              {processing ? <Loader2 className="animate-spin" /> : <>Gerar Plano Mandalart <Sparkles /></>}
             </button>
           </div>
         )}
