@@ -1,9 +1,10 @@
 'use client';
 
 import React, { useRef, useState } from 'react'
-import html2canvas from 'html2canvas'
+import html2canvas from 'html2canvas-pro'
 import {
   Download,
+  Loader2,
   RefreshCcw,
   X,
   Info,
@@ -32,57 +33,69 @@ export const MandalartView: React.FC<MandalartViewProps> = ({
     subGoalIndex: number
     taskIndex: number
   } | null>(null)
+  const [isExporting, setIsExporting] = useState(false)
 
   const handleDownload = async () => {
-    if (printRef.current) {
-      try {
-        const canvas = await html2canvas(printRef.current, {
-          scale: 2,
-          backgroundColor: '#ffffff',
-          useCORS: true,
-          logging: false,
-          windowWidth: 1920,
-          onclone: clonedDoc => {
-            const wrapper = clonedDoc.getElementById('mandalart-print-area')
-            const gridContainer = clonedDoc.getElementById(
-              'mandalart-grid-container'
-            )
+    if (!printRef.current || isExporting) return
 
-            if (wrapper && gridContainer) {
-              wrapper.style.width = '1600px'
-              wrapper.style.height = 'auto'
-              wrapper.style.padding = '60px'
-              wrapper.style.boxShadow = 'none'
-              wrapper.style.background = '#ffffff'
+    setIsExporting(true)
+    try {
+      const canvas = await html2canvas(printRef.current, {
+        scale: 2,
+        backgroundColor: '#ffffff',
+        useCORS: true,
+        logging: false,
+        windowWidth: 1920,
+        onclone: clonedDoc => {
+          const wrapper = clonedDoc.getElementById('mandalart-print-area')
+          const gridContainer = clonedDoc.getElementById(
+            'mandalart-grid-container'
+          )
 
-              gridContainer.style.width = '1400px'
-              gridContainer.style.height = '1400px'
-              gridContainer.style.maxWidth = 'none'
-              gridContainer.style.maxHeight = 'none'
+          if (wrapper && gridContainer) {
+            wrapper.style.width = '1600px'
+            wrapper.style.height = 'auto'
+            wrapper.style.padding = '60px'
+            wrapper.style.boxShadow = 'none'
+            wrapper.style.background = '#ffffff'
 
-              const textSpans = gridContainer.querySelectorAll('span')
-              textSpans.forEach((span: HTMLSpanElement) => {
-                span.style.webkitLineClamp = 'unset'
-                span.style.display = 'block'
-                span.style.overflow = 'visible'
-                span.style.fontSize = '12px'
-                span.style.lineHeight = '1.3'
-              })
-            }
+            gridContainer.style.width = '1400px'
+            gridContainer.style.height = '1400px'
+            gridContainer.style.maxWidth = 'none'
+            gridContainer.style.maxHeight = 'none'
+
+            const textSpans = gridContainer.querySelectorAll('span')
+            textSpans.forEach((span: HTMLSpanElement) => {
+              span.style.webkitLineClamp = 'unset'
+              span.style.display = 'block'
+              span.style.overflow = 'visible'
+              span.style.fontSize = '12px'
+              span.style.lineHeight = '1.3'
+            })
           }
-        })
+        }
+      })
 
-        const image = canvas.toDataURL('image/png')
-        const link = document.createElement('a')
-        link.href = image
-        link.download = `mandalart-${data.mainGoal
-          .replace(/\s+/g, '-')
-          .toLowerCase()}.png`
-        link.click()
-      } catch (err) {
-        console.error('Export failed:', err)
-        alert('Não foi possível gerar a imagem. Tente novamente.')
-      }
+      const image = canvas.toDataURL('image/png')
+      const link = document.createElement('a')
+      const goalSlug = data.mainGoal
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .replace(/[^a-zA-Z0-9]+/g, '-')
+        .replace(/^-|-$/g, '')
+        .toLowerCase()
+        .slice(0, 80) || 'plano'
+
+      link.href = image
+      link.download = `mandalart-${goalSlug}.png`
+      document.body.appendChild(link)
+      link.click()
+      link.remove()
+    } catch (err) {
+      console.error('Export failed:', err)
+      alert('Não foi possível gerar a imagem. Tente novamente.')
+    } finally {
+      setIsExporting(false)
     }
   }
 
@@ -326,10 +339,16 @@ export const MandalartView: React.FC<MandalartViewProps> = ({
       <div className="flex gap-4 mb-8">
         <button
           onClick={handleDownload}
-          className="flex items-center gap-2 px-6 py-2.5 bg-gray-900 text-white rounded-xl hover:bg-black transition shadow-lg font-medium text-sm"
+          disabled={isExporting}
+          aria-busy={isExporting}
+          className="flex items-center gap-2 px-6 py-2.5 bg-gray-900 text-white rounded-xl hover:bg-black disabled:bg-gray-400 disabled:cursor-wait transition shadow-lg font-medium text-sm"
         >
-          <Download size={16} />
-          Salvar Imagem
+          {isExporting ? (
+            <Loader2 size={16} className="animate-spin" />
+          ) : (
+            <Download size={16} />
+          )}
+          {isExporting ? 'Gerando imagem...' : 'Salvar Imagem'}
         </button>
         <button
           onClick={onReset}
