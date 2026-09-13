@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Image from 'next/image';
 import { ArrowRight, Sparkles, BrainCircuit, Loader2, History, X, Trash2, Calendar, LogOut } from 'lucide-react';
 import { generateQuestions, generateMandalartData } from '@/actions/ai';
@@ -52,6 +52,8 @@ export default function Home() {
 
   const [history, setHistory] = useState<HistoryItem[]>([]);
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
+  const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
+  const userMenuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     let active = true;
@@ -84,6 +86,27 @@ export default function Home() {
     return () => window.clearInterval(interval);
   }, [step]);
 
+  useEffect(() => {
+    if (!isUserMenuOpen) return;
+
+    const closeUserMenu = (event: PointerEvent) => {
+      if (!userMenuRef.current?.contains(event.target as Node)) {
+        setIsUserMenuOpen(false);
+      }
+    };
+    const closeUserMenuOnEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setIsUserMenuOpen(false);
+    };
+
+    document.addEventListener('pointerdown', closeUserMenu);
+    document.addEventListener('keydown', closeUserMenuOnEscape);
+
+    return () => {
+      document.removeEventListener('pointerdown', closeUserMenu);
+      document.removeEventListener('keydown', closeUserMenuOnEscape);
+    };
+  }, [isUserMenuOpen]);
+
   const refreshHistory = async () => {
     const userHistory = await getHistory();
     setHistory(userHistory);
@@ -95,6 +118,7 @@ export default function Home() {
   };
 
   const handleLogout = async () => {
+    setIsUserMenuOpen(false);
     await logout();
     setUser(null);
     setHistory([]);
@@ -205,7 +229,7 @@ export default function Home() {
   return (
     <div className="min-h-screen relative flex flex-col text-gray-900 overflow-x-hidden">
       <div className="fixed top-0 left-0 right-0 p-6 flex justify-between items-start z-40">
-        <div className="flex flex-col gap-3">
+        <div>
           {step !== 'input' && (
             <button 
               onClick={handleReset}
@@ -215,34 +239,61 @@ export default function Home() {
               <span className="font-bold text-gray-800 text-sm">Mandalart.AI</span>
             </button>
           )}
-
-          <div className="flex items-center gap-2 bg-white/90 backdrop-blur-sm border border-gray-100 p-1.5 rounded-2xl pr-4 shadow-md animate-in slide-in-from-left duration-500">
-             <div aria-hidden="true" className="w-8 h-8 rounded-xl bg-indigo-100 text-indigo-700 flex items-center justify-center text-xs font-black uppercase">
-               {user.name.slice(0, 2)}
-             </div>
-             <div className="flex flex-col">
-                <span className="text-[10px] font-bold text-gray-400 uppercase leading-none mb-0.5">Logado como</span>
-                <span className="text-xs font-bold text-gray-800 leading-none">{user.name}</span>
-             </div>
-             <button 
-                onClick={handleLogout}
-                className="ml-2 p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all"
-                title="Sair"
-             >
-                <LogOut size={16} />
-             </button>
-          </div>
         </div>
 
-        <button 
-          onClick={() => setIsHistoryOpen(true)}
-          className="bg-white hover:bg-gray-50 text-gray-600 hover:text-indigo-600 shadow-md border border-gray-100 p-3 rounded-full transition-all relative group"
-        >
-          <History className="w-6 h-6" />
-          {history.length > 0 && (
-            <span className="absolute top-0 right-0 w-3 h-3 bg-indigo-500 rounded-full border-2 border-white transform translate-x-1 -translate-y-1"></span>
-          )}
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => {
+              setIsUserMenuOpen(false);
+              setIsHistoryOpen(true);
+            }}
+            className="bg-white hover:bg-gray-50 text-gray-600 hover:text-indigo-600 shadow-md border border-gray-100 p-3 rounded-full transition-all relative group"
+            aria-label="Abrir histórico"
+          >
+            <History className="w-6 h-6" />
+            {history.length > 0 && (
+              <span className="absolute top-0 right-0 w-3 h-3 bg-indigo-500 rounded-full border-2 border-white transform translate-x-1 -translate-y-1"></span>
+            )}
+          </button>
+
+          <div ref={userMenuRef} className="relative">
+            <button
+              type="button"
+              onClick={() => setIsUserMenuOpen(current => !current)}
+              aria-label="Abrir menu da conta"
+              aria-expanded={isUserMenuOpen}
+              aria-haspopup="menu"
+              className="w-12 h-12 rounded-full bg-white text-indigo-700 border border-gray-100 shadow-md flex items-center justify-center text-sm font-black uppercase hover:bg-gray-50 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2"
+            >
+              {user.name.trim().charAt(0) || user.email.charAt(0)}
+            </button>
+
+            {isUserMenuOpen && (
+              <div
+                role="menu"
+                className="absolute top-full right-0 mt-2 w-64 rounded-2xl border border-gray-100 bg-white p-2 shadow-xl animate-in fade-in zoom-in-95 duration-150"
+              >
+                <div className="px-3 py-2.5 border-b border-gray-100">
+                  <p className="text-xs font-semibold text-gray-800 truncate">
+                    {user.name}
+                  </p>
+                  <p className="mt-0.5 text-xs text-gray-500 break-all">
+                    {user.email}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  role="menuitem"
+                  onClick={handleLogout}
+                  className="mt-1 w-full flex items-center gap-2 rounded-xl px-3 py-2.5 text-sm font-medium text-gray-700 hover:bg-red-50 hover:text-red-600 transition-colors"
+                >
+                  <LogOut size={16} />
+                  Sair
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
       </div>
 
       {isHistoryOpen && (
