@@ -17,36 +17,54 @@ export const GridCell: React.FC<GridCellProps> = ({ text, type, className = '', 
 
   switch (type) {
     case 'main':
-      typeClasses = "bg-gradient-to-br from-indigo-600 to-purple-600 text-white font-bold text-xs sm:text-sm shadow-md z-10";
+      typeClasses = "bg-gradient-to-br from-indigo-600 to-purple-600 text-white font-bold text-sm shadow-md z-10";
       break;
     case 'sub-main':
-      typeClasses = "bg-indigo-50 text-indigo-900 font-semibold text-[10px] sm:text-xs z-10";
+      typeClasses = "bg-indigo-50 text-indigo-900 font-semibold text-xs z-10";
       break;
     case 'task':
       if (isCompleted) {
-        typeClasses = "bg-emerald-100 text-emerald-900 border-emerald-200 text-[9px] sm:text-[10px] font-medium";
+        typeClasses = "bg-emerald-100 text-emerald-900 border-emerald-200 text-[11px] sm:text-[10px] font-medium";
       } else {
-        typeClasses = "bg-white text-slate-600 hover:text-slate-900 hover:bg-slate-50 text-[9px] sm:text-[10px] font-medium";
+        typeClasses = "bg-white text-slate-600 hover:text-slate-900 hover:bg-slate-50 text-[11px] sm:text-[10px] font-medium";
       }
       
-      if (onClick) {
-        interactiveClasses = "cursor-pointer hover:scale-[1.02] active:scale-95 shadow-sm hover:shadow-md z-0";
-      }
       break;
   }
 
-  return (
-    <div 
-      onClick={onClick}
-      className={`${baseClasses} ${typeClasses} ${interactiveClasses} ${className}`}
-    >
+  if (onClick) {
+    interactiveClasses = "cursor-pointer hover:scale-[1.02] active:scale-95 shadow-sm hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-inset z-0";
+  }
+
+  const content = (
+    <>
       <span className="line-clamp-4 relative z-10">{text}</span>
-      
+
       {isCompleted && type === 'task' && (
         <div className="absolute top-1 right-1 text-emerald-600 opacity-50">
           <Check size={10} strokeWidth={4} />
         </div>
       )}
+    </>
+  );
+
+  if (onClick) {
+    return (
+      <button
+        type="button"
+        onClick={onClick}
+        className={`${baseClasses} ${typeClasses} ${interactiveClasses} ${className}`}
+      >
+        {content}
+      </button>
+    );
+  }
+
+  return (
+    <div
+      className={`${baseClasses} ${typeClasses} ${interactiveClasses} ${className}`}
+    >
+      {content}
     </div>
   );
 };

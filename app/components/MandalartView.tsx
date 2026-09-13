@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useRef, useState } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 import html2canvas from 'html2canvas-pro'
 import {
   Download,
@@ -11,7 +11,8 @@ import {
   CheckCircle2,
   TrendingUp,
   Lightbulb,
-  CheckSquare
+  CheckSquare,
+  ChevronDown
 } from 'lucide-react'
 import { MandalartData, Task } from '@/types'
 import { GridCell } from '@/app/components/GridCell'
@@ -34,6 +35,21 @@ export const MandalartView: React.FC<MandalartViewProps> = ({
     taskIndex: number
   } | null>(null)
   const [isExporting, setIsExporting] = useState(false)
+  const [openMobileAreaIndex, setOpenMobileAreaIndex] = useState<number | null>(
+    null
+  )
+
+  useEffect(() => {
+    if (openMobileAreaIndex === null) return
+
+    const frame = window.requestAnimationFrame(() => {
+      document
+        .getElementById(`mobile-area-${openMobileAreaIndex}`)
+        ?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    })
+
+    return () => window.cancelAnimationFrame(frame)
+  }, [openMobileAreaIndex])
 
   const handleDownload = async () => {
     if (!printRef.current || isExporting) return
@@ -134,7 +150,14 @@ export const MandalartView: React.FC<MandalartViewProps> = ({
     return zoneIndex < 4 ? zoneIndex : zoneIndex - 1
   }
 
-  const renderZone = (zoneIndex: number) => {
+  const openMobileArea = (subGoalIndex: number) => {
+    setOpenMobileAreaIndex(subGoalIndex)
+  }
+
+  const renderZone = (
+    zoneIndex: number,
+    onSubGoalClick?: (subGoalIndex: number) => void
+  ) => {
     const contentIndex = getZoneContentIndex(zoneIndex)
     const isCenterZone = contentIndex === 'CENTER'
 
@@ -156,7 +179,16 @@ export const MandalartView: React.FC<MandalartViewProps> = ({
             const subGoalIdx = cellIndex < 4 ? cellIndex : cellIndex - 1
             const subGoal = data.subGoals[subGoalIdx]
             return (
-              <GridCell key={cellIndex} text={subGoal.title} type="sub-main" />
+              <GridCell
+                key={cellIndex}
+                text={subGoal.title}
+                type="sub-main"
+                onClick={
+                  onSubGoalClick
+                    ? () => onSubGoalClick(subGoalIdx)
+                    : undefined
+                }
+              />
             )
           })}
         </div>
@@ -375,7 +407,7 @@ export const MandalartView: React.FC<MandalartViewProps> = ({
 
         <div
           id="mandalart-grid-container"
-          className="grid grid-cols-3 gap-3 sm:gap-6 p-2 mx-auto"
+          className="hidden sm:grid grid-cols-3 gap-6 p-2 mx-auto"
           style={{
             width: 'min(95vw, 900px)',
             height: 'min(95vw, 900px)',
@@ -383,6 +415,65 @@ export const MandalartView: React.FC<MandalartViewProps> = ({
           }}
         >
           {[0, 1, 2, 3, 4, 5, 6, 7, 8].map(zoneIndex => renderZone(zoneIndex))}
+        </div>
+
+        <div className="sm:hidden w-full space-y-8">
+          <section className="space-y-3">
+            <div>
+              <h3 className="font-bold text-gray-900">Visão geral</h3>
+              <p className="text-sm text-gray-500 mt-1">
+                Toque em um pilar para abrir suas ações.
+              </p>
+            </div>
+            <div className="w-full aspect-square">
+              {renderZone(4, openMobileArea)}
+            </div>
+          </section>
+
+          <section className="space-y-3">
+            <div>
+              <h3 className="font-bold text-gray-900">Ações por área</h3>
+              <p className="text-sm text-gray-500 mt-1">
+                Abra uma área para consultar e marcar suas tarefas.
+              </p>
+            </div>
+
+            <div className="space-y-3">
+              {[0, 1, 2, 3, 5, 6, 7, 8].map((zoneIndex, areaIndex) => (
+                <details
+                  key={zoneIndex}
+                  id={`mobile-area-${areaIndex}`}
+                  open={openMobileAreaIndex === areaIndex}
+                  onToggle={event => {
+                    const isOpen = event.currentTarget.open
+                    setOpenMobileAreaIndex(currentIndex =>
+                      isOpen
+                        ? areaIndex
+                        : currentIndex === areaIndex
+                          ? null
+                          : currentIndex
+                    )
+                  }}
+                  className="group scroll-mt-4 rounded-2xl border border-slate-200 bg-white overflow-hidden"
+                >
+                  <summary className="min-h-14 px-4 py-3 flex items-center gap-3 cursor-pointer list-none [&::-webkit-details-marker]:hidden">
+                    <span className="w-7 h-7 shrink-0 rounded-lg bg-indigo-50 text-indigo-700 flex items-center justify-center text-xs font-bold">
+                      {areaIndex + 1}
+                    </span>
+                    <span className="flex-1 text-left text-sm font-semibold text-gray-800">
+                      {data.subGoals[areaIndex].title}
+                    </span>
+                    <ChevronDown className="w-5 h-5 shrink-0 text-gray-400 transition-transform group-open:rotate-180" />
+                  </summary>
+                  <div className="p-3 pt-0">
+                    <div className="w-full aspect-square">
+                      {renderZone(zoneIndex)}
+                    </div>
+                  </div>
+                </details>
+              ))}
+            </div>
+          </section>
         </div>
 
         <div className="w-full flex justify-between items-center mt-6 px-4">
