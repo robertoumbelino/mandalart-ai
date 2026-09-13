@@ -5,6 +5,7 @@ import './globals.css';
 export const metadata: Metadata = {
   title: 'Mandalart.AI - Transforme sonhos em planos de ação',
   description: 'Sua estratégia começa aqui. Transforme sonhos vagos em planos de ação concretos com IA.',
+  applicationName: 'Mandalart.AI',
 };
 
 export default function RootLayout({

@@ -1,7 +1,8 @@
 'use client'
 
 import React, { useState } from 'react'
-import { Mail, Lock, LogIn, UserPlus, Sparkles, Loader2 } from 'lucide-react'
+import Image from 'next/image'
+import { Mail, Lock, LogIn, UserPlus, Loader2 } from 'lucide-react'
 import { login, register } from '@/actions/auth'
 import type { User } from '@/types'
 
@@ -40,8 +41,8 @@ export const Auth: React.FC<AuthProps> = ({ onLogin }) => {
     <div className="min-h-screen flex items-center justify-center p-6 bg-slate-50">
       <div className="w-full max-w-md animate-in fade-in zoom-in duration-500">
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center p-3 bg-indigo-600 text-white rounded-2xl shadow-xl mb-4">
-            <Sparkles size={32} />
+          <div className="inline-flex items-center justify-center w-20 h-20 mb-4 drop-shadow-xl">
+            <Image src="/mandalart-logo.png" alt="" width={80} height={80} priority />
           </div>
           <h1 className="text-4xl font-black tracking-tight text-slate-900">Mandalart.AI</h1>
           <p className="text-slate-500 mt-2 font-medium">Sua estratégia começa aqui.</p>

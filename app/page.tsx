@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { ArrowRight, Sparkles, BrainCircuit, Loader2, History, X, Trash2, Calendar, LayoutGrid, LogOut } from 'lucide-react';
+import Image from 'next/image';
+import { ArrowRight, Sparkles, BrainCircuit, Loader2, History, X, Trash2, Calendar, LogOut } from 'lucide-react';
 import { generateQuestions, generateMandalartData } from '@/actions/ai';
 import { MandalartData, Question, AppStep, InterviewAnswer, HistoryItem, User } from '@/types';
 import { MandalartView } from '@/app/components/MandalartView';
@@ -168,7 +169,7 @@ export default function Home() {
               onClick={handleReset}
               className="flex items-center gap-2 bg-white/80 backdrop-blur shadow-sm px-4 py-2 rounded-full border border-gray-100 hover:bg-white transition group"
             >
-              <LayoutGrid size={18} className="text-indigo-600 group-hover:rotate-90 transition-transform" />
+              <Image src="/mandalart-logo.png" alt="" width={22} height={22} className="group-hover:rotate-90 transition-transform" />
               <span className="font-bold text-gray-800 text-sm">Mandalart.AI</span>
             </button>
           )}
