@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import {
   credentialsSchema,
   generatedMandalartSchema,
+  googleLoginSchema,
   mandalartDataSchema,
   questionsOutputSchema
 } from './validation'
@@ -72,6 +73,14 @@ describe('credentials schema', () => {
     expect(credentialsSchema.parse({ email: ' User@Example.com ', password: '12345678' }).email)
       .toBe('user@example.com')
     expect(credentialsSchema.safeParse({ email: 'user@example.com', password: 'short' }).success)
+      .toBe(false)
+  })
+
+  it('accepts a Google ID token and validates an optional linking password', () => {
+    const credential = 'header.payload.signature'.repeat(10)
+
+    expect(googleLoginSchema.safeParse({ credential }).success).toBe(true)
+    expect(googleLoginSchema.safeParse({ credential, linkingPassword: 'short' }).success)
       .toBe(false)
   })
 })

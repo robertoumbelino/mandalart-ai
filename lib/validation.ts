@@ -13,6 +13,11 @@ export const credentialsSchema = z.object({
   password: z.string().min(8).max(72)
 })
 
+export const googleLoginSchema = z.object({
+  credential: z.string().min(100).max(10_000),
+  linkingPassword: z.string().min(8).max(72).optional()
+})
+
 export const idSchema = z.string().uuid()
 
 export const questionSchema = z.object({

@@ -1,0 +1,66 @@
+import type { Metadata } from 'next'
+import Link from 'next/link'
+
+export const metadata: Metadata = {
+  title: 'Política de Privacidade | Mandalart.AI',
+  description: 'Como o Mandalart.AI coleta, utiliza e protege seus dados.'
+}
+
+export default function PrivacyPage() {
+  return (
+    <main className="min-h-screen bg-slate-50 px-6 py-12 text-slate-700">
+      <article className="mx-auto max-w-3xl rounded-3xl border border-slate-100 bg-white p-8 shadow-sm sm:p-12">
+        <Link href="/" className="text-sm font-bold text-indigo-600 hover:text-indigo-700">
+          ← Voltar ao Mandalart.AI
+        </Link>
+
+        <h1 className="mt-8 text-3xl font-black tracking-tight text-slate-900">Política de Privacidade</h1>
+        <p className="mt-2 text-sm text-slate-500">Última atualização: 13 de setembro de 2026</p>
+
+        <div className="mt-8 space-y-7 leading-relaxed">
+          <section>
+            <h2 className="text-lg font-bold text-slate-900">1. Dados que tratamos</h2>
+            <p className="mt-2">
+              Para criar e acessar sua conta, tratamos nome, endereço de e-mail, foto de perfil opcional e credenciais de autenticação. Quando você usa o produto, armazenamos os objetivos, respostas, planos Mandalart e progresso que decidir salvar.
+            </p>
+          </section>
+
+          <section>
+            <h2 className="text-lg font-bold text-slate-900">2. Login com Google</h2>
+            <p className="mt-2">
+              Ao escolher o Google, recebemos somente as informações básicas autorizadas para autenticação: identificador da conta Google, nome, e-mail verificado e foto de perfil. Não recebemos sua senha do Google nem acessamos Gmail, Drive, contatos ou agenda.
+            </p>
+          </section>
+
+          <section>
+            <h2 className="text-lg font-bold text-slate-900">3. Como usamos os dados</h2>
+            <p className="mt-2">
+              Usamos os dados para autenticar sua conta, manter seus planos salvos, gerar perguntas e sugestões com inteligência artificial, proteger o serviço contra abuso e corrigir falhas. Objetivos e respostas necessários à geração são processados pelos provedores de infraestrutura e IA usados pelo Mandalart.AI.
+            </p>
+          </section>
+
+          <section>
+            <h2 className="text-lg font-bold text-slate-900">4. Compartilhamento e armazenamento</h2>
+            <p className="mt-2">
+              Não vendemos seus dados. Eles são compartilhados apenas com fornecedores essenciais de hospedagem, banco de dados, autenticação e processamento de IA, na medida necessária para operar o serviço e sujeitos às práticas de segurança desses fornecedores.
+            </p>
+          </section>
+
+          <section>
+            <h2 className="text-lg font-bold text-slate-900">5. Segurança e retenção</h2>
+            <p className="mt-2">
+              Adotamos controles como cookies de sessão protegidos, senhas com hash e validação de identidade no servidor. Mantemos os dados enquanto sua conta estiver ativa ou pelo período necessário para segurança e cumprimento de obrigações legais.
+            </p>
+          </section>
+
+          <section>
+            <h2 className="text-lg font-bold text-slate-900">6. Seus direitos e contato</h2>
+            <p className="mt-2">
+              Você pode solicitar acesso, correção ou exclusão dos seus dados pelo e-mail de suporte informado na tela de consentimento do Google. Também pode deixar de usar o login Google removendo o acesso ao Mandalart.AI nas configurações da sua Conta Google.
+            </p>
+          </section>
+        </div>
+      </article>
+    </main>
+  )
+}

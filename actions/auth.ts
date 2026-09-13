@@ -2,9 +2,11 @@
 
 import bcrypt from 'bcryptjs'
 import jwt from 'jsonwebtoken'
+import { randomUUID } from 'node:crypto'
+import { OAuth2Client } from 'google-auth-library'
 import { cookies } from 'next/headers'
 import { getDb } from '@/lib/db'
-import { credentialsSchema } from '@/lib/validation'
+import { credentialsSchema, googleLoginSchema } from '@/lib/validation'
 import type { User } from '@/types'
 
 const TOKEN_COOKIE = 'mandalart_token'
@@ -19,6 +21,20 @@ type UserRow = {
   avatar: string | null
   password_hash?: string | null
 }
+
+type GoogleProfile = {
+  subject: string
+  email: string
+  name: string
+  avatar: string | null
+}
+
+export type GoogleLoginResult =
+  | { status: 'authenticated'; user: User }
+  | { status: 'password_required'; email: string }
+  | { status: 'link_error'; message: string }
+
+const googleClient = new OAuth2Client()
 
 const getJwtSecret = () => {
   const secret = process.env.JWT_SECRET
@@ -49,6 +65,100 @@ const createSession = async (userId: string) => {
     path: '/',
     maxAge: TOKEN_MAX_AGE
   })
+}
+
+const getGoogleClientId = () => {
+  const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID
+  if (!clientId) {
+    throw new Error('Login com Google não está configurado.')
+  }
+  return clientId
+}
+
+const verifyGoogleCredential = async (credential: string): Promise<GoogleProfile> => {
+  const ticket = await googleClient.verifyIdToken({
+    idToken: credential,
+    audience: getGoogleClientId()
+  })
+  const payload = ticket.getPayload()
+
+  if (!payload?.sub || !payload.email || payload.email_verified !== true) {
+    throw new Error('A conta Google não possui um e-mail verificado.')
+  }
+
+  const email = payload.email.trim().toLowerCase()
+  const fallbackName = email.split('@')[0]
+
+  return {
+    subject: payload.sub,
+    email,
+    name: (payload.name?.trim() || fallbackName).slice(0, 255),
+    avatar: payload.picture || null
+  }
+}
+
+const findUserByGoogleSubject = async (subject: string) => {
+  const sql = getDb()
+  const users = await sql`
+    SELECT u.id, u.email, u.name, u.avatar, u.password_hash
+    FROM user_identities identity
+    JOIN users u ON u.id = identity.user_id
+    WHERE identity.provider = 'google'
+      AND identity.provider_account_id = ${subject}
+    LIMIT 1
+  ` as UserRow[]
+  return users[0] || null
+}
+
+const findUserByEmail = async (email: string) => {
+  const sql = getDb()
+  const users = await sql`
+    SELECT id, email, name, avatar, password_hash
+    FROM users
+    WHERE LOWER(email) = ${email}
+    LIMIT 1
+  ` as UserRow[]
+  return users[0] || null
+}
+
+const linkGoogleIdentity = async (user: UserRow, profile: GoogleProfile) => {
+  const sql = getDb()
+  const identities = await sql`
+    INSERT INTO user_identities (user_id, provider, provider_account_id, email)
+    VALUES (${user.id}, 'google', ${profile.subject}, ${profile.email})
+    ON CONFLICT (provider, provider_account_id)
+    DO UPDATE SET email = EXCLUDED.email, last_used_at = NOW()
+    RETURNING user_id
+  ` as Array<{ user_id: string }>
+
+  if (identities[0]?.user_id !== user.id) {
+    throw new Error('Esta conta Google já está vinculada a outra conta.')
+  }
+
+  if (!user.avatar && profile.avatar) {
+    await sql`UPDATE users SET avatar = ${profile.avatar} WHERE id = ${user.id}`
+    user.avatar = profile.avatar
+  }
+
+  return user
+}
+
+const createGoogleUser = async (profile: GoogleProfile) => {
+  const sql = getDb()
+  const userId = randomUUID()
+  const results = await sql.transaction(transaction => [
+    transaction`
+      INSERT INTO users (id, email, name, password_hash, avatar)
+      VALUES (${userId}, ${profile.email}, ${profile.name}, NULL, ${profile.avatar})
+      RETURNING id, email, name, avatar, password_hash
+    `,
+    transaction`
+      INSERT INTO user_identities (user_id, provider, provider_account_id, email)
+      VALUES (${userId}, 'google', ${profile.subject}, ${profile.email})
+    `
+  ])
+
+  return (results[0] as UserRow[])[0]
 }
 
 export const login = async (rawEmail: string, rawPassword: string): Promise<User> => {
@@ -98,6 +208,61 @@ export const register = async (rawEmail: string, rawPassword: string): Promise<U
 
   await createSession(user.id)
   return toUser(user)
+}
+
+export const loginWithGoogle = async (
+  rawCredential: string,
+  rawLinkingPassword?: string
+): Promise<GoogleLoginResult> => {
+  const { credential, linkingPassword } = googleLoginSchema.parse({
+    credential: rawCredential,
+    linkingPassword: rawLinkingPassword || undefined
+  })
+  const profile = await verifyGoogleCredential(credential)
+
+  let user = await findUserByGoogleSubject(profile.subject)
+
+  if (user) {
+    const sql = getDb()
+    await sql`
+      UPDATE user_identities
+      SET email = ${profile.email}, last_used_at = NOW()
+      WHERE provider = 'google' AND provider_account_id = ${profile.subject}
+    `
+  } else {
+    user = await findUserByEmail(profile.email)
+
+    if (user) {
+      if (!user.password_hash) {
+        return {
+          status: 'link_error',
+          message: 'Não foi possível confirmar a conta existente para vinculá-la.'
+        }
+      }
+      if (!linkingPassword) {
+        return { status: 'password_required', email: profile.email }
+      }
+      if (!(await bcrypt.compare(linkingPassword, user.password_hash))) {
+        return {
+          status: 'link_error',
+          message: 'Senha incorreta. A conta Google ainda não foi vinculada.'
+        }
+      }
+
+      user = await linkGoogleIdentity(user, profile)
+    } else {
+      try {
+        user = await createGoogleUser(profile)
+      } catch {
+        // Uma requisição concorrente pode ter criado a conta entre a consulta e o insert.
+        user = await findUserByGoogleSubject(profile.subject)
+        if (!user) throw new Error('Não foi possível criar a conta com Google.')
+      }
+    }
+  }
+
+  await createSession(user.id)
+  return { status: 'authenticated', user: toUser(user) }
 }
 
 export const getCurrentUser = async (): Promise<User | null> => {
