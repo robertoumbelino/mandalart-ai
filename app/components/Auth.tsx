@@ -42,7 +42,7 @@ export const Auth: React.FC<AuthProps> = ({ onLogin }) => {
       <div className="w-full max-w-md animate-in fade-in zoom-in duration-500">
         <div className="text-center mb-8">
           <div className="inline-flex items-center justify-center w-20 h-20 mb-4 drop-shadow-xl">
-            <Image src="/mandalart-logo.png" alt="" width={80} height={80} priority />
+            <Image src="/mandalart-logo.svg" alt="" width={80} height={80} priority />
           </div>
           <h1 className="text-4xl font-black tracking-tight text-slate-900">Mandalart.AI</h1>
           <p className="text-slate-500 mt-2 font-medium">Sua estratégia começa aqui.</p>

@@ -169,7 +169,7 @@ export default function Home() {
               onClick={handleReset}
               className="flex items-center gap-2 bg-white/80 backdrop-blur shadow-sm px-4 py-2 rounded-full border border-gray-100 hover:bg-white transition group"
             >
-              <Image src="/mandalart-logo.png" alt="" width={22} height={22} className="group-hover:rotate-90 transition-transform" />
+              <Image src="/mandalart-logo.svg" alt="" width={22} height={22} className="group-hover:rotate-90 transition-transform" />
               <span className="font-bold text-gray-800 text-sm">Mandalart.AI</span>
             </button>
           )}
