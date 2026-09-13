@@ -120,7 +120,7 @@ export const Auth: React.FC<AuthProps> = ({ onLogin }) => {
       shape: 'pill',
       logo_alignment: 'left',
       locale: 'pt-BR',
-      width: Math.min(336, Math.floor(button.getBoundingClientRect().width))
+      width: Math.min(280, Math.floor(button.getBoundingClientRect().width))
     })
   }, [googleReady, isLogin, pendingLink])
 
