@@ -1,0 +1,8 @@
+.env
+.env.local
+.env.development*
+.env.production*
+.env.test*
+.next
+node_modules
+coverage

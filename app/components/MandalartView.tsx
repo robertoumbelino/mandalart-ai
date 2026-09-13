@@ -89,23 +89,31 @@ export const MandalartView: React.FC<MandalartViewProps> = ({
   const handleToggleCheck = (checkItemId: string) => {
     if (!selectedTask) return
 
-    const newData = { ...data }
-    const task =
-      newData.subGoals[selectedTask.subGoalIndex].tasks[selectedTask.taskIndex]
-
-    task.checklist = task.checklist.map(item =>
+    const task = data.subGoals[selectedTask.subGoalIndex].tasks[selectedTask.taskIndex]
+    const checklist = task.checklist.map(item =>
       item.id === checkItemId ? { ...item, checked: !item.checked } : item
     )
-
-    const allChecked = task.checklist.every(item => item.checked)
-    task.isCompleted = allChecked
+    const updatedTask = {
+      ...task,
+      checklist,
+      isCompleted: checklist.every(item => item.checked)
+    }
+    const newData = {
+      ...data,
+      subGoals: data.subGoals.map((subGoal, subGoalIndex) =>
+        subGoalIndex === selectedTask.subGoalIndex
+          ? {
+              ...subGoal,
+              tasks: subGoal.tasks.map((currentTask, taskIndex) =>
+                taskIndex === selectedTask.taskIndex ? updatedTask : currentTask
+              )
+            }
+          : subGoal
+      )
+    }
 
     onDataUpdate(newData)
-
-    setSelectedTask({
-      ...selectedTask,
-      task: { ...task }
-    })
+    setSelectedTask({ ...selectedTask, task: updatedTask })
   }
 
   const getZoneContentIndex = (zoneIndex: number): number | 'CENTER' => {
@@ -300,7 +308,7 @@ export const MandalartView: React.FC<MandalartViewProps> = ({
                 <h3>Dica de Ouro</h3>
               </div>
               <div className="bg-amber-50 p-4 rounded-xl border border-amber-100 text-sm text-amber-900 leading-relaxed italic">
-                "{task.advice}"
+                “{task.advice}”
               </div>
             </div>
           </div>

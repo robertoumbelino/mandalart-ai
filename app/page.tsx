@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { ArrowRight, Sparkles, BrainCircuit, Loader2, History, X, Trash2, Calendar, LayoutGrid, LogOut } from 'lucide-react';
-import { generateQuestions, generateMandalartData } from '@/lib/openRouterService';
+import { generateQuestions, generateMandalartData } from '@/actions/ai';
 import { MandalartData, Question, AppStep, InterviewAnswer, HistoryItem, User } from '@/types';
 import { MandalartView } from '@/app/components/MandalartView';
 import { Auth } from '@/app/components/Auth';
@@ -25,18 +25,22 @@ export default function Home() {
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
 
   useEffect(() => {
-    loadUserAndHistory();
-  }, []);
+    let active = true;
+    const load = async () => {
+      try {
+        const currentUser = await getCurrentUser();
+        if (!active || !currentUser) return;
+        setUser(currentUser);
+        const userHistory = await getHistory();
+        if (active) setHistory(userHistory);
+      } finally {
+        if (active) setLoading(false);
+      }
+    };
 
-  const loadUserAndHistory = async () => {
-    const currentUser = await getCurrentUser();
-    if (currentUser) {
-      setUser(currentUser);
-      const userHistory = await getHistory();
-      setHistory(userHistory);
-    }
-    setLoading(false);
-  };
+    void load();
+    return () => { active = false; };
+  }, []);
 
   const refreshHistory = async () => {
     const userHistory = await getHistory();
@@ -58,15 +62,23 @@ export default function Home() {
   const handleDataUpdate = async (newData: MandalartData) => {
     setMandalartData(newData);
     if (currentMandalartId) {
-      await updateMandalart(currentMandalartId, newData);
-      await refreshHistory();
+      try {
+        await updateMandalart(currentMandalartId, newData);
+        await refreshHistory();
+      } catch {
+        setError('Não foi possível salvar o progresso.');
+      }
     }
   };
 
   const deleteHistoryItem = async (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
-    await deleteMandalart(id);
-    await refreshHistory();
+    try {
+      await deleteMandalart(id);
+      await refreshHistory();
+    } catch {
+      setError('Não foi possível excluir esse plano.');
+    }
   };
 
   const loadHistoryItem = (item: HistoryItem) => {
@@ -87,18 +99,17 @@ export default function Home() {
       setQuestions(q);
       setAnswers(q.map(item => ({ questionId: item.id, questionText: item.text, answer: '' })));
       setStep('interview');
-    } catch (err) {
-      setError("Erro ao gerar perguntas.");
-      console.error(err);
+    } catch {
+      setError('Não foi possível gerar as perguntas. Tente novamente.');
     } finally {
       setProcessing(false);
     }
   };
 
   const handleAnswerChange = (index: number, value: string) => {
-    const newAnswers = [...answers];
-    newAnswers[index].answer = value;
-    setAnswers(newAnswers);
+    setAnswers(current => current.map((answer, answerIndex) =>
+      answerIndex === index ? { ...answer, answer: value } : answer
+    ));
   };
 
   const handleGenerate = async () => {
@@ -108,6 +119,7 @@ export default function Home() {
     }
     setStep('generating');
     setProcessing(true);
+    setError(null);
     try {
       const data = await generateMandalartData(mainGoal, answers);
       setMandalartData(data);
@@ -117,8 +129,8 @@ export default function Home() {
         await refreshHistory();
       }
       setStep('result');
-    } catch (err) {
-      setError("Erro ao criar o Mandalart.");
+    } catch {
+      setError('Não foi possível criar o Mandalart. Tente novamente.');
       setStep('interview');
     } finally {
       setProcessing(false);
@@ -131,6 +143,7 @@ export default function Home() {
     setAnswers([]);
     setMandalartData(null);
     setCurrentMandalartId(null);
+    setError(null);
     setStep('input');
   };
 
@@ -161,11 +174,9 @@ export default function Home() {
           )}
 
           <div className="flex items-center gap-2 bg-white/90 backdrop-blur-sm border border-gray-100 p-1.5 rounded-2xl pr-4 shadow-md animate-in slide-in-from-left duration-500">
-             <img 
-               src={user.avatar || `https://api.dicebear.com/7.x/initials/svg?seed=${user.name}`} 
-               className="w-8 h-8 rounded-xl bg-indigo-50" 
-               alt="User" 
-             />
+             <div aria-hidden="true" className="w-8 h-8 rounded-xl bg-indigo-100 text-indigo-700 flex items-center justify-center text-xs font-black uppercase">
+               {user.name.slice(0, 2)}
+             </div>
              <div className="flex flex-col">
                 <span className="text-[10px] font-bold text-gray-400 uppercase leading-none mb-0.5">Logado como</span>
                 <span className="text-xs font-bold text-gray-800 leading-none">{user.name}</span>
@@ -237,6 +248,7 @@ export default function Home() {
                   type="text"
                   value={mainGoal}
                   onChange={(e) => setMainGoal(e.target.value)}
+                  maxLength={300}
                   placeholder="Qual é o seu objetivo principal?"
                   className="w-full sm:flex-grow px-6 py-4 text-lg bg-transparent outline-none text-gray-900 placeholder:text-gray-400"
                   autoFocus
@@ -254,15 +266,15 @@ export default function Home() {
             <div className="pt-8 grid grid-cols-1 sm:grid-cols-3 gap-4 max-w-3xl mx-auto w-full px-4">
                <div onClick={() => setMainGoal("Correr uma maratona")} className="flex flex-col items-center gap-3 p-4 bg-white/80 backdrop-blur-sm rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-all cursor-pointer group">
                   <span className="bg-orange-50 p-3 rounded-xl text-2xl group-hover:scale-110 transition-transform">🏃</span>
-                  <span className="font-medium text-gray-700">"Correr uma maratona"</span>
+                  <span className="font-medium text-gray-700">Correr uma maratona</span>
                </div>
                <div onClick={() => setMainGoal("Virar Tech Lead")} className="flex flex-col items-center gap-3 p-4 bg-white/80 backdrop-blur-sm rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-all cursor-pointer group">
                   <span className="bg-blue-50 p-3 rounded-xl text-2xl group-hover:scale-110 transition-transform">💼</span>
-                  <span className="font-medium text-gray-700">"Virar Tech Lead"</span>
+                  <span className="font-medium text-gray-700">Virar Tech Lead</span>
                </div>
                <div onClick={() => setMainGoal("Morar no exterior")} className="flex flex-col items-center gap-3 p-4 bg-white/80 backdrop-blur-sm rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-all cursor-pointer group">
                   <span className="bg-purple-50 p-3 rounded-xl text-2xl group-hover:scale-110 transition-transform">✈️</span>
-                  <span className="font-medium text-gray-700">"Morar no exterior"</span>
+                  <span className="font-medium text-gray-700">Morar no exterior</span>
                </div>
             </div>
           </div>
@@ -282,6 +294,7 @@ export default function Home() {
                   <textarea
                     value={answers[idx]?.answer || ''}
                     onChange={(e) => handleAnswerChange(idx, e.target.value)}
+                    maxLength={1000}
                     className="w-full p-3 border border-gray-300 rounded-xl outline-none focus:ring-2 ring-indigo-500 transition-all h-24 bg-white text-gray-900"
                     placeholder="Sua resposta..."
                   />
@@ -291,6 +304,7 @@ export default function Home() {
             <button onClick={handleGenerate} disabled={processing} className="w-full py-4 bg-indigo-600 text-white font-bold rounded-2xl shadow-lg flex items-center justify-center gap-2 text-lg">
               {processing ? <Loader2 className="animate-spin" /> : <>Gerar Plano Mandalart <Sparkles /></>}
             </button>
+            {error && <p role="alert" className="text-center text-red-600 bg-red-50 p-3 rounded-xl">{error}</p>}
           </div>
         )}
 

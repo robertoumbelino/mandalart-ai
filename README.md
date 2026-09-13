@@ -1,105 +1,63 @@
-# Mandalart.AI - Planejamento Estratégico com IA
+# Mandalart.AI
 
-Transforme sonhos vagos em planos de ação concretos. Nossa IA cria uma matriz 9x9 estratégica para guiar seu sucesso.
+Aplicação que transforma um objetivo em uma matriz Mandalart 9×9: 8 subobjetivos, cada um com 8 tarefas e checklists acionáveis.
 
-## 🚀 Tecnologias
+## Stack
 
-- **Next.js 16** - React Framework com App Router
-- **Neon PostgreSQL** - Banco de dados serverless (otimizado para Vercel)
-- **@neondatabase/serverless** - Driver PostgreSQL para serverless
-- **Tailwind CSS v4** - Estilização moderna
-- **OpenRouter** - API de IA para geração de planos
-- **Server Actions** - Operações do banco de forma segura
+- Next.js 16 e React 19
+- Vercel AI SDK 7 com Vercel AI Gateway
+- `openai/gpt-5.6-luna` como modelo padrão de bom custo-benefício
+- Neon Postgres com `@neondatabase/serverless`
+- Tailwind CSS 4
+- Zod, JWT e bcrypt
 
-## 🏃 Localmente
+O OpenRouter foi removido. As chamadas de IA são Server Actions, portanto credenciais e prompts não entram no bundle do navegador. Em deploys na Vercel, o Gateway usa o token OIDC do próprio projeto; uma `AI_GATEWAY_API_KEY` só é necessária quando o desenvolvimento local não usa `vercel dev`.
 
-**Pré-requisitos:**
-- Node.js 18+
-- pnpm
+## Desenvolvimento local
 
-1. Instalar dependências:
-   ```bash
-   pnpm install
-   ```
+Requisitos: Node.js 22.18 ou superior e pnpm 10.
 
-2. Configurar variáveis de ambiente (criar `.env`):
-   ```env
-   DATABASE_URL=postgresql://neondb_owner:npg_i7wL4fySUCzY@ep-falling-lake-ack97uyh-pooler.sa-east-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require
-   JWT_SECRET=sua-chave-secreta-aqui
-   OPENROUTER_API_KEY=sua-api-key-do-openrouter
-   OPENROUTER_MODEL_NAME=z-ai/glm-4.5-air:free
-   ```
-
-3. Executar migration do banco (criar tabelas):
-   ```bash
-   pnpm tsx scripts/setup-db.ts
-   ```
-
-4. Rodar o projeto:
-   ```bash
-   pnpm dev
-   ```
-
-5. Acessar: http://localhost:3000
-
-## 🚀 Deploy na Vercel
-
-1. Push do código para GitHub
-2. Importar projeto na Vercel
-3. Configurar variáveis de ambiente na Vercel:
-   - `DATABASE_URL` - Connection string do Neon
-   - `JWT_SECRET` - Chave secreta para JWT
-   - `OPENROUTER_API_KEY` - API key do OpenRouter
-   - `OPENROUTER_MODEL_NAME` - Modelo da IA (ex: `z-ai/glm-4.5-air:free`)
-
-## 📊 Banco de Dados
-
-### Schema
-
-**Tabela `users`:**
-- `id` (UUID, PK)
-- `email` (VARCHAR, UNIQUE)
-- `name` (VARCHAR)
-- `password_hash` (VARCHAR, opcional para Google login)
-- `avatar` (TEXT, opcional)
-- `created_at` (TIMESTAMP)
-
-**Tabela `mandalarts`:**
-- `id` (UUID, PK)
-- `user_id` (UUID, FK → users.id, ON DELETE CASCADE)
-- `main_goal` (TEXT)
-- `sub_goals` (JSONB)
-- `created_at` (TIMESTAMP)
-- `updated_at` (TIMESTAMP)
-
-### Índices
-- `idx_users_email` - Para busca rápida por email
-- `idx_mandalarts_user_id` - Para mandalarts do usuário
-- `idx_mandalarts_created_at` - Para ordenação por data
-
-## 🔐 Autenticação
-
-- **Senha**: Hash com bcrypt (salt rounds: 10)
-- **Sessão**: JWT com expiração de 7 dias
-- **Cookies**: HttpOnly, Secure em produção
-
-## 📝 Notas
-
-- Server Actions do Next.js 15+ para operações do banco
-- Conexão com Neon via @neondatabase/serverless (otimizado para edge functions)
-- Tokens JWT armazenados em cookies HttpOnly
-- Todas as operações do banco verificam o `user_id` do token
-
-## 🐛 Debug
-
-### Ver logs do Next.js:
 ```bash
-tail -f /tmp/nextjs.log
+pnpm install
+cp .env.example .env
+pnpm dev
 ```
 
-### Verificar banco de dados:
-Acesse o Neon Console para ver as tabelas e dados.
+Preencha `.env` com uma conexão Neon válida e um `JWT_SECRET` aleatório de pelo menos 32 caracteres. Para autenticação local do Gateway, use `vercel env pull`/`vercel dev` ou crie uma chave do AI Gateway.
 
-## 📄 Licença
+Antes da primeira execução, aplique [migrations/001_initial_schema.sql](./migrations/001_initial_schema.sql) em uma conexão direta do Neon. O runtime pode usar a URL com pooler.
 
-MIT
+## Qualidade
+
+```bash
+pnpm check
+pnpm build
+```
+
+`check` executa ESLint, TypeScript e testes Vitest.
+
+## Variáveis de ambiente
+
+| Variável | Obrigatória | Uso |
+| --- | --- | --- |
+| `DATABASE_URL` | Sim | Conexão do Neon |
+| `JWT_SECRET` | Sim | Assinatura das sessões; mínimo de 32 caracteres |
+| `AI_MODEL_NAME` | Não | Padrão: `openai/gpt-5.6-luna` |
+| `AI_GATEWAY_API_KEY` | Apenas local, se necessário | Autenticação do Gateway fora do OIDC da Vercel |
+
+## Deploy na Vercel
+
+Vincule o repositório, configure `DATABASE_URL`, `JWT_SECRET` e `AI_MODEL_NAME`, e execute:
+
+```bash
+vercel --prod
+```
+
+Depois, confirme `GET /api/health` (banco) e faça um fluxo completo de cadastro e geração. Configure também um limite de gasto no painel do AI Gateway.
+
+## Segurança
+
+- Sessões usam cookies `HttpOnly`, `Secure` em produção e `SameSite=Lax`.
+- Todas as mutações validam sessão, UUID e payload no servidor.
+- A saída do modelo é validada por schema antes de ser persistida.
+- Se uma credencial já apareceu no histórico Git, remova/rotacione a credencial no provedor; editar apenas o arquivo atual não revoga o segredo.

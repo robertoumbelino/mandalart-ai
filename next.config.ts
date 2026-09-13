@@ -1,12 +1,17 @@
-import type { NextConfig } from 'next';
+import type { NextConfig } from 'next'
+
+const securityHeaders = [
+  { key: 'X-Content-Type-Options', value: 'nosniff' },
+  { key: 'X-Frame-Options', value: 'DENY' },
+  { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
+  { key: 'Permissions-Policy', value: 'camera=(), microphone=(), geolocation=()' }
+]
 
 const nextConfig: NextConfig = {
-  env: {
-    DATABASE_URL: process.env.DATABASE_URL,
-    JWT_SECRET: process.env.JWT_SECRET,
-    OPENROUTER_API_KEY: process.env.OPENROUTER_API_KEY,
-    OPENROUTER_MODEL_NAME: process.env.OPENROUTER_MODEL_NAME
+  poweredByHeader: false,
+  async headers() {
+    return [{ source: '/(.*)', headers: securityHeaders }]
   }
-};
+}
 
-export default nextConfig;
+export default nextConfig
