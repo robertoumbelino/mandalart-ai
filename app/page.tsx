@@ -10,6 +10,33 @@ import { Auth } from '@/app/components/Auth';
 import { getCurrentUser, logout } from '@/actions/auth';
 import { getHistory, saveMandalart, updateMandalart, deleteMandalart } from '@/actions/mandalarts';
 
+const GENERATION_MESSAGES = [
+  {
+    title: 'Entendendo seu objetivo',
+    description: 'Conectando suas respostas ao resultado que você quer alcançar.'
+  },
+  {
+    title: 'Organizando suas prioridades',
+    description: 'Separando o que mais importa para manter o plano focado.'
+  },
+  {
+    title: 'Definindo os 8 pilares',
+    description: 'Criando as áreas que vão sustentar seu objetivo principal.'
+  },
+  {
+    title: 'Criando ações práticas',
+    description: 'Transformando cada pilar em tarefas claras e possíveis.'
+  },
+  {
+    title: 'Revisando seu plano',
+    description: 'Conferindo se as ações fazem sentido juntas.'
+  },
+  {
+    title: 'Preparando seu Mandalart',
+    description: 'Organizando tudo na matriz para você começar.'
+  }
+] as const;
+
 export default function Home() {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
@@ -21,6 +48,7 @@ export default function Home() {
   const [currentMandalartId, setCurrentMandalartId] = useState<string | null>(null);
   const [processing, setProcessing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [generationMessageIndex, setGenerationMessageIndex] = useState(0);
 
   const [history, setHistory] = useState<HistoryItem[]>([]);
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
@@ -42,6 +70,19 @@ export default function Home() {
     void load();
     return () => { active = false; };
   }, []);
+
+  useEffect(() => {
+    if (step !== 'generating') return;
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+
+    const interval = window.setInterval(() => {
+      setGenerationMessageIndex(current =>
+        (current + 1) % GENERATION_MESSAGES.length
+      );
+    }, 2200);
+
+    return () => window.clearInterval(interval);
+  }, [step]);
 
   const refreshHistory = async () => {
     const userHistory = await getHistory();
@@ -118,6 +159,7 @@ export default function Home() {
       setError("Responda todas as perguntas.");
       return;
     }
+    setGenerationMessageIndex(0);
     setStep('generating');
     setProcessing(true);
     setError(null);
@@ -312,7 +354,19 @@ export default function Home() {
         {step === 'generating' && (
           <div className="flex flex-col items-center justify-center h-[50vh] text-center space-y-6 animate-in zoom-in duration-500">
               <div className="bg-white p-4 rounded-full shadow-xl relative animate-bounce"><Sparkles className="w-12 h-12 text-indigo-600" /></div>
-              <h3 className="text-2xl font-bold text-gray-800">A IA está pensando...</h3>
+              <div
+                key={generationMessageIndex}
+                role="status"
+                aria-live="polite"
+                className="min-h-20 max-w-md space-y-2 animate-in fade-in slide-in-from-bottom-8 duration-500"
+              >
+                <h3 className="text-2xl font-bold text-gray-800">
+                  {GENERATION_MESSAGES[generationMessageIndex].title}
+                </h3>
+                <p className="text-gray-500">
+                  {GENERATION_MESSAGES[generationMessageIndex].description}
+                </p>
+              </div>
           </div>
         )}
 
