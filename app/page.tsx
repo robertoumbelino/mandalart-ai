@@ -333,7 +333,7 @@ export default function Home() {
                 Mandalart<span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-purple-600">.AI</span>
               </h1>
               <p className="text-xl sm:text-2xl text-gray-500 max-w-2xl mx-auto font-light leading-relaxed">
-                Transforme sonhos vagos em planos de ação concretos. Nossa IA cria uma <span className="text-gray-900 font-medium">matriz 9x9</span> estratégica para guiar seu sucesso.
+                Transforme sonhos vagos em planos de ação concretos.
               </p>
             </div>
             <div className="max-w-xl mx-auto bg-white p-2 rounded-3xl shadow-xl border border-gray-100/50">
