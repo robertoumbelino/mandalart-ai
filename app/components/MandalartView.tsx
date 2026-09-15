@@ -12,10 +12,16 @@ import {
   TrendingUp,
   Lightbulb,
   CheckSquare,
-  ChevronDown
+  ChevronDown,
+  ArrowRight,
+  Compass,
+  Play,
+  Sparkles
 } from 'lucide-react'
 import { MandalartData, Task } from '@/types'
 import { GridCell } from '@/app/components/GridCell'
+import { JourneyView } from '@/app/components/JourneyView'
+import { getJourneyProgress } from '@/lib/journey'
 
 interface MandalartViewProps {
   data: MandalartData
@@ -29,15 +35,66 @@ export const MandalartView: React.FC<MandalartViewProps> = ({
   onDataUpdate
 }) => {
   const printRef = useRef<HTMLDivElement>(null)
+  const taskSheetRef = useRef<HTMLDivElement>(null)
+  const closeSheetButtonRef = useRef<HTMLButtonElement>(null)
   const [selectedTask, setSelectedTask] = useState<{
     task: Task
     subGoalIndex: number
     taskIndex: number
   } | null>(null)
   const [isExporting, setIsExporting] = useState(false)
+  const [viewMode, setViewMode] = useState<'matrix' | 'journey'>('matrix')
   const [openMobileAreaIndex, setOpenMobileAreaIndex] = useState<number | null>(
     null
   )
+
+  const journeyProgress = getJourneyProgress(data)
+  const isTaskSheetOpen = selectedTask !== null
+
+  useEffect(() => {
+    if (!isTaskSheetOpen) return
+
+    const previousOverflow = document.body.style.overflow
+    const previouslyFocused = document.activeElement as HTMLElement | null
+    const focusFrame = window.requestAnimationFrame(() => closeSheetButtonRef.current?.focus())
+    const handleSheetKeys = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setSelectedTask(null)
+        return
+      }
+      if (event.key !== 'Tab' || !taskSheetRef.current) return
+
+      const focusable = Array.from(
+        taskSheetRef.current.querySelectorAll<HTMLElement>(
+          'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+        )
+      )
+      if (focusable.length === 0) {
+        event.preventDefault()
+        return
+      }
+
+      const first = focusable[0]
+      const last = focusable[focusable.length - 1]
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault()
+        last.focus()
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault()
+        first.focus()
+      }
+    }
+
+    document.body.style.overflow = 'hidden'
+    document.addEventListener('keydown', handleSheetKeys)
+
+    return () => {
+      window.cancelAnimationFrame(focusFrame)
+      document.body.style.overflow = previousOverflow
+      document.removeEventListener('keydown', handleSheetKeys)
+      previouslyFocused?.focus()
+    }
+  }, [isTaskSheetOpen])
 
   useEffect(() => {
     if (openMobileAreaIndex === null) return
@@ -154,6 +211,14 @@ export const MandalartView: React.FC<MandalartViewProps> = ({
     setOpenMobileAreaIndex(subGoalIndex)
   }
 
+  const openTask = (subGoalIndex: number, taskIndex: number) => {
+    setSelectedTask({
+      task: data.subGoals[subGoalIndex].tasks[taskIndex],
+      subGoalIndex,
+      taskIndex
+    })
+  }
+
   const renderZone = (
     zoneIndex: number,
     onSubGoalClick?: (subGoalIndex: number) => void
@@ -215,13 +280,7 @@ export const MandalartView: React.FC<MandalartViewProps> = ({
               text={task.title}
               type="task"
               isCompleted={task.isCompleted}
-              onClick={() =>
-                setSelectedTask({
-                  task,
-                  subGoalIndex: subGoalIdx,
-                  taskIndex: taskIdx
-                })
-              }
+              onClick={() => openTask(subGoalIdx, taskIdx)}
             />
           )
         })}
@@ -240,10 +299,17 @@ export const MandalartView: React.FC<MandalartViewProps> = ({
     return (
       <>
         <div
+          aria-hidden="true"
           className="fixed inset-0 bg-black/20 backdrop-blur-sm z-50 animate-in fade-in duration-200"
           onClick={() => setSelectedTask(null)}
         />
-        <div className="fixed inset-y-0 right-0 w-full sm:w-[400px] bg-white shadow-2xl z-50 animate-in slide-in-from-right duration-300 flex flex-col">
+        <div
+          ref={taskSheetRef}
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="task-sheet-title"
+          className="fixed inset-y-0 right-0 w-full sm:w-[400px] bg-white shadow-2xl z-50 animate-in slide-in-from-right duration-300 flex flex-col"
+        >
           <div
             className={`p-6 border-b border-gray-100 flex items-start justify-between transition-colors ${
               task.isCompleted ? 'bg-emerald-50' : 'bg-gray-50/50'
@@ -260,12 +326,14 @@ export const MandalartView: React.FC<MandalartViewProps> = ({
                   </span>
                 )}
               </div>
-              <h2 className="text-xl font-bold text-gray-900 leading-tight">
+              <h2 id="task-sheet-title" className="text-xl font-bold text-gray-900 leading-tight">
                 {task.title}
               </h2>
             </div>
             <button
+              ref={closeSheetButtonRef}
               onClick={() => setSelectedTask(null)}
+              aria-label="Fechar detalhes da etapa"
               className="p-2 hover:bg-gray-200 rounded-full transition text-gray-500"
             >
               <X size={20} />
@@ -296,35 +364,36 @@ export const MandalartView: React.FC<MandalartViewProps> = ({
 
               <ul className="space-y-3">
                 {task.checklist.map(item => (
-                  <li
-                    key={item.id}
-                    className={`flex items-start gap-3 p-3 rounded-lg border transition-all cursor-pointer ${
-                      item.checked
-                        ? 'bg-green-50 border-green-200'
-                        : 'bg-white border-gray-100 hover:border-indigo-200'
-                    }`}
-                    onClick={() => handleToggleCheck(item.id)}
-                  >
-                    <div
-                      className={`mt-0.5 w-5 h-5 rounded border-2 flex items-center justify-center transition-colors ${
+                  <li key={item.id}>
+                    <button
+                      type="button"
+                      aria-pressed={item.checked}
+                      onClick={() => handleToggleCheck(item.id)}
+                      className={`flex w-full items-start gap-3 p-3 text-left rounded-lg border transition-all cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 ${
                         item.checked
-                          ? 'bg-green-500 border-green-500'
-                          : 'border-gray-300'
+                          ? 'bg-green-50 border-green-200'
+                          : 'bg-white border-gray-100 hover:border-indigo-200'
                       }`}
                     >
-                      {item.checked && (
-                        <CheckCircle2 size={14} className="text-white" />
-                      )}
-                    </div>
-                    <span
-                      className={`text-sm ${
-                        item.checked
-                          ? 'text-green-800 line-through opacity-70'
-                          : 'text-gray-700'
-                      }`}
-                    >
-                      {item.text}
-                    </span>
+                      <span
+                        className={`mt-0.5 w-5 h-5 shrink-0 rounded border-2 flex items-center justify-center transition-colors ${
+                          item.checked
+                            ? 'bg-green-500 border-green-500'
+                            : 'border-gray-300'
+                        }`}
+                      >
+                        {item.checked && <CheckCircle2 size={14} className="text-white" />}
+                      </span>
+                      <span
+                        className={`text-sm ${
+                          item.checked
+                            ? 'text-green-800 line-through opacity-70'
+                            : 'text-gray-700'
+                        }`}
+                      >
+                        {item.text}
+                      </span>
+                    </button>
                   </li>
                 ))}
               </ul>
@@ -366,30 +435,87 @@ export const MandalartView: React.FC<MandalartViewProps> = ({
     )
   }
 
+  if (viewMode === 'journey') {
+    return (
+      <div className="w-full animate-in fade-in duration-500">
+        <JourneyView
+          key={journeyProgress.currentStageIndex}
+          data={data}
+          onBack={() => setViewMode('matrix')}
+          onSelectTask={openTask}
+        />
+        {renderSheet()}
+      </div>
+    )
+  }
+
   return (
     <div className="flex flex-col items-center w-full max-w-[1200px] mx-auto animate-fade-in pb-12 relative">
-      <div className="flex gap-4 mb-8">
-        <button
-          onClick={handleDownload}
-          disabled={isExporting}
-          aria-busy={isExporting}
-          className="flex items-center gap-2 px-6 py-2.5 bg-gray-900 text-white rounded-xl hover:bg-black disabled:bg-gray-400 disabled:cursor-wait transition shadow-lg font-medium text-sm"
-        >
-          {isExporting ? (
-            <Loader2 size={16} className="animate-spin" />
-          ) : (
-            <Download size={16} />
-          )}
-          {isExporting ? 'Gerando imagem...' : 'Salvar Imagem'}
-        </button>
-        <button
-          onClick={onReset}
-          className="flex items-center gap-2 px-6 py-2.5 bg-white text-gray-700 border border-gray-200 rounded-xl hover:bg-gray-50 transition shadow-sm font-medium text-sm"
-        >
-          <RefreshCcw size={16} />
-          Novo
-        </button>
+      <div className="mb-7 flex w-full flex-col gap-4 px-1 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <p className="text-xs font-black uppercase tracking-[0.16em] text-indigo-600">Seu plano está pronto</p>
+          <h2 className="mt-1 text-2xl font-black tracking-tight text-slate-950 sm:text-3xl">{data.mainGoal}</h2>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          <button
+            onClick={handleDownload}
+            disabled={isExporting}
+            aria-busy={isExporting}
+            className="flex min-h-11 items-center gap-2 rounded-xl border border-gray-200 bg-white px-4 text-sm font-bold text-gray-700 shadow-sm transition hover:bg-gray-50 disabled:cursor-wait disabled:bg-gray-100"
+          >
+            {isExporting ? <Loader2 size={16} className="animate-spin" /> : <Download size={16} />}
+            {isExporting ? 'Gerando...' : 'Salvar imagem'}
+          </button>
+          <button
+            onClick={onReset}
+            className="flex min-h-11 items-center gap-2 rounded-xl border border-gray-200 bg-white px-4 text-sm font-bold text-gray-700 shadow-sm transition hover:bg-gray-50"
+          >
+            <RefreshCcw size={16} />
+            Novo
+          </button>
+        </div>
       </div>
+
+      <section className="journey-invitation relative mb-8 w-full overflow-hidden rounded-[2rem] bg-gradient-to-br from-indigo-600 via-violet-600 to-purple-700 px-6 py-7 text-white shadow-xl shadow-indigo-200/60 sm:px-9 sm:py-8">
+        <div className="journey-invitation-glow" aria-hidden="true" />
+        <div className="relative z-10 grid gap-7 lg:grid-cols-[1fr_auto] lg:items-center">
+          <div className="flex items-start gap-4">
+            <div className="hidden h-12 w-12 shrink-0 place-items-center rounded-2xl bg-white/15 ring-1 ring-white/20 sm:grid">
+              <Compass size={25} />
+            </div>
+            <div>
+              <div className="mb-2 flex items-center gap-2 text-xs font-black uppercase tracking-[0.16em] text-violet-100">
+                <Sparkles size={14} /> Da estratégia para a ação
+              </div>
+              <h3 className="text-2xl font-black tracking-tight sm:text-3xl">
+                {journeyProgress.percentage > 0 ? 'Continue de onde parou.' : 'Agora você tem por onde começar.'}
+              </h3>
+              <p className="mt-2 max-w-2xl text-sm leading-relaxed text-indigo-100 sm:text-base">
+                Sua jornada organiza as 64 etapas na ordem recomendada e destaca uma única prioridade por vez. Sem ficar encarando a matriz pensando “e agora?”.
+              </p>
+            </div>
+          </div>
+
+          <div className="min-w-64 rounded-2xl bg-slate-950/20 p-3 ring-1 ring-white/15 backdrop-blur-sm">
+            <div className="mb-3 flex items-center justify-between px-1 text-xs font-bold text-indigo-100">
+              <span>{journeyProgress.completedItems}/{journeyProgress.totalItems} ações</span>
+              <span>{journeyProgress.percentage}%</span>
+            </div>
+            <div className="mb-3 h-1.5 overflow-hidden rounded-full bg-white/20">
+              <div className="h-full rounded-full bg-white transition-all duration-700" style={{ width: `${journeyProgress.percentage}%` }} />
+            </div>
+            <button
+              type="button"
+              onClick={() => setViewMode('journey')}
+              className="group flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-white px-5 text-sm font-black text-indigo-700 shadow-lg transition hover:-translate-y-0.5 hover:bg-indigo-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-indigo-600"
+            >
+              {journeyProgress.percentage > 0 ? <Play size={17} fill="currentColor" /> : <Compass size={18} />}
+              {journeyProgress.percentage === 100 ? 'Rever jornada' : journeyProgress.percentage > 0 ? 'Continuar jornada' : 'Iniciar jornada'}
+              <ArrowRight size={17} className="transition-transform group-hover:translate-x-1" />
+            </button>
+          </div>
+        </div>
+      </section>
 
       <div
         ref={printRef}

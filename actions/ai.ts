@@ -70,6 +70,8 @@ export const generateMandalartData = async (
     system: [
       'Você é um estrategista de metas especializado no método Mandalart.',
       'Produza um plano prático, específico e sem tarefas redundantes.',
+      'Ordene os oito subobjetivos como capítulos de uma jornada: fundamentos e desbloqueios primeiro, consolidação e expansão depois.',
+      'Dentro de cada subobjetivo, ordene as oito tarefas na sequência recomendada de execução, respeitando dependências e começando pela menor ação que gera avanço real.',
       'O campo mainGoal é o título exibido na célula central: resuma o objetivo em 2 a 4 palavras e no máximo 32 caracteres.',
       'Os títulos de subobjetivos e tarefas devem ter no máximo 40 caracteres.',
       'Cada checklist deve conter três próximos passos concretos para executar a tarefa.',

@@ -9,6 +9,7 @@ import { MandalartView } from '@/app/components/MandalartView';
 import { Auth } from '@/app/components/Auth';
 import { getCurrentUser, logout } from '@/actions/auth';
 import { getHistory, saveMandalart, updateMandalart, deleteMandalart } from '@/actions/mandalarts';
+import { getJourneyProgress } from '@/lib/journey';
 
 const GENERATION_MESSAGES = [
   {
@@ -48,12 +49,22 @@ export default function Home() {
   const [currentMandalartId, setCurrentMandalartId] = useState<string | null>(null);
   const [processing, setProcessing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [progressSaveError, setProgressSaveError] = useState<string | null>(null);
+  const [isSavingProgress, setIsSavingProgress] = useState(false);
   const [generationMessageIndex, setGenerationMessageIndex] = useState(0);
 
   const [history, setHistory] = useState<HistoryItem[]>([]);
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const userMenuRef = useRef<HTMLDivElement>(null);
+  const historyButtonRef = useRef<HTMLButtonElement>(null);
+  const historyDrawerRef = useRef<HTMLDivElement>(null);
+  const historyCloseButtonRef = useRef<HTMLButtonElement>(null);
+  const pendingMandalartUpdateRef = useRef<{
+    id: string;
+    data: MandalartData;
+  } | null>(null);
+  const mandalartUpdateInFlightRef = useRef(false);
 
   useEffect(() => {
     let active = true;
@@ -107,6 +118,52 @@ export default function Home() {
     };
   }, [isUserMenuOpen]);
 
+  useEffect(() => {
+    if (!isHistoryOpen) return;
+
+    const previousOverflow = document.body.style.overflow;
+    const previouslyFocused = document.activeElement as HTMLElement | null;
+    const fallbackTrigger = historyButtonRef.current;
+    const focusFrame = window.requestAnimationFrame(() => historyCloseButtonRef.current?.focus());
+    const handleHistoryKeys = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setIsHistoryOpen(false);
+        return;
+      }
+      if (event.key !== 'Tab' || !historyDrawerRef.current) return;
+
+      const focusable = Array.from(
+        historyDrawerRef.current.querySelectorAll<HTMLElement>(
+          'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+        )
+      );
+      if (focusable.length === 0) {
+        event.preventDefault();
+        return;
+      }
+
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
+    };
+
+    document.body.style.overflow = 'hidden';
+    document.addEventListener('keydown', handleHistoryKeys);
+
+    return () => {
+      window.cancelAnimationFrame(focusFrame);
+      document.body.style.overflow = previousOverflow;
+      document.removeEventListener('keydown', handleHistoryKeys);
+      (previouslyFocused ?? fallbackTrigger)?.focus();
+    };
+  }, [isHistoryOpen]);
+
   const refreshHistory = async () => {
     const userHistory = await getHistory();
     setHistory(userHistory);
@@ -125,15 +182,51 @@ export default function Home() {
     setStep('input');
   };
 
-  const handleDataUpdate = async (newData: MandalartData) => {
-    setMandalartData(newData);
-    if (currentMandalartId) {
+  const flushMandalartUpdates = async () => {
+    if (mandalartUpdateInFlightRef.current || !pendingMandalartUpdateRef.current) return;
+
+    mandalartUpdateInFlightRef.current = true;
+    setIsSavingProgress(true);
+    setProgressSaveError(null);
+    let failed = false;
+
+    try {
+      while (pendingMandalartUpdateRef.current) {
+        const update = pendingMandalartUpdateRef.current;
+        pendingMandalartUpdateRef.current = null;
+
+        try {
+          await updateMandalart(update.id, update.data);
+        } catch {
+          pendingMandalartUpdateRef.current ??= update;
+          throw new Error('save-failed');
+        }
+      }
+    } catch {
+      failed = true;
+      setProgressSaveError('Seu progresso ainda não foi salvo. Verifique a conexão e tente novamente.');
+    } finally {
+      mandalartUpdateInFlightRef.current = false;
+      setIsSavingProgress(false);
+    }
+
+    if (!failed) {
       try {
-        await updateMandalart(currentMandalartId, newData);
         await refreshHistory();
       } catch {
-        setError('Não foi possível salvar o progresso.');
+        // O progresso já foi salvo; o histórico será sincronizado na próxima atualização.
       }
+
+      if (pendingMandalartUpdateRef.current) void flushMandalartUpdates();
+    }
+  };
+
+  const handleDataUpdate = (newData: MandalartData) => {
+    setMandalartData(newData);
+    if (currentMandalartId) {
+      pendingMandalartUpdateRef.current = { id: currentMandalartId, data: newData };
+      setProgressSaveError(null);
+      void flushMandalartUpdates();
     }
   };
 
@@ -148,6 +241,8 @@ export default function Home() {
   };
 
   const loadHistoryItem = (item: HistoryItem) => {
+    pendingMandalartUpdateRef.current = null;
+    setProgressSaveError(null);
     setMandalartData(item.data);
     setCurrentMandalartId(item.id);
     setMainGoal(item.data.mainGoal);
@@ -205,12 +300,14 @@ export default function Home() {
   };
 
   const handleReset = () => {
+    pendingMandalartUpdateRef.current = null;
     setMainGoal('');
     setQuestions([]);
     setAnswers([]);
     setMandalartData(null);
     setCurrentMandalartId(null);
     setError(null);
+    setProgressSaveError(null);
     setStep('input');
   };
 
@@ -243,6 +340,7 @@ export default function Home() {
 
         <div className="flex items-center gap-2">
           <button
+            ref={historyButtonRef}
             onClick={() => {
               setIsUserMenuOpen(false);
               setIsHistoryOpen(true);
@@ -299,23 +397,49 @@ export default function Home() {
       {isHistoryOpen && (
         <div className="fixed inset-0 bg-black/20 backdrop-blur-sm z-50 transition-opacity" onClick={() => setIsHistoryOpen(false)} />
       )}
-      <div className={`fixed inset-y-0 right-0 w-80 bg-white shadow-2xl z-50 transform transition-transform duration-300 ${isHistoryOpen ? 'translate-x-0' : 'translate-x-full'}`}>
+      <div
+        ref={historyDrawerRef}
+        role="dialog"
+        aria-modal="true"
+        aria-label="Histórico de planos"
+        aria-hidden={!isHistoryOpen}
+        inert={!isHistoryOpen}
+        className={`fixed inset-y-0 right-0 w-80 bg-white shadow-2xl z-50 transform transition-transform duration-300 ${isHistoryOpen ? 'translate-x-0' : 'translate-x-full'}`}
+      >
         <div className="flex flex-col h-full">
           <div className="p-5 border-b flex items-center justify-between">
             <h2 className="font-bold flex items-center gap-2"><History className="text-indigo-600"/> Histórico de {user.name}</h2>
-            <button onClick={() => setIsHistoryOpen(false)} className="p-1 hover:bg-gray-100 rounded-full"><X size={20}/></button>
+            <button ref={historyCloseButtonRef} aria-label="Fechar histórico" onClick={() => setIsHistoryOpen(false)} className="p-1 hover:bg-gray-100 rounded-full"><X size={20}/></button>
           </div>
           <div className="flex-1 overflow-y-auto p-4 space-y-3">
             {history.length === 0 ? (
               <div className="text-center py-20 text-gray-400">Nenhum plano salvo ainda.</div>
             ) : (
-              history.map(item => (
-                <div key={item.id} onClick={() => loadHistoryItem(item)} className="p-4 rounded-xl border border-gray-100 hover:border-indigo-200 bg-white shadow-sm hover:shadow-md transition-all cursor-pointer group relative">
-                  <h3 className="font-bold text-gray-800 line-clamp-2 pr-6">{item.data.mainGoal}</h3>
-                  <div className="flex items-center gap-1 mt-2 text-xs text-gray-400"><Calendar size={12}/> {new Date(item.timestamp).toLocaleDateString()}</div>
-                  <button onClick={(e) => deleteHistoryItem(item.id, e)} className="absolute top-3 right-3 p-1.5 text-gray-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-all"><Trash2 size={16}/></button>
-                </div>
-              ))
+              history.map(item => {
+                const progress = getJourneyProgress(item.data)
+                return (
+                  <div key={item.id} className="group relative">
+                    <button
+                      type="button"
+                      onClick={() => loadHistoryItem(item)}
+                      className="w-full rounded-xl border border-gray-100 bg-white p-4 text-left shadow-sm transition-all hover:border-indigo-200 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
+                    >
+                      <h3 className="font-bold text-gray-800 line-clamp-2 pr-6">{item.data.mainGoal}</h3>
+                      <div className="mt-3 flex items-center justify-between text-[11px] font-bold">
+                        <span className={progress.percentage === 100 ? 'text-emerald-600' : 'text-indigo-600'}>
+                          {progress.percentage === 100 ? 'Jornada concluída' : `${progress.percentage}% da jornada`}
+                        </span>
+                        <span className="text-gray-400">{progress.completedTasks}/64 etapas</span>
+                      </div>
+                      <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-slate-100">
+                        <div className={`h-full rounded-full ${progress.percentage === 100 ? 'bg-emerald-500' : 'bg-indigo-500'}`} style={{ width: `${progress.percentage}%` }} />
+                      </div>
+                      <div className="flex items-center gap-1 mt-3 text-xs text-gray-400"><Calendar size={12}/> {new Date(item.timestamp).toLocaleDateString()}</div>
+                    </button>
+                    <button aria-label={`Excluir ${item.data.mainGoal}`} onClick={(e) => deleteHistoryItem(item.id, e)} className="absolute top-3 right-3 p-1.5 text-gray-300 hover:text-red-500 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-all"><Trash2 size={16}/></button>
+                  </div>
+                )
+              })
             )}
           </div>
         </div>
@@ -422,7 +546,20 @@ export default function Home() {
         )}
 
         {step === 'result' && mandalartData && (
-          <div className="pt-24 w-full flex justify-center">
+          <div className="pt-24 w-full flex flex-col items-center gap-3">
+            {progressSaveError && (
+              <div role="alert" className="mx-4 flex max-w-2xl items-center gap-3 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900 shadow-sm">
+                <span className="flex-1">{progressSaveError}</span>
+                <button
+                  type="button"
+                  onClick={() => void flushMandalartUpdates()}
+                  disabled={isSavingProgress}
+                  className="shrink-0 rounded-xl bg-amber-900 px-3 py-2 font-bold text-white transition hover:bg-amber-950 disabled:opacity-60"
+                >
+                  {isSavingProgress ? 'Salvando…' : 'Tentar novamente'}
+                </button>
+              </div>
+            )}
             <MandalartView 
               data={mandalartData} 
               onReset={handleReset} 
