@@ -4,9 +4,10 @@ import React, { useState, useEffect, useRef } from 'react';
 import Image from 'next/image';
 import { ArrowRight, Sparkles, BrainCircuit, Loader2, History, X, Trash2, Calendar, LogOut } from 'lucide-react';
 import { generateQuestions, generateMandalartData } from '@/actions/ai';
-import { MandalartData, Question, AppStep, InterviewAnswer, HistoryItem, User } from '@/types';
+import { MandalartData, Question, AppStep, GoalSafetyCategory, InterviewAnswer, HistoryItem, User } from '@/types';
 import { MandalartView } from '@/app/components/MandalartView';
 import { Auth } from '@/app/components/Auth';
+import { SafetyNotice } from '@/app/components/SafetyNotice';
 import { getCurrentUser, logout } from '@/actions/auth';
 import { getHistory, saveMandalart, updateMandalart, deleteMandalart } from '@/actions/mandalarts';
 import { getJourneyProgress } from '@/lib/journey';
@@ -43,6 +44,7 @@ export default function Home() {
   const [loading, setLoading] = useState(true);
   const [step, setStep] = useState<AppStep>('input');
   const [mainGoal, setMainGoal] = useState('');
+  const [safetyCategory, setSafetyCategory] = useState<GoalSafetyCategory | null>(null);
   const [questions, setQuestions] = useState<Question[]>([]);
   const [answers, setAnswers] = useState<InterviewAnswer[]>([]);
   const [mandalartData, setMandalartData] = useState<MandalartData | null>(null);
@@ -256,7 +258,14 @@ export default function Home() {
     setProcessing(true);
     setError(null);
     try {
-      const q = await generateQuestions(mainGoal);
+      const result = await generateQuestions(mainGoal);
+      if (result.status === 'blocked') {
+        setSafetyCategory(result.category);
+        setStep('safety');
+        return;
+      }
+
+      const q = result.questions;
       setQuestions(q);
       setAnswers(q.map(item => ({ questionId: item.id, questionText: item.text, answer: '' })));
       setStep('interview');
@@ -302,6 +311,7 @@ export default function Home() {
   const handleReset = () => {
     pendingMandalartUpdateRef.current = null;
     setMainGoal('');
+    setSafetyCategory(null);
     setQuestions([]);
     setAnswers([]);
     setMandalartData(null);
@@ -496,6 +506,10 @@ export default function Home() {
                </div>
             </div>
           </div>
+        )}
+
+        {step === 'safety' && safetyCategory && (
+          <SafetyNotice category={safetyCategory} onBack={handleReset} />
         )}
         
         {step === 'interview' && (

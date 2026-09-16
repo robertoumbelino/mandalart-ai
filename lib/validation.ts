@@ -29,6 +29,10 @@ export const questionsOutputSchema = z.object({
   questions: z.array(questionSchema).length(3)
 })
 
+export const goalSafetyOutputSchema = z.object({
+  classification: z.enum(['allowed', 'illegal', 'self_harm'])
+})
+
 export const interviewAnswerSchema = z.object({
   questionId: z.string().trim().min(1).max(40),
   questionText: detailText,

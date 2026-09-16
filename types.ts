@@ -36,7 +36,13 @@ export interface Question {
   text: string;
 }
 
-export type AppStep = 'input' | 'interview' | 'generating' | 'result';
+export type GoalSafetyCategory = 'illegal' | 'self-harm';
+
+export type QuestionGenerationResult =
+  | { status: 'allowed'; questions: Question[] }
+  | { status: 'blocked'; category: GoalSafetyCategory };
+
+export type AppStep = 'input' | 'safety' | 'interview' | 'generating' | 'result';
 
 export interface InterviewAnswer {
   questionId: string;

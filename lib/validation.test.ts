@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import {
   credentialsSchema,
   generatedMandalartSchema,
+  goalSafetyOutputSchema,
   googleLoginSchema,
   mandalartDataSchema,
   questionsOutputSchema
@@ -30,6 +31,13 @@ describe('AI output schemas', () => {
       }))
     })
     expect(result.success).toBe(true)
+  })
+
+  it('only accepts supported goal safety classifications', () => {
+    expect(goalSafetyOutputSchema.safeParse({ classification: 'allowed' }).success).toBe(true)
+    expect(goalSafetyOutputSchema.safeParse({ classification: 'illegal' }).success).toBe(true)
+    expect(goalSafetyOutputSchema.safeParse({ classification: 'self_harm' }).success).toBe(true)
+    expect(goalSafetyOutputSchema.safeParse({ classification: 'uncertain' }).success).toBe(false)
   })
 
   it('rejects incomplete Mandalart matrices', () => {
