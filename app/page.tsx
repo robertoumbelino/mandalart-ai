@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
-import Image from 'next/image';
+import { BrandLogo, BrandWordmark } from '@/app/components/Brand';
 import { ArrowRight, Sparkles, BrainCircuit, Loader2, History, X, Trash2, Calendar, LogOut } from 'lucide-react';
 import { generateQuestions, generateMandalartData } from '@/actions/ai';
 import { MandalartData, Question, AppStep, GoalSafetyCategory, InterviewAnswer, HistoryItem, User } from '@/types';
@@ -342,8 +342,7 @@ export default function Home() {
               onClick={handleReset}
               className="flex items-center gap-2 bg-white/80 backdrop-blur shadow-sm px-4 py-2 rounded-full border border-gray-100 hover:bg-white transition group"
             >
-              <Image src="/mandalart-logo.svg" alt="" width={22} height={22} className="group-hover:rotate-90 transition-transform" />
-              <span className="font-bold text-gray-800 text-sm">Mandalart.AI</span>
+              <span className="text-sm"><BrandLogo iconSize={22} /></span>
             </button>
           )}
         </div>
@@ -442,7 +441,7 @@ export default function Home() {
                         <span className="text-gray-400">{progress.completedTasks}/64 etapas</span>
                       </div>
                       <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-slate-100">
-                        <div className={`h-full rounded-full ${progress.percentage === 100 ? 'bg-emerald-500' : 'bg-indigo-500'}`} style={{ width: `${progress.percentage}%` }} />
+                        <div className={`h-full rounded-full ${progress.percentage === 100 ? 'bg-emerald-500' : 'brand-surface'}`} style={{ width: `${progress.percentage}%` }} />
                       </div>
                       <div className="flex items-center gap-1 mt-3 text-xs text-gray-400"><Calendar size={12}/> {new Date(item.timestamp).toLocaleDateString()}</div>
                     </button>
@@ -464,7 +463,7 @@ export default function Home() {
                 <span>Powered by AI</span>
               </div>
               <h1 className="text-5xl sm:text-7xl font-extrabold tracking-tighter text-gray-900 leading-[1.1]">
-                Mandalart<span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-purple-600">.AI</span>
+                <BrandWordmark />
               </h1>
               <p className="text-xl sm:text-2xl text-gray-500 max-w-2xl mx-auto font-light leading-relaxed">
                 Transforme sonhos vagos em planos de ação concretos.
@@ -484,7 +483,7 @@ export default function Home() {
                 <button
                   type="submit"
                   disabled={processing || !mainGoal.trim()}
-                  className="w-full sm:w-auto px-8 py-4 bg-gray-900 hover:bg-black disabled:bg-gray-400 text-white font-bold rounded-2xl transition-all shadow-lg flex items-center justify-center gap-2 text-lg whitespace-nowrap"
+                  className="w-full sm:w-auto px-8 py-4 brand-button text-white font-bold rounded-2xl transition-all shadow-lg flex items-center justify-center gap-2 text-lg whitespace-nowrap"
                 >
                   {processing ? <Loader2 className="animate-spin" /> : <>Iniciar <ArrowRight size={20} /></>}
                 </button>
@@ -516,7 +515,7 @@ export default function Home() {
           <div className="w-full max-w-2xl mx-auto space-y-8 animate-in fade-in slide-in-from-right-8 duration-500 pt-24">
             <div className="text-center space-y-2">
                <div className="bg-purple-100 p-3 rounded-full inline-block"><BrainCircuit className="w-8 h-8 text-purple-600" /></div>
-               <h2 className="text-2xl font-bold text-gray-800">Entendendo Melhor</h2>
+               <h2 className="brand-text text-2xl font-bold">Entendendo Melhor</h2>
                <p className="text-gray-500">Responda a essas perguntas rápidas para personalizar seu plano.</p>
             </div>
             <div className="space-y-6">
@@ -533,7 +532,7 @@ export default function Home() {
                 </div>
               ))}
             </div>
-            <button onClick={handleGenerate} disabled={processing} className="w-full py-4 bg-indigo-600 text-white font-bold rounded-2xl shadow-lg flex items-center justify-center gap-2 text-lg">
+            <button onClick={handleGenerate} disabled={processing} className="w-full py-4 brand-button text-white font-bold rounded-2xl shadow-lg flex items-center justify-center gap-2 text-lg">
               {processing ? <Loader2 className="animate-spin" /> : <>Gerar Plano Mandalart <Sparkles /></>}
             </button>
             {error && <p role="alert" className="text-center text-red-600 bg-red-50 p-3 rounded-xl">{error}</p>}

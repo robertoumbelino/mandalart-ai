@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useCallback, useEffect, useRef, useState } from 'react'
-import Image from 'next/image'
+import { BrandIcon, BrandWordmark } from './Brand'
 import Link from 'next/link'
 import Script from 'next/script'
 import { ArrowLeft, Mail, Lock, LogIn, UserPlus, Loader2 } from 'lucide-react'
@@ -158,9 +158,9 @@ export const Auth: React.FC<AuthProps> = ({ onLogin }) => {
       <div className="w-full max-w-md animate-in fade-in zoom-in duration-500">
         <div className="text-center mb-8">
           <div className="inline-flex items-center justify-center w-20 h-20 mb-4 drop-shadow-xl">
-            <Image src="/mandalart-logo.svg" alt="" width={80} height={80} priority />
+            <BrandIcon size={80} />
           </div>
-          <h1 className="text-4xl font-black tracking-tight text-slate-900">Mandalart.AI</h1>
+          <h1 className="text-4xl font-black tracking-tight text-slate-900"><BrandWordmark /></h1>
           <p className="text-slate-500 mt-2 font-medium">Sua estratégia começa aqui.</p>
         </div>
 
@@ -195,7 +195,7 @@ export const Auth: React.FC<AuthProps> = ({ onLogin }) => {
 
               {error && <p role="alert" className="text-sm text-red-700 bg-red-50 border border-red-100 p-3 rounded-xl">{error}</p>}
 
-              <button type="submit" disabled={busy} className="w-full py-4 bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-300 text-white font-bold rounded-2xl shadow-lg shadow-indigo-100 transition-all flex items-center justify-center gap-2">
+              <button type="submit" disabled={busy} className="w-full py-4 brand-button text-white font-bold rounded-2xl shadow-lg shadow-indigo-100 transition-all flex items-center justify-center gap-2">
                 {googleLoading ? <Loader2 className="animate-spin" /> : <><LogIn size={20} /> Confirmar e vincular</>}
               </button>
             </form>
@@ -244,7 +244,7 @@ export const Auth: React.FC<AuthProps> = ({ onLogin }) => {
 
                 {error && <p role="alert" className="text-sm text-red-700 bg-red-50 border border-red-100 p-3 rounded-xl">{error}</p>}
 
-                <button type="submit" disabled={busy} className="w-full py-4 bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-300 text-white font-bold rounded-2xl shadow-lg shadow-indigo-100 transition-all flex items-center justify-center gap-2 mt-2">
+                <button type="submit" disabled={busy} className="w-full py-4 brand-button text-white font-bold rounded-2xl shadow-lg shadow-indigo-100 transition-all flex items-center justify-center gap-2 mt-2">
                   {loading ? <Loader2 className="animate-spin" /> : isLogin ? <><LogIn size={20} /> Entrar</> : <><UserPlus size={20} /> Criar conta</>}
                 </button>
               </form>

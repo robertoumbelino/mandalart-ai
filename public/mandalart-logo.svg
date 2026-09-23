@@ -1,5 +1,11 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Mandalart.AI">
-  <g fill="#7377F2">
+  <defs>
+    <linearGradient id="brand" x1="8" y1="8" x2="56" y2="8" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#4f39f6" />
+      <stop offset="1" stop-color="#9810fa" />
+    </linearGradient>
+  </defs>
+  <g fill="url(#brand)">
     <rect x="8" y="8" width="21" height="21" rx="6" />
     <rect x="35" y="8" width="21" height="21" rx="6" />
     <rect x="8" y="35" width="21" height="21" rx="6" />

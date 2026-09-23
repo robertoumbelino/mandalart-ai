@@ -27,16 +27,13 @@ interface JourneyViewProps {
   onSelectTask: (subGoalIndex: number, taskIndex: number) => void
 }
 
-const STAGE_THEMES = [
-  { soft: 'bg-violet-50', text: 'text-violet-700', border: 'border-violet-200', dot: 'bg-violet-500', ring: 'ring-violet-100' },
-  { soft: 'bg-blue-50', text: 'text-blue-700', border: 'border-blue-200', dot: 'bg-blue-500', ring: 'ring-blue-100' },
-  { soft: 'bg-cyan-50', text: 'text-cyan-700', border: 'border-cyan-200', dot: 'bg-cyan-500', ring: 'ring-cyan-100' },
-  { soft: 'bg-emerald-50', text: 'text-emerald-700', border: 'border-emerald-200', dot: 'bg-emerald-500', ring: 'ring-emerald-100' },
-  { soft: 'bg-amber-50', text: 'text-amber-700', border: 'border-amber-200', dot: 'bg-amber-500', ring: 'ring-amber-100' },
-  { soft: 'bg-orange-50', text: 'text-orange-700', border: 'border-orange-200', dot: 'bg-orange-500', ring: 'ring-orange-100' },
-  { soft: 'bg-rose-50', text: 'text-rose-700', border: 'border-rose-200', dot: 'bg-rose-500', ring: 'ring-rose-100' },
-  { soft: 'bg-fuchsia-50', text: 'text-fuchsia-700', border: 'border-fuchsia-200', dot: 'bg-fuchsia-500', ring: 'ring-fuchsia-100' }
-] as const
+const STAGE_THEME = {
+  soft: 'bg-violet-50',
+  text: 'text-violet-700',
+  border: 'border-violet-200',
+  dot: 'brand-surface',
+  ring: 'ring-violet-100'
+} as const
 
 export const JourneyView: React.FC<JourneyViewProps> = ({
   data,
@@ -123,7 +120,7 @@ export const JourneyView: React.FC<JourneyViewProps> = ({
             <div className="mb-4 inline-flex items-center gap-2 rounded-full bg-indigo-50 px-3 py-1.5 text-xs font-black uppercase tracking-[0.16em] text-indigo-700">
               <Map size={14} /> Sua jornada
             </div>
-            <h1 className="max-w-3xl text-4xl font-black leading-[1.05] tracking-[-0.04em] text-slate-950 sm:text-6xl">
+            <h1 className="brand-text max-w-3xl text-4xl font-black leading-[1.05] tracking-[-0.04em] sm:text-6xl">
               {data.mainGoal}
             </h1>
             <p className="mt-4 max-w-2xl text-base leading-relaxed text-slate-500 sm:text-lg">
@@ -135,7 +132,7 @@ export const JourneyView: React.FC<JourneyViewProps> = ({
             <div
               className="journey-progress-ring grid h-20 w-20 shrink-0 place-items-center rounded-full"
               style={{
-                background: `conic-gradient(#4f46e5 ${progress.percentage}%, #e2e8f0 ${progress.percentage}% 100%)`
+                background: `conic-gradient(var(--brand-start) 0%, var(--brand-end) ${progress.percentage}%, var(--color-slate-200) ${progress.percentage}% 100%)`
               }}
               role="progressbar"
               aria-label="Progresso geral da jornada"
@@ -161,12 +158,12 @@ export const JourneyView: React.FC<JourneyViewProps> = ({
       </header>
 
       <main className="w-full max-w-5xl mx-auto px-4 sm:px-8">
-        <section className="journey-focus relative mt-10 overflow-hidden rounded-[2rem] bg-slate-950 px-6 py-7 text-white shadow-2xl shadow-indigo-950/15 sm:px-9 sm:py-9">
+        <section className="journey-focus relative mt-10 overflow-hidden rounded-[2rem] brand-surface px-6 py-7 text-white shadow-2xl shadow-indigo-950/15 sm:px-9 sm:py-9">
           <div className="journey-focus-orbit" aria-hidden="true" />
           {nextTask ? (
             <div className="relative z-10 grid gap-8 lg:grid-cols-[1fr_auto] lg:items-center">
               <div className="max-w-2xl">
-                <div className="mb-4 flex items-center gap-2 text-xs font-black uppercase tracking-[0.18em] text-violet-300">
+                <div className="mb-4 flex items-center gap-2 text-xs font-black uppercase tracking-[0.18em] text-violet-100">
                   <Sparkles size={15} /> Seu foco agora
                 </div>
                 <div className="flex items-start gap-4">
@@ -174,13 +171,13 @@ export const JourneyView: React.FC<JourneyViewProps> = ({
                     <Target size={23} />
                   </div>
                   <div>
-                    <p className="mb-2 text-xs font-bold text-slate-400">
+                    <p className="mb-2 text-xs font-bold text-white/85">
                       Capítulo {nextTask.subGoalIndex + 1} · Etapa {nextTask.stepNumber} de {progress.totalTasks}
                     </p>
                     <h2 className="text-2xl font-black leading-tight tracking-tight sm:text-3xl">
                       {nextTask.task.title}
                     </h2>
-                    <p className="mt-3 max-w-xl text-sm leading-relaxed text-slate-300 sm:text-base">
+                    <p className="mt-3 max-w-xl text-sm leading-relaxed text-white/90 sm:text-base">
                       {nextTask.task.description}
                     </p>
                   </div>
@@ -188,13 +185,13 @@ export const JourneyView: React.FC<JourneyViewProps> = ({
               </div>
 
               <div className="relative z-10 min-w-56">
-                <p className="mb-3 text-xs font-semibold text-slate-400">
+                <p className="mb-3 text-xs font-semibold text-white/85">
                   {nextTaskChecked} de {nextTask.task.checklist.length} ações desta etapa
                 </p>
                 <button
                   type="button"
                   onClick={() => onSelectTask(nextTask.subGoalIndex, nextTask.taskIndex)}
-                  className="group flex min-h-14 w-full items-center justify-center gap-3 rounded-2xl bg-white px-6 text-sm font-black text-slate-950 shadow-lg transition hover:-translate-y-0.5 hover:bg-violet-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-300 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950"
+                  className="group flex min-h-14 w-full items-center justify-center gap-3 rounded-2xl bg-white px-6 text-sm font-black text-indigo-700 shadow-lg transition hover:-translate-y-0.5 hover:bg-violet-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-300 focus-visible:ring-offset-2 focus-visible:ring-offset-indigo-600"
                 >
                   {nextTaskChecked > 0 ? <Play size={18} fill="currentColor" /> : <Footprints size={19} />}
                   {nextTaskChecked > 0 ? 'Continuar esta etapa' : 'Começar esta etapa'}
@@ -204,13 +201,13 @@ export const JourneyView: React.FC<JourneyViewProps> = ({
             </div>
           ) : (
             <div className="relative z-10 flex flex-col items-start gap-6 sm:flex-row sm:items-center">
-              <div className="grid h-16 w-16 shrink-0 place-items-center rounded-3xl bg-amber-300 text-slate-950 shadow-lg shadow-amber-400/20">
+              <div className="grid h-16 w-16 shrink-0 place-items-center rounded-3xl bg-amber-300 text-indigo-700 shadow-lg shadow-amber-400/20">
                 <Trophy size={31} />
               </div>
               <div>
                 <p className="text-xs font-black uppercase tracking-[0.18em] text-amber-300">Objetivo concluído</p>
                 <h2 className="mt-2 text-3xl font-black tracking-tight">Você completou toda a jornada.</h2>
-                <p className="mt-2 text-slate-300">Todas as 64 etapas e 192 ações foram concluídas. Este mapa agora é a história do caminho que você percorreu.</p>
+                <p className="mt-2 text-white/90">Todas as 64 etapas e 192 ações foram concluídas. Este mapa agora é a história do caminho que você percorreu.</p>
               </div>
             </div>
           )}
@@ -255,7 +252,7 @@ export const JourneyView: React.FC<JourneyViewProps> = ({
                         isComplete
                           ? 'border-emerald-500 bg-emerald-500 text-white'
                           : isCurrent
-                            ? 'border-indigo-600 bg-indigo-600 text-white ring-4 ring-indigo-100'
+                            ? 'border-indigo-600 brand-surface text-white ring-4 ring-indigo-100'
                             : 'border-slate-200 bg-white text-slate-400 group-hover:border-indigo-300 group-hover:text-indigo-600'
                       }`}>
                         {isComplete ? <Check size={16} strokeWidth={3} /> : stageIndex + 1}
@@ -289,7 +286,7 @@ export const JourneyView: React.FC<JourneyViewProps> = ({
         <section className="mt-10" aria-labelledby="route-title">
           <div className="mb-6 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
             <div>
-              <p className="text-xs font-black uppercase tracking-[0.16em] text-indigo-600">Rota completa</p>
+              <p className="brand-text text-xs font-black uppercase tracking-[0.16em]">Rota completa</p>
               <h2 id="route-title" className="mt-1 text-2xl font-black tracking-tight text-slate-950 sm:text-3xl">Do primeiro passo à conquista</h2>
             </div>
             <p className="max-w-sm text-sm leading-relaxed text-slate-500">Abra qualquer capítulo para explorar. A rota recomenda uma ordem, mas continua sendo sua.</p>
@@ -297,7 +294,7 @@ export const JourneyView: React.FC<JourneyViewProps> = ({
 
           <div className="space-y-4">
             {data.subGoals.map((subGoal, stageIndex) => {
-              const theme = STAGE_THEMES[stageIndex]
+              const theme = STAGE_THEME
               const stage = progress.stages[stageIndex]
               const isOpen = openStages.has(stageIndex)
               const isComplete = stage.completedTasks === stage.totalTasks

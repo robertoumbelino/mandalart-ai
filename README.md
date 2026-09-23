@@ -19,13 +19,25 @@ Requisitos: Node.js 22.18 ou superior e pnpm 10.
 
 ```bash
 pnpm install
-cp .env.example .env
+cp .env.example .env.local
+docker compose up -d
+for migration in migrations/*.sql; do
+  docker compose exec -T postgres psql -v ON_ERROR_STOP=1 -U mandalart -d mandalart_local < "$migration"
+done
 pnpm dev
 ```
 
-Preencha `.env` com uma conexão Neon válida e um `JWT_SECRET` aleatório de pelo menos 32 caracteres. Para autenticação local do Gateway, use `vercel env pull`/`vercel dev` ou crie uma chave do AI Gateway.
+O Postgres local usa `127.0.0.1:55432`, banco `mandalart_local`, em volume próprio. Preencha `.env.local` com um `JWT_SECRET` aleatório de pelo menos 32 caracteres e a chave do AI Gateway. O ambiente de desenvolvimento recusa conexões remotas; `LOCAL_DATABASE_ONLY=true` mantém essa proteção também ao testar um build de produção localmente. A configuração do deploy continua usando Neon.
+
+Ao importar variáveis da Vercel, preserve o `DATABASE_URL` local. Nunca execute migrations de desenvolvimento contra a conexão de produção.
 
 Antes da primeira execução, aplique, em ordem, as migrations de `migrations/` em uma conexão direta do Neon. O runtime pode usar a URL com pooler. Em um banco que já está em uso, aplique somente [migrations/002_google_identity.sql](./migrations/002_google_identity.sql) para habilitar contas Google.
+
+As instruções de Neon acima se aplicam somente ao deploy. A jornada pública também requer [migrations/003_onboarding.sql](./migrations/003_onboarding.sql), a ser aplicada no ambiente de destino antes de publicar. Nenhuma migration de produção é executada automaticamente.
+
+## Jornada pública
+
+Abra `http://localhost:3000/comecar`. Toda a experiência permanece nessa URL: apresentação, seis perguntas, geração, prévia, oferta e aviso de compra futura. Login não é necessário. Veja [docs/onboarding.md](./docs/onboarding.md) para regras de persistência, limites e pontos de integração.
 
 ### Login com Google
 

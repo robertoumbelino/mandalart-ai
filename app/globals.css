@@ -1,6 +1,66 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 
+/* The original .AI wordmark is the source of the product's brand gradient. */
+:root {
+  --brand-start: var(--color-indigo-600);
+  --brand-end: var(--color-purple-600);
+  --brand-gradient: linear-gradient(90deg, var(--brand-start), var(--brand-end));
+  --brand-gradient-hover: linear-gradient(90deg, var(--color-indigo-700), var(--color-purple-700));
+}
+
+.brand-logo {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4em;
+}
+.brand-icon {
+  flex-shrink: 0;
+}
+.brand-wordmark {
+  font-family: ui-sans-serif, system-ui, sans-serif;
+  font-weight: 800;
+  letter-spacing: -0.055em;
+  line-height: 1.1;
+  white-space: nowrap;
+  color: var(--color-slate-900);
+}
+.brand-text {
+  color: var(--brand-start);
+  background-image: var(--brand-gradient);
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  padding-right: 0.06em;
+}
+.brand-surface,
+.brand-button {
+  background-color: var(--brand-start);
+  background-image: var(--brand-gradient);
+  color: white;
+}
+.brand-button:hover:not(:disabled) {
+  background-image: var(--brand-gradient-hover);
+}
+.brand-button:disabled {
+  background-image: none;
+  background-color: var(--color-slate-200);
+  color: var(--color-slate-500);
+  box-shadow: none;
+  cursor: not-allowed;
+}
+.brand-button:focus-visible {
+  outline: 3px solid var(--color-indigo-400);
+  outline-offset: 3px;
+}
+
+@media (forced-colors: active) {
+  .brand-text {
+    background: none;
+    -webkit-text-fill-color: currentColor;
+  }
+}
+
 @layer utilities {
   .animate-fade-in {
     animation: fadeIn 0.5s ease-in-out;

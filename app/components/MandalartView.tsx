@@ -1,4 +1,6 @@
-'use client';
+'use client'
+
+import { BrandLogo } from './Brand';
 
 import React, { useEffect, useRef, useState } from 'react'
 import html2canvas from 'html2canvas-pro'
@@ -409,7 +411,7 @@ export const MandalartView: React.FC<MandalartViewProps> = ({
                   className={`absolute top-0 left-0 h-full transition-all duration-500 rounded-full ${
                     task.isCompleted
                       ? 'bg-emerald-500'
-                      : 'bg-gradient-to-r from-blue-400 to-indigo-500'
+                      : 'brand-surface'
                   }`}
                   style={{ width: `${progress}%` }}
                 />
@@ -453,8 +455,8 @@ export const MandalartView: React.FC<MandalartViewProps> = ({
     <div className="flex flex-col items-center w-full max-w-[1200px] mx-auto animate-fade-in pb-12 relative">
       <div className="mb-7 flex w-full flex-col gap-4 px-1 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <p className="text-xs font-black uppercase tracking-[0.16em] text-indigo-600">Seu plano está pronto</p>
-          <h2 className="mt-1 text-2xl font-black tracking-tight text-slate-950 sm:text-3xl">{data.mainGoal}</h2>
+          <p className="brand-text text-xs font-black uppercase tracking-[0.16em]">Seu plano está pronto</p>
+          <h2 className="brand-text mt-1 text-2xl font-black tracking-tight sm:text-3xl">{data.mainGoal}</h2>
         </div>
         <div className="flex flex-wrap gap-2">
           <button
@@ -476,7 +478,7 @@ export const MandalartView: React.FC<MandalartViewProps> = ({
         </div>
       </div>
 
-      <section className="journey-invitation relative mb-8 w-full overflow-hidden rounded-[2rem] bg-gradient-to-br from-indigo-600 via-violet-600 to-purple-700 px-6 py-7 text-white shadow-xl shadow-indigo-200/60 sm:px-9 sm:py-8">
+      <section className="journey-invitation relative mb-8 w-full overflow-hidden rounded-[2rem] brand-surface px-6 py-7 text-white shadow-xl shadow-indigo-200/60 sm:px-9 sm:py-8">
         <div className="journey-invitation-glow" aria-hidden="true" />
         <div className="relative z-10 grid gap-7 lg:grid-cols-[1fr_auto] lg:items-center">
           <div className="flex items-start gap-4">
@@ -603,7 +605,7 @@ export const MandalartView: React.FC<MandalartViewProps> = ({
         </div>
 
         <div className="w-full flex justify-between items-center mt-6 px-4">
-          <div className="text-xs text-gray-400 font-medium">Mandalart.AI</div>
+          <div className="text-xs"><BrandLogo iconSize={20} /></div>
           <div className="text-xs text-gray-400">Gerado com IA</div>
         </div>
       </div>

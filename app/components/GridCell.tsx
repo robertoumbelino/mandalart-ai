@@ -17,7 +17,7 @@ export const GridCell: React.FC<GridCellProps> = ({ text, type, className = '', 
 
   switch (type) {
     case 'main':
-      typeClasses = "bg-gradient-to-br from-indigo-600 to-purple-600 text-white font-bold text-sm shadow-md z-10";
+      typeClasses = "brand-surface text-white font-bold text-sm shadow-md z-10";
       break;
     case 'sub-main':
       typeClasses = "bg-indigo-50 text-indigo-900 font-semibold text-xs z-10";

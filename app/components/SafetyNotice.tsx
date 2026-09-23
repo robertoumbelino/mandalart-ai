@@ -79,7 +79,7 @@ export const SafetyNotice: React.FC<SafetyNoticeProps> = ({ category, onBack }) 
           <button
             type="button"
             onClick={onBack}
-            className="mt-8 inline-flex min-h-14 items-center justify-center gap-3 rounded-2xl bg-slate-950 px-7 text-base font-bold text-white shadow-lg shadow-slate-300/60 transition hover:-translate-y-0.5 hover:bg-black focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 sm:text-lg"
+            className="mt-8 inline-flex min-h-14 items-center justify-center gap-3 rounded-2xl brand-button px-7 text-base font-bold text-white shadow-lg shadow-slate-300/60 transition hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 sm:text-lg"
           >
             <ArrowLeft size={22} />
             {isSelfHarm ? 'Voltar ao início' : 'Voltar e reformular'}

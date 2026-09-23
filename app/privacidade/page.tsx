@@ -15,7 +15,7 @@ export default function PrivacyPage() {
         </Link>
 
         <h1 className="mt-8 text-3xl font-black tracking-tight text-slate-900">Política de Privacidade</h1>
-        <p className="mt-2 text-sm text-slate-500">Última atualização: 13 de setembro de 2026</p>
+        <p className="mt-2 text-sm text-slate-500">Última atualização: 23 de setembro de 2026</p>
 
         <div className="mt-8 space-y-7 leading-relaxed">
           <section>
@@ -36,6 +36,9 @@ export default function PrivacyPage() {
             <h2 className="text-lg font-bold text-slate-900">3. Como usamos os dados</h2>
             <p className="mt-2">
               Usamos os dados para autenticar sua conta, manter seus planos salvos, gerar perguntas e sugestões com inteligência artificial, proteger o serviço contra abuso e corrigir falhas. Objetivos e respostas necessários à geração são processados pelos provedores de infraestrutura e IA usados pelo Mandalart.AI.
+            </p>
+            <p className="mt-2">
+              Na prévia sem cadastro, em /comecar, guardamos as respostas e o progresso neste navegador por até 7 dias desde o último uso. Ao solicitar a geração, as respostas também são processadas pela IA e a prévia fica associada a uma sessão anônima em nosso servidor. Usamos um cookie protegido para recuperar a mesma prévia, referências da campanha para identificar sua origem e um identificador de rede protegido por hash para limitar abusos. Os eventos de uso da jornada não contêm o texto do seu sonho nem suas respostas.
             </p>
           </section>
 
