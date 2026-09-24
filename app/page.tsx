@@ -1,15 +1,19 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
-import { BrandLogo, BrandWordmark } from '@/app/components/Brand';
+import { BrandIcon, BrandLogo, BrandWordmark } from '@/app/components/Brand';
 import { ArrowRight, Sparkles, BrainCircuit, Loader2, History, X, Trash2, Calendar, LogOut } from 'lucide-react';
-import { generateQuestions, generateMandalartData } from '@/actions/ai';
+import { generateQuestions } from '@/actions/ai';
 import { MandalartData, Question, AppStep, GoalSafetyCategory, InterviewAnswer, HistoryItem, User } from '@/types';
 import { MandalartView } from '@/app/components/MandalartView';
 import { Auth } from '@/app/components/Auth';
 import { SafetyNotice } from '@/app/components/SafetyNotice';
 import { getCurrentUser, logout } from '@/actions/auth';
-import { getHistory, saveMandalart, updateMandalart, deleteMandalart } from '@/actions/mandalarts';
+import { getHistory, updateMandalart, deleteMandalart } from '@/actions/mandalarts';
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { generateDream, getDreamGeneration, getDreamWallet } from '@/actions/dreams';
+import { DRAFT_STORAGE_KEY, restoreDraft, answersSchema, getAnswerContext } from '@/lib/onboarding';
 import { getJourneyProgress } from '@/lib/journey';
 
 const GENERATION_MESSAGES = [
@@ -40,10 +44,12 @@ const GENERATION_MESSAGES = [
 ] as const;
 
 export default function Home() {
+  const router = useRouter();
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [step, setStep] = useState<AppStep>('input');
   const [mainGoal, setMainGoal] = useState('');
+  const [previewId, setPreviewId] = useState<string | undefined>(undefined);
   const [safetyCategory, setSafetyCategory] = useState<GoalSafetyCategory | null>(null);
   const [questions, setQuestions] = useState<Question[]>([]);
   const [answers, setAnswers] = useState<InterviewAnswer[]>([]);
@@ -55,9 +61,14 @@ export default function Home() {
   const [isSavingProgress, setIsSavingProgress] = useState(false);
   const [generationMessageIndex, setGenerationMessageIndex] = useState(0);
 
+  const [wallet, setWallet] = useState<Awaited<ReturnType<typeof getDreamWallet>> | null>(null);
+  const needsDreams = wallet !== null && wallet.balance < 1;
+  const [recoverGeneration, setRecoverGeneration] = useState(0);
   const [history, setHistory] = useState<HistoryItem[]>([]);
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
+  const generationRecoveryRef = useRef<{ id: string; goal: string; answers: InterviewAnswer[]; previewId?: string } | null>(null);
+  const activeUserIdRef = useRef<string | null>(null);
   const userMenuRef = useRef<HTMLDivElement>(null);
   const historyButtonRef = useRef<HTMLButtonElement>(null);
   const historyDrawerRef = useRef<HTMLDivElement>(null);
@@ -74,6 +85,7 @@ export default function Home() {
       try {
         const currentUser = await getCurrentUser();
         if (!active || !currentUser) return;
+        activeUserIdRef.current = currentUser.id;
         setUser(currentUser);
         const userHistory = await getHistory();
         if (active) setHistory(userHistory);
@@ -85,6 +97,89 @@ export default function Home() {
     void load();
     return () => { active = false; };
   }, []);
+
+  useEffect(() => {
+    if (!user) return;
+    let active = true;
+    let timer: ReturnType<typeof setTimeout>;
+    const key = `mandalart.generation.${user.id}`;
+    const refreshWallet = () => { void getDreamWallet().then(value => { if (active) setWallet(value); }).catch(() => {}); };
+    refreshWallet();
+    window.addEventListener('focus', refreshWallet);
+    async function recover(id: string) {
+      try {
+        const result = await getDreamGeneration(id);
+        if (!active) return;
+        if (result.status === 'generating') {
+          setStep('generating');
+          timer = setTimeout(() => void recover(id), 3000);
+        } else {
+          generationRecoveryRef.current = null;
+          try { sessionStorage.removeItem(key); } catch {}
+          if (result.status === 'completed') {
+            setMandalartData(result.item.data); setCurrentMandalartId(result.item.id); setStep('result'); setError(null);
+            try { sessionStorage.removeItem(`mandalart.interview.${result.item.userId}`); } catch {}
+          } else {
+            setStep('interview'); setError(result.message);
+          }
+          setProcessing(false);
+          void getDreamWallet().then(value => { if (active) setWallet(value); }).catch(() => {});
+          void getHistory().then(value => { if (active) setHistory(value); }).catch(() => {});
+        }
+      } catch {
+        if (active) { setError('A conexão caiu. Estamos conferindo sua geração para evitar usar outro sonho.'); timer = setTimeout(() => void recover(id), 5000); }
+      }
+    }
+    async function restore() {
+      await Promise.resolve();
+      if (!active) return;
+      try {
+        let pending: string | null = null;
+        try { pending = sessionStorage.getItem(key); } catch {}
+        pending ||= generationRecoveryRef.current ? JSON.stringify(generationRecoveryRef.current) : null;
+        if (pending) {
+          const saved = JSON.parse(pending);
+          if (typeof saved.id === 'string' && typeof saved.goal === 'string' && Array.isArray(saved.answers)) {
+            setMainGoal(saved.goal); setAnswers(saved.answers); setPreviewId(saved.previewId);
+            setQuestions(saved.answers.map((a: InterviewAnswer) => ({ id: a.questionId, text: a.questionText })));
+            setStep('generating'); setProcessing(true); void recover(saved.id);
+          }
+        } else if (new URLSearchParams(window.location.search).get('continuar') === 'sonho') {
+          const raw = localStorage.getItem(DRAFT_STORAGE_KEY);
+          const draft = raw ? restoreDraft(JSON.parse(raw)) : null;
+          const parsed = answersSchema.safeParse(draft?.answers);
+          if (parsed.success) {
+            const context = getAnswerContext(parsed.data);
+            const restoredAnswers = [
+              { questionId: 'context', questionText: 'Onde você está hoje?', answer: `${context.category}. ${context.stage}` },
+              { questionId: 'obstacle', questionText: 'O que mais precisa de atenção?', answer: context.obstacle },
+              { questionId: 'rhythm', questionText: 'Qual ritmo faz sentido para você?', answer: `${context.time}. ${context.horizon}` }
+            ];
+            setMainGoal(context.dream); setAnswers(restoredAnswers); setPreviewId(draft?.result?.id);
+            setQuestions(restoredAnswers.map(a => ({ id: a.questionId, text: a.questionText })));
+            setStep('interview');
+          }
+        } else {
+          const saved = sessionStorage.getItem(`mandalart.interview.${user.id}`);
+          if (saved) {
+            const interview = JSON.parse(saved);
+            if (typeof interview.goal === 'string' && Array.isArray(interview.answers)) {
+              setMainGoal(interview.goal); setAnswers(interview.answers); setPreviewId(interview.previewId);
+              setQuestions(interview.answers.map((a: InterviewAnswer) => ({ id: a.questionId, text: a.questionText })));
+              setStep(interview.answers.length === 3 ? 'interview' : 'input');
+            }
+          }
+        }
+      } catch { /* O planner pode continuar sem armazenamento no navegador. */ }
+    }
+    void restore();
+    return () => { active = false; clearTimeout(timer); window.removeEventListener('focus', refreshWallet); };
+  }, [user, recoverGeneration]);
+
+  useEffect(() => {
+    if (!user || !mainGoal.trim() || !['input', 'interview'].includes(step)) return;
+    try { sessionStorage.setItem(`mandalart.interview.${user.id}`, JSON.stringify({ goal: mainGoal, answers, previewId })); } catch {}
+  }, [user, mainGoal, answers, step, previewId]);
 
   useEffect(() => {
     if (step !== 'generating') return;
@@ -172,6 +267,8 @@ export default function Home() {
   };
 
   const handleLogin = async (newUser: User) => {
+    activeUserIdRef.current = newUser.id;
+    setWallet(null);
     setUser(newUser);
     await refreshHistory();
   };
@@ -179,7 +276,14 @@ export default function Home() {
   const handleLogout = async () => {
     setIsUserMenuOpen(false);
     await logout();
+    activeUserIdRef.current = null;
+    generationRecoveryRef.current = null;
+    setWallet(null);
     setUser(null);
+    setMainGoal('');
+    setAnswers([]);
+    setQuestions([]);
+    setPreviewId(undefined);
     setHistory([]);
     setStep('input');
   };
@@ -254,10 +358,23 @@ export default function Home() {
 
   const handleStart = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!mainGoal.trim()) return;
+    if (!mainGoal.trim() || processing || !user) return;
     setProcessing(true);
     setError(null);
     try {
+      const currentWallet = wallet ?? await getDreamWallet();
+      setWallet(currentWallet);
+      if (currentWallet.balance < 1) {
+        try {
+          sessionStorage.setItem(`mandalart.interview.${user.id}`, JSON.stringify({ goal: mainGoal, answers: [] }));
+        } catch {
+          setError('Não conseguimos guardar seu objetivo neste navegador. Permita o armazenamento para continuar de onde parou após a compra.');
+          return;
+        }
+        router.push('/sonhos?origem=account');
+        return;
+      }
+      setPreviewId(undefined);
       const result = await generateQuestions(mainGoal);
       if (result.status === 'blocked') {
         setSafetyCategory(result.category);
@@ -283,34 +400,44 @@ export default function Home() {
   };
 
   const handleGenerate = async () => {
-    if (answers.some(a => !a.answer.trim())) {
-      setError("Responda todas as perguntas.");
-      return;
-    }
-    setGenerationMessageIndex(0);
-    setStep('generating');
-    setProcessing(true);
-    setError(null);
+    if (processing || !user) return;
+    if (answers.some(a => !a.answer.trim())) { setError('Responda todas as perguntas.'); return; }
+    try { sessionStorage.setItem(`mandalart.interview.${user.id}`, JSON.stringify({ goal: mainGoal, answers, previewId })); } catch {}
+    if (!wallet || wallet.balance < 1) { router.push('/sonhos'); return; }
+    const id = crypto.randomUUID();
+    const key = `mandalart.generation.${user.id}`;
+    generationRecoveryRef.current = { id, goal: mainGoal, answers, previewId };
+    try { sessionStorage.setItem(key, JSON.stringify({ id, goal: mainGoal, answers, previewId })); } catch {}
+    setGenerationMessageIndex(0); setStep('generating'); setProcessing(true); setError(null);
     try {
-      const data = await generateMandalartData(mainGoal, answers);
-      setMandalartData(data);
-      if (user) {
-        const newItem = await saveMandalart(data);
-        setCurrentMandalartId(newItem.id);
-        await refreshHistory();
+      const result = await generateDream(id, mainGoal, answers, previewId);
+      if (activeUserIdRef.current !== user.id) return;
+      if (result.status === 'completed') {
+        setMandalartData(result.item.data); setCurrentMandalartId(result.item.id); setStep('result');
+        try { sessionStorage.removeItem(key); sessionStorage.removeItem(`mandalart.interview.${user.id}`); } catch {}
+        void refreshHistory().catch(() => {});
+      } else if (result.status === 'generating') {
+        setRecoverGeneration(value => value + 1); return;
+      } else {
+        try { sessionStorage.removeItem(key); } catch {}
+        setError(result.message); setStep('interview');
       }
-      setStep('result');
-    } catch {
-      setError('Não foi possível criar o Mandalart. Tente novamente.');
-      setStep('interview');
-    } finally {
+      generationRecoveryRef.current = null;
       setProcessing(false);
+      void getDreamWallet().then(setWallet).catch(() => {});
+    } catch {
+      if (activeUserIdRef.current !== user.id) return;
+      setError('Estamos conferindo se seu planner ficou pronto. Você não precisa gerar novamente.');
+      setRecoverGeneration(value => value + 1);
     }
   };
 
   const handleReset = () => {
+    if (user) { try { sessionStorage.removeItem(`mandalart.interview.${user.id}`); } catch {} }
+    window.history.replaceState({}, '', '/');
     pendingMandalartUpdateRef.current = null;
     setMainGoal('');
+    setPreviewId(undefined);
     setSafetyCategory(null);
     setQuestions([]);
     setAnswers([]);
@@ -335,19 +462,24 @@ export default function Home() {
 
   return (
     <div className="min-h-screen relative flex flex-col text-gray-900 overflow-x-hidden">
-      <div className="fixed top-0 left-0 right-0 p-6 flex justify-between items-start z-40">
+      <div className="fixed top-0 left-0 right-0 p-3 sm:p-6 flex justify-between items-start z-40">
         <div>
           {step !== 'input' && (
             <button 
               onClick={handleReset}
+              aria-label="Voltar ao início"
               className="flex items-center gap-2 bg-white/80 backdrop-blur shadow-sm px-4 py-2 rounded-full border border-gray-100 hover:bg-white transition group"
             >
-              <span className="text-sm"><BrandLogo iconSize={22} /></span>
+              <span className="sm:hidden"><BrandIcon size={22} /></span><span className="hidden sm:inline text-sm"><BrandLogo iconSize={22} /></span>
             </button>
           )}
         </div>
 
         <div className="flex items-center gap-2">
+          <Link href="/sonhos" className={`${needsDreams ? 'brand-button text-white' : 'bg-white border border-indigo-100 text-indigo-700'} shadow-sm rounded-full px-4 py-2 text-xs sm:text-sm font-semibold min-h-12 flex items-center justify-center gap-2`} aria-label={needsDreams ? 'Comprar sonhos' : 'Ver saldo e comprar sonhos'}>
+            <span className={needsDreams ? undefined : 'brand-text'}>{needsDreams ? 'Comprar sonhos' : wallet ? `${wallet.balance} ${wallet.balance === 1 ? 'sonho' : 'sonhos'}` : 'Meus sonhos'}</span>
+            {needsDreams && <ArrowRight size={15} aria-hidden="true" />}
+          </Link>
           <button
             ref={historyButtonRef}
             onClick={() => {
@@ -469,25 +601,35 @@ export default function Home() {
                 Transforme sonhos vagos em planos de ação concretos.
               </p>
             </div>
-            <div className="max-w-xl mx-auto bg-white p-2 rounded-3xl shadow-xl border border-gray-100/50">
-              <form onSubmit={handleStart} className="flex flex-col sm:flex-row gap-2 items-center mb-0">
-                <input
-                  type="text"
-                  value={mainGoal}
-                  onChange={(e) => setMainGoal(e.target.value)}
-                  maxLength={300}
-                  placeholder="Qual é o seu objetivo principal?"
-                  className="w-full sm:flex-grow px-6 py-4 text-lg bg-transparent outline-none text-gray-900 placeholder:text-gray-400"
-                  autoFocus
-                />
-                <button
-                  type="submit"
-                  disabled={processing || !mainGoal.trim()}
-                  className="w-full sm:w-auto px-8 py-4 brand-button text-white font-bold rounded-2xl transition-all shadow-lg flex items-center justify-center gap-2 text-lg whitespace-nowrap"
-                >
-                  {processing ? <Loader2 className="animate-spin" /> : <>Iniciar <ArrowRight size={20} /></>}
-                </button>
-              </form>
+            <div className="max-w-xl mx-auto">
+              <div className="bg-white p-2 rounded-3xl shadow-xl border border-gray-100/50">
+                <form onSubmit={handleStart} className="flex flex-col sm:flex-row gap-2 items-center mb-0">
+                  <input
+                    type="text"
+                    value={mainGoal}
+                    onChange={(e) => setMainGoal(e.target.value)}
+                    maxLength={300}
+                    placeholder="Qual é o seu objetivo principal?"
+                    aria-label="Qual é o seu objetivo principal?"
+                    aria-describedby={needsDreams ? 'dream-purchase-hint' : undefined}
+                    className="w-full sm:flex-grow px-6 py-4 text-lg bg-transparent outline-none text-gray-900 placeholder:text-gray-400"
+                    autoFocus
+                  />
+                  <button
+                    type="submit"
+                    disabled={processing || !mainGoal.trim()}
+                    className="w-full sm:w-auto px-8 py-4 brand-button text-white font-bold rounded-2xl transition-all shadow-lg flex items-center justify-center gap-2 text-lg whitespace-nowrap"
+                  >
+                    {processing ? <Loader2 className="animate-spin" /> : <>{needsDreams ? 'Continuar' : 'Iniciar'} <ArrowRight size={20} /></>}
+                  </button>
+                </form>
+              </div>
+              {needsDreams && (
+                <p id="dream-purchase-hint" className="mt-5 px-3 text-sm leading-relaxed text-slate-500">
+                  Escreva seu objetivo. No próximo passo, escolha um pacote de sonhos para criar seu planner.
+                  <span className="block mt-1 font-medium text-slate-600">Seu texto fica guardado para continuar após a compra.</span>
+                </p>
+              )}
             </div>
             {error && <p className="text-red-500 bg-red-50 p-3 rounded-lg inline-block">{error}</p>}
             <div className="pt-8 grid grid-cols-1 sm:grid-cols-3 gap-4 max-w-3xl mx-auto w-full px-4">
@@ -515,14 +657,16 @@ export default function Home() {
           <div className="w-full max-w-2xl mx-auto space-y-8 animate-in fade-in slide-in-from-right-8 duration-500 pt-24">
             <div className="text-center space-y-2">
                <div className="bg-purple-100 p-3 rounded-full inline-block"><BrainCircuit className="w-8 h-8 text-purple-600" /></div>
-               <h2 className="brand-text text-2xl font-bold">Entendendo Melhor</h2>
-               <p className="text-gray-500">Responda a essas perguntas rápidas para personalizar seu plano.</p>
+               <h2 className="brand-text text-2xl font-bold">{previewId ? 'Seu próximo capítulo' : 'Entendendo Melhor'}</h2>
+               <p className="text-gray-500">{previewId ? 'Suas respostas já estão aqui. Confira e dê o próximo passo.' : 'Responda a essas perguntas rápidas para personalizar seu plano.'}</p>
+               {previewId && <p className="text-sm font-semibold text-indigo-700">{mainGoal}</p>}
             </div>
             <div className="space-y-6">
               {questions.map((q, idx) => (
                 <div key={q.id} className="bg-white/80 backdrop-blur-sm p-6 rounded-2xl shadow-sm border border-gray-200/60">
-                  <p className="text-lg font-medium text-gray-900 mb-4">{q.text}</p>
+                  <label htmlFor={`answer-${q.id}`} className="block text-lg font-medium text-gray-900 mb-4">{q.text}</label>
                   <textarea
+                    id={`answer-${q.id}`}
                     value={answers[idx]?.answer || ''}
                     onChange={(e) => handleAnswerChange(idx, e.target.value)}
                     maxLength={1000}
@@ -533,7 +677,7 @@ export default function Home() {
               ))}
             </div>
             <button onClick={handleGenerate} disabled={processing} className="w-full py-4 brand-button text-white font-bold rounded-2xl shadow-lg flex items-center justify-center gap-2 text-lg">
-              {processing ? <Loader2 className="animate-spin" /> : <>Gerar Plano Mandalart <Sparkles /></>}
+              {processing ? <Loader2 className="animate-spin" /> : <>{wallet && wallet.balance > 0 ? 'Gerar meu planner · 1 sonho' : 'Escolher meus sonhos'} <Sparkles /></>}
             </button>
             {error && <p role="alert" className="text-center text-red-600 bg-red-50 p-3 rounded-xl">{error}</p>}
           </div>
@@ -554,6 +698,7 @@ export default function Home() {
                 <p className="text-gray-500">
                   {GENERATION_MESSAGES[generationMessageIndex].description}
                 </p>
+                {error && <p role="status" className="text-sm text-indigo-700">{error}</p>}
               </div>
           </div>
         )}

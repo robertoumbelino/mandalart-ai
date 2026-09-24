@@ -1,6 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { generateText } from 'ai'
-import { generateMandalartData, generateQuestions } from './ai'
+import { generateQuestions } from './ai'
+import { buildMandalartData } from '@/lib/plan-generation'
+import { mandalartDataSchema } from '@/lib/validation'
+vi.mock('server-only', () => ({}))
+vi.mock('@/lib/credits', () => ({ creditBalance: vi.fn().mockResolvedValue(1) }))
 
 vi.mock('ai', async () => {
   const actual = await vi.importActual<typeof import('ai')>('ai')
@@ -55,8 +59,25 @@ describe('goal safety screening', () => {
       answer: `Resposta ${index + 1}`
     }))
 
-    await expect(generateMandalartData('Objetivo de teste válido', answers))
+    await expect(buildMandalartData('Objetivo de teste válido', answers))
       .rejects.toThrow('Objetivo bloqueado pela verificação de segurança.')
     expect(generateTextMock).toHaveBeenCalledTimes(1)
   })
+})
+
+it('preserves the purchased preview pillars and first action when expanding it', async () => {
+  const preview = {
+    title: 'Começar um novo idioma', introduction: 'Um caminho possível para estudar no seu ritmo.',
+    pillars: Array.from({ length: 8 }, (_, i) => ({ title: `Pilar da prévia ${i + 1}`, description: 'Descrição original do pilar.' })),
+    firstStep: { title: 'Meu primeiro passo original', description: 'A descrição do primeiro passo que foi apresentada na prévia.', minutes: 15, checklist: ['A'.repeat(150), 'Ação original dois', 'Ação original três'] }
+  }
+  const generated = { mainGoal: 'Aprender um idioma', subGoals: Array.from({ length: 8 }, () => ({ title: 'Título reescrito', description: 'Descrição reescrita', advice: 'Uma orientação concreta.', tasks: Array.from({ length: 8 }, () => ({ title: 'Uma tarefa prática', description: 'Faça a tarefa com atenção.', advice: 'Reserve tempo para praticar.', checklist: ['Primeira ação', 'Segunda ação', 'Terceira ação'] })) })) }
+  generateTextMock.mockReset()
+  generateTextMock.mockResolvedValueOnce({ output: { classification: 'allowed' } } as never).mockResolvedValueOnce({ output: generated } as never)
+  const result = await buildMandalartData('Aprender um idioma', Array.from({ length: 3 }, (_, i) => ({ questionId: String(i), questionText: 'Pergunta válida?', answer: 'Resposta válida.' })), preview)
+  expect(result.subGoals.map(p => p.title)).toEqual(preview.pillars.map(p => p.title))
+  expect(result.subGoals[0].tasks[0].title).toBe(preview.firstStep.title)
+  expect(result.subGoals[0].tasks[0].checklist.map(c => c.text)).toEqual(preview.firstStep.checklist)
+  expect(result.subGoals.flatMap(p => p.tasks)).toHaveLength(64)
+  expect(() => mandalartDataSchema.parse(result)).not.toThrow()
 })

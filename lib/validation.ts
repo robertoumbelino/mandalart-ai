@@ -73,7 +73,7 @@ export const mandalartDataSchema = z.object({
           checklist: z.array(
             z.object({
               id: z.string().trim().min(1).max(100),
-              text: shortText,
+              text: z.string().trim().min(1).max(150),
               checked: z.boolean()
             })
           ).length(3),

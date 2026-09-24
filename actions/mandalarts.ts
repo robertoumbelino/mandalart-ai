@@ -48,26 +48,6 @@ export const getHistory = async (): Promise<HistoryItem[]> => {
   })
 }
 
-export const saveMandalart = async (rawData: MandalartData): Promise<HistoryItem> => {
-  const user = await requireUser()
-  const data = mandalartDataSchema.parse(rawData)
-  const subGoals = JSON.stringify(data.subGoals)
-  const sql = getDb()
-  const rows = await sql`
-    INSERT INTO mandalarts (user_id, main_goal, sub_goals)
-    VALUES (${user.id}, ${data.mainGoal}, ${subGoals}::jsonb)
-    RETURNING id, user_id, created_at AS timestamp
-  ` as Array<Pick<MandalartRow, 'id' | 'user_id' | 'timestamp'>>
-  const result = rows[0]
-
-  return {
-    id: result.id,
-    userId: result.user_id,
-    timestamp: new Date(result.timestamp).getTime(),
-    data
-  }
-}
-
 export const updateMandalart = async (rawId: string, rawData: MandalartData): Promise<void> => {
   const user = await requireUser()
   const id = idSchema.parse(rawId)

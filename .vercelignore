@@ -1,8 +1,6 @@
-.env
-.env.local
-.env.development*
-.env.production*
-.env.test*
-.next
-node_modules
-coverage
+# Credenciais locais e arquivos de referência nunca entram no upload do deploy.
+.env*
+!.env.example
+
+# Explorações de design locais não fazem parte da aplicação publicada.
+design/

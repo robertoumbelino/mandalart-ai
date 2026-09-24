@@ -237,7 +237,7 @@ export function Preview({
               </li>
             </ul>
             <div className="purchase-card">
-              <span className="coming-soon-tag">EM BREVE</span>
+              <span className="coming-soon-tag">SEU PRÓXIMO PASSO</span>
               <h3>Quantos sonhos você quer cultivar?</h3>
               <fieldset className="pack-options">
                 <legend className="sr-only">
@@ -255,7 +255,7 @@ export function Preview({
                     {pack === 1 && <span />}
                   </span>
                   <span>
-                    <strong>1 sonho</strong>
+                    <strong>1 sonho · R$ 39,90</strong>
                     <small>Um planner para o seu objetivo de agora.</small>
                   </span>
                   <Sprout size={22} />
@@ -272,8 +272,8 @@ export function Preview({
                     {pack === 3 && <span />}
                   </span>
                   <span>
-                    <strong>3 sonhos</strong>
-                    <small>Este planner e mais 2 sonhos para depois.</small>
+                    <strong>3 sonhos · R$ 99,90</strong>
+                    <small>Economize R$ 19,80. Use os sonhos no seu ritmo.</small>
                   </span>
                   <Layers3 size={22} />
                 </label>
@@ -281,7 +281,7 @@ export function Preview({
               <p className="purchase-explainer">
                 Pagamento único, sem assinatura.
                 <br />
-                Valores disponíveis no lançamento.
+                Cada novo planner usa um sonho.
               </p>
               <button className="begin-primary offer-cta" onClick={onCheckout}>
                 {pack === 1
@@ -290,7 +290,7 @@ export function Preview({
                 <ArrowRight size={18} />
               </button>
               <p className="checkout-unavailable">
-                <LockKeyhole size={12} /> Compra disponível em breve
+                <LockKeyhole size={12} /> Seus créditos ficam na sua conta
               </p>
             </div>
           </div>
@@ -316,9 +316,8 @@ export function Preview({
               <ChevronDown size={18} />
             </summary>
             <p>
-              Não. A proposta é pagamento único pelo pacote escolhido. Consultar
-              seu planner e marcar seu progresso não consome novos sonhos. Os
-              valores e condições de acesso serão apresentados no lançamento.
+              Não. Você paga uma vez pelo pacote escolhido. Consultar
+              seu planner e marcar seu progresso não consome novos sonhos.
             </p>
           </details>
           <details>
@@ -357,7 +356,7 @@ export function Preview({
           <strong>
             {pack === 1 ? 'Seu próximo capítulo' : 'Espaço para 3 sonhos'}
           </strong>
-          <small>Planner completo · Em breve</small>
+          <small>{pack === 1 ? 'R$ 39,90 · pagamento único' : 'R$ 99,90 · pagamento único'}</small>
         </span>
         <button onClick={onCheckout}>
           Quero continuar <ArrowRight size={16} />

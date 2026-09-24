@@ -2,7 +2,7 @@
 
 ## Experiência
 
-A página contém apresentação, seis perguntas com alternativas, entrada livre opcional, geração real de uma prévia com IA, primeira tarefa com três ações marcáveis, oito pilares expansíveis e oferta de 1 ou 3 sonhos. O CTA abre um aviso de lançamento futuro. Não há checkout, cobrança, compra simulada, preço inventado, criação de créditos ou geração do planner pago.
+A página contém apresentação, seis perguntas com alternativas, entrada livre opcional, geração real de uma prévia com IA, primeira tarefa com três ações marcáveis, oito pilares expansíveis e oferta de 1 ou 3 sonhos. O CTA leva a `/sonhos`, onde o usuário entra na conta e compra créditos pelo Stripe. Pacotes: 1 sonho por R$ 39,90 ou 3 por R$ 99,90. A prévia gratuita permanece no navegador. Veja [payments.md](./payments.md).
 
 O roteiro cobre área, sonho, ponto de partida, dificuldade, disponibilidade e horizonte dos primeiros avanços. Selecionar outra área remove o sonho anterior. Editar respostas invalida a prévia e o checklist. Voltar sem mudar as respostas preserva ambos.
 
@@ -30,17 +30,15 @@ Eventos de funil: `begin_view`, `begin_started`, `begin_question_completed`, `be
 
 ## Integrações futuras
 
-1. Definir preços, validade dos créditos, duração do acesso e política de refazer um planner.
-2. Integrar checkout preservando a atribuição oficial do afiliado. Associar a compra à prévia por identificador seguro, sem confiar no estado do navegador.
-3. Confirmar pagamento no servidor por webhook autenticado e idempotente. O retorno público deve usar a própria `/comecar`, sem liberar conteúdo baseado em query string.
-4. Verificar a posse da conta de destino e expandir a prévia persistida, mantendo pilares e primeira tarefa. Liberar os créditos uma única vez; geração malsucedida não deve cobrar de novo.
-5. Revisar permissões de geração do aplicativo autenticado para o modelo comercial.
+A integração Stripe já confirma pagamento no servidor, credita a conta e permite gerar o planner com as respostas da prévia. A jornada de perguntas e prévia continua em `/comecar`; compra e saldo ficam em `/sonhos`. O retorno do Stripe não libera créditos por query string: consulta o pedido autenticado e verifica a confirmação no provedor. O usuário escolhe quando gerar o planner, consumindo um sonho.
+
+A Kiwify e a atribuição oficial de afiliados continuam pendentes. Ao gerar a partir da prévia, o servidor valida sua sessão e recupera os oito pilares e o primeiro passo originais. Eles são preservados no planner completo. A marcação do checklist gratuito não é transferida; o acompanhamento do planner começa do zero.
 
 Jev foi avaliado como classificador opcional de sonhos livres. Não foi integrado: não há credencial TypeSafe configurada, e as alternativas atuais são tratadas por regras determinísticas. O gerador existente no AI Gateway produz a prévia. Não adicionar latência de uma chamada por pergunta; comparar Jev em português antes de ativar uma ramificação experimental.
 
 ## Banco local
 
-`docker compose up -d` inicia somente o Postgres deste projeto, publicado no loopback em `55432`. Banco: `mandalart_local`; volume: `mandalart-postgres-data`. Aplicar as três migrations localmente como descrito no README. `lib/db.ts` usa `pg` em loopback e mantém Neon para o deploy. O servidor de desenvolvimento recusa banco remoto. Não copiar dados de clientes de produção para os testes.
+O projeto reutiliza o Postgres do container `adstart-database`, acessível em `127.0.0.1:5432`. O banco `mandalart_local` e o usuário `mandalart` são próprios do Mandalart; as bases da Adstart permanecem separadas. Não há container ou volume de Postgres dedicado ao Mandalart. Aplicar as migrations pendentes localmente como descrito no README. `lib/db.ts` usa `pg` em loopback e mantém Neon para o deploy. O servidor de desenvolvimento recusa banco remoto. Não copiar dados de clientes de produção para os testes.
 
 ## Validação
 

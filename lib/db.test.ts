@@ -30,7 +30,7 @@ describe('database isolation and adapter', () => {
     vi.stubEnv('LOCAL_DATABASE_ONLY', 'true')
     vi.stubEnv(
       'DATABASE_URL',
-      'postgresql://test:test@127.0.0.1:55432/mandalart_local'
+      'postgresql://test:test@127.0.0.1:5432/mandalart_local'
     )
   })
   afterEach(() => {

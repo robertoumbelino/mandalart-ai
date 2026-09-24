@@ -45,7 +45,14 @@ export default function PrivacyPage() {
           <section>
             <h2 className="text-lg font-bold text-slate-900">4. Compartilhamento e armazenamento</h2>
             <p className="mt-2">
-              Não vendemos seus dados. Eles são compartilhados apenas com fornecedores essenciais de hospedagem, banco de dados, autenticação e processamento de IA, na medida necessária para operar o serviço e sujeitos às práticas de segurança desses fornecedores.
+              Não vendemos seus dados. Eles são compartilhados apenas com fornecedores essenciais de hospedagem, banco de dados, autenticação, processamento de IA e pagamentos, na medida necessária para operar o serviço e sujeitos às práticas de segurança desses fornecedores.
+            </p>
+          </section>
+
+          <section>
+            <h2 className="text-lg font-bold text-slate-900">Pagamentos e créditos</h2>
+            <p className="mt-2">
+              O checkout é processado pelo Stripe. Compartilhamos seu e-mail, o identificador da conta e os dados do pedido necessários para confirmar a compra. Os dados do cartão são informados diretamente ao Stripe; o Mandalart.AI não recebe nem armazena o número completo do cartão ou o código de segurança. Guardamos identificadores e situação do pagamento, valores, saldo e movimentações de sonhos para entregar o serviço e conciliar compras, reembolsos e contestações.
             </p>
           </section>
 

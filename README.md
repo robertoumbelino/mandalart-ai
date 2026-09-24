@@ -20,14 +20,16 @@ Requisitos: Node.js 22.18 ou superior e pnpm 10.
 ```bash
 pnpm install
 cp .env.example .env.local
-docker compose up -d
+docker start adstart-database
 for migration in migrations/*.sql; do
-  docker compose exec -T postgres psql -v ON_ERROR_STOP=1 -U mandalart -d mandalart_local < "$migration"
+  docker exec -i adstart-database psql -v ON_ERROR_STOP=1 -U mandalart -d mandalart_local < "$migration"
 done
 pnpm dev
 ```
 
-O Postgres local usa `127.0.0.1:55432`, banco `mandalart_local`, em volume próprio. Preencha `.env.local` com um `JWT_SECRET` aleatório de pelo menos 32 caracteres e a chave do AI Gateway. O ambiente de desenvolvimento recusa conexões remotas; `LOCAL_DATABASE_ONLY=true` mantém essa proteção também ao testar um build de produção localmente. A configuração do deploy continua usando Neon.
+O Postgres local reutiliza o container `adstart-database` na porta `127.0.0.1:5432`, com banco próprio `mandalart_local` e usuário `mandalart` (senha local: `mandalart_local_dev`). A base do Mandalart é separada das bases da Adstart. Não é necessário iniciar outro Postgres. Em uma máquina nova, crie esse usuário e banco no Postgres local antes de aplicar as migrations. Em uma base existente, aplique somente as migrations pendentes.
+
+Preencha `.env.local` com um `JWT_SECRET` aleatório de pelo menos 32 caracteres e a chave do AI Gateway. O ambiente de desenvolvimento recusa conexões remotas; `LOCAL_DATABASE_ONLY=true` mantém essa proteção também ao testar um build de produção localmente. A configuração do deploy continua usando Neon.
 
 Ao importar variáveis da Vercel, preserve o `DATABASE_URL` local. Nunca execute migrations de desenvolvimento contra a conexão de produção.
 
@@ -37,7 +39,7 @@ As instruções de Neon acima se aplicam somente ao deploy. A jornada pública t
 
 ## Jornada pública
 
-Abra `http://localhost:3000/comecar`. Toda a experiência permanece nessa URL: apresentação, seis perguntas, geração, prévia, oferta e aviso de compra futura. Login não é necessário. Veja [docs/onboarding.md](./docs/onboarding.md) para regras de persistência, limites e pontos de integração.
+Abra `http://localhost:3000/comecar`. Toda a experiência permanece nessa URL: apresentação, seis perguntas, geração, prévia e oferta. Login não é necessário para a prévia. A compra acontece em `/sonhos`, com login e checkout Stripe. Veja [docs/onboarding.md](./docs/onboarding.md) para regras de persistência, limites e pontos de integração.
 
 ### Login com Google
 
@@ -82,3 +84,7 @@ Depois, confirme `GET /api/health` (banco) e faça um fluxo completo de cadastro
 - Todas as mutações validam sessão, UUID e payload no servidor.
 - A saída do modelo é validada por schema antes de ser persistida.
 - Se uma credencial já apareceu no histórico Git, remova/rotacione a credencial no provedor; editar apenas o arquivo atual não revoga o segredo.
+
+## Compra e créditos de sonhos
+
+Veja [docs/payments.md](./docs/payments.md) para configurar os pacotes de R$ 39,90 e R$ 99,90, simular compras e entender saldo, devoluções e a disponibilidade do Pix. A cobrança requer a migration 004 no banco do ambiente.

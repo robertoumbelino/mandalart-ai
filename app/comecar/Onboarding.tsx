@@ -1,5 +1,6 @@
 'use client'
 
+import { useRouter } from 'next/navigation'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import { track } from '@vercel/analytics'
@@ -102,12 +103,13 @@ function analytics(name: string, properties?: Record<string, string | number>) {
 }
 
 export function Onboarding() {
+  const router = useRouter()
   const [draft, setDraft] = useState<OnboardingDraft>(EMPTY)
   const [hydrated, setHydrated] = useState(false)
   const [storageAvailable, setStorageAvailable] = useState(true)
   const [error, setError] = useState('')
   const [blocked, setBlocked] = useState<'illegal' | 'self-harm'>('illegal')
-  const [dialog, setDialog] = useState<'checkout' | 'restart' | null>(null)
+  const [dialog, setDialog] = useState<'restart' | null>(null)
   const [slow, setSlow] = useState(false)
   const dialogRef = useRef<HTMLDialogElement>(null)
   const customRef = useRef<HTMLTextAreaElement>(null)
@@ -359,7 +361,7 @@ export function Onboarding() {
   }
 
   function checkout() {
-    setDialog('checkout')
+    router.push(`/sonhos?pacote=${draft.pack}&origem=comecar`)
     analytics('begin_offer_interest', { dreams: draft.pack })
   }
   const category = CATEGORIES.find((item) => item.id === draft.answers.category)
@@ -811,29 +813,9 @@ export function Onboarding() {
           <span className="dialog-flower">
             <Sprout size={32} strokeWidth={1.4} />
           </span>
-          <span className="begin-eyebrow">
-            {dialog === 'restart'
-              ? 'UM NOVO COMEÇO'
-              : 'ESTAMOS PREPARANDO TUDO'}
-          </span>
-          <h2 id="begin-dialog-title">
-            {dialog === 'restart'
-              ? 'Espaço para outro sonho?'
-              : 'Seu próximo capítulo está chegando.'}
-          </h2>
-          <p>
-            {dialog === 'restart'
-              ? 'Ao começar de novo, as respostas e a prévia deste sonho serão substituídas neste navegador.'
-              : 'A compra do planner completo estará disponível em breve. Por enquanto, aproveite seu primeiro passo gratuito. Nenhuma cobrança foi realizada.'}
-          </p>
-          {dialog === 'checkout' && (
-            <div className="dialog-selection">
-              <Check size={16} />{' '}
-              {draft.pack === 1
-                ? 'Seu interesse: 1 sonho'
-                : 'Seu interesse: 3 sonhos'}
-            </div>
-          )}
+          <span className="begin-eyebrow">UM NOVO COMEÇO</span>
+          <h2 id="begin-dialog-title">Espaço para outro sonho?</h2>
+          <p>Ao começar de novo, as respostas e a prévia deste sonho serão substituídas neste navegador.</p>
           <button
             className="begin-primary"
             onClick={() => {
