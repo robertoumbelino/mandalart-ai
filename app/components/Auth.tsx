@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react'
 import { BrandIcon, BrandWordmark } from './Brand'
+import Image from 'next/image'
 import Link from 'next/link'
 import { Mail, Lock, LogIn, UserPlus, Loader2 } from 'lucide-react'
 import { getCurrentUser, login, register } from '@/actions/auth'
@@ -99,7 +100,7 @@ export const Auth: React.FC<AuthProps> = ({ onLogin }) => {
           {mode !== 'forgot' && (
             <>
               <button type="button" onClick={handleGoogle} disabled={loading} className="w-full min-h-11 rounded-full border border-slate-300 bg-white px-4 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-60 flex items-center justify-center gap-3">
-                <span aria-hidden="true" className="text-base font-black text-blue-600">G</span>
+                <Image src="/google-g.png" alt="" aria-hidden="true" width={20} height={21} className="h-auto w-5 shrink-0" />
                 Continuar com Google
               </button>
               <div className="my-6 flex items-center gap-3" aria-hidden="true">
