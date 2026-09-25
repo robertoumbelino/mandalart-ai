@@ -1,8 +1,8 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
-import { BrandIcon, BrandLogo, BrandWordmark } from '@/app/components/Brand';
-import { ArrowRight, Sparkles, BrainCircuit, Loader2, History, X, Trash2, Calendar, LogOut } from 'lucide-react';
+import { BrandLogo } from '@/app/components/Brand';
+import { ArrowRight, Sparkles, BrainCircuit, Loader2, History, X, Trash2, Calendar, LogOut, Check, Compass, ListChecks } from 'lucide-react';
 import { generateQuestions } from '@/actions/ai';
 import { MandalartData, Question, AppStep, GoalSafetyCategory, InterviewAnswer, HistoryItem, User } from '@/types';
 import { MandalartView } from '@/app/components/MandalartView';
@@ -15,6 +15,7 @@ import { useRouter } from 'next/navigation';
 import { generateDream, getDreamGeneration, getDreamWallet } from '@/actions/dreams';
 import { DRAFT_STORAGE_KEY, restoreDraft, answersSchema, getAnswerContext } from '@/lib/onboarding';
 import { getJourneyProgress } from '@/lib/journey';
+import './home.css';
 
 const GENERATION_MESSAGES = [
   {
@@ -73,6 +74,7 @@ export default function Home() {
   const historyButtonRef = useRef<HTMLButtonElement>(null);
   const historyDrawerRef = useRef<HTMLDivElement>(null);
   const historyCloseButtonRef = useRef<HTMLButtonElement>(null);
+  const goalInputRef = useRef<HTMLInputElement>(null);
   const pendingMandalartUpdateRef = useRef<{
     id: string;
     data: MandalartData;
@@ -461,35 +463,33 @@ export default function Home() {
   }
 
   return (
-    <div className="min-h-screen relative flex flex-col text-gray-900 overflow-x-hidden">
-      <div className="fixed top-0 left-0 right-0 p-3 sm:p-6 flex justify-between items-start z-40">
-        <div>
-          {step !== 'input' && (
-            <button 
-              onClick={handleReset}
-              aria-label="Voltar ao início"
-              className="flex items-center gap-2 bg-white/80 backdrop-blur shadow-sm px-4 py-2 rounded-full border border-gray-100 hover:bg-white transition group"
-            >
-              <span className="sm:hidden"><BrandIcon size={22} /></span><span className="hidden sm:inline text-sm"><BrandLogo iconSize={22} /></span>
+    <div className={`min-h-screen relative flex flex-col text-gray-900 overflow-x-hidden ${step === 'input' ? 'home-screen' : ''}`}>
+      <header className="home-header">
+        <div className="home-header-inner">
+          {step === 'input' ? (
+            <div className="home-header-brand" aria-label="Mandalart.AI"><BrandLogo iconSize={28} /></div>
+          ) : (
+            <button onClick={handleReset} aria-label="Voltar ao início" className="home-header-brand home-header-brand-button">
+              <BrandLogo iconSize={28} />
             </button>
           )}
-        </div>
 
-        <div className="flex items-center gap-2">
-          <Link href="/sonhos" className={`${needsDreams ? 'brand-button text-white' : 'bg-white border border-indigo-100 text-indigo-700'} shadow-sm rounded-full px-4 py-2 text-xs sm:text-sm font-semibold min-h-12 flex items-center justify-center gap-2`} aria-label={needsDreams ? 'Comprar sonhos' : 'Ver saldo e comprar sonhos'}>
-            <span className={needsDreams ? undefined : 'brand-text'}>{needsDreams ? 'Comprar sonhos' : wallet ? `${wallet.balance} ${wallet.balance === 1 ? 'sonho' : 'sonhos'}` : 'Meus sonhos'}</span>
-            {needsDreams && <ArrowRight size={15} aria-hidden="true" />}
-          </Link>
+          <nav className="home-header-actions" aria-label="Sua conta">
+            <Link href="/sonhos" className={`home-wallet-link ${needsDreams ? 'home-wallet-empty' : ''}`} aria-label={needsDreams ? 'Comprar sonhos' : 'Ver saldo e comprar sonhos'}>
+              <Sparkles size={16} aria-hidden="true" />
+              <span>{needsDreams ? 'Comprar sonhos' : wallet ? `${wallet.balance} ${wallet.balance === 1 ? 'sonho disponível' : 'sonhos disponíveis'}` : 'Meus sonhos'}</span>
+              <ArrowRight size={15} aria-hidden="true" />
+            </Link>
           <button
             ref={historyButtonRef}
             onClick={() => {
               setIsUserMenuOpen(false);
               setIsHistoryOpen(true);
             }}
-            className="bg-white hover:bg-gray-50 text-gray-600 hover:text-indigo-600 shadow-md border border-gray-100 p-3 rounded-full transition-all relative group"
+            className="home-icon-button relative"
             aria-label="Abrir histórico"
           >
-            <History className="w-6 h-6" />
+            <History size={20} />
             {history.length > 0 && (
               <span className="absolute top-0 right-0 w-3 h-3 bg-indigo-500 rounded-full border-2 border-white transform translate-x-1 -translate-y-1"></span>
             )}
@@ -502,7 +502,7 @@ export default function Home() {
               aria-label="Abrir menu da conta"
               aria-expanded={isUserMenuOpen}
               aria-haspopup="menu"
-              className="w-12 h-12 rounded-full bg-white text-indigo-700 border border-gray-100 shadow-md flex items-center justify-center text-sm font-black uppercase hover:bg-gray-50 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2"
+              className="home-icon-button home-avatar"
             >
               {user.name.trim().charAt(0) || user.email.charAt(0)}
             </button>
@@ -532,8 +532,9 @@ export default function Home() {
               </div>
             )}
           </div>
+          </nav>
         </div>
-      </div>
+      </header>
 
       {isHistoryOpen && (
         <div className="fixed inset-0 bg-black/20 backdrop-blur-sm z-50 transition-opacity" onClick={() => setIsHistoryOpen(false)} />
@@ -586,66 +587,82 @@ export default function Home() {
         </div>
       </div>
 
-      <main className="flex-grow flex flex-col items-center justify-center px-4 pb-4 pt-24 sm:p-8 w-full">
+      <main className={step === 'input' ? 'home-main' : 'flex-grow flex flex-col items-center justify-center px-4 pb-8 pt-8 sm:p-8 w-full'}>
         {step === 'input' && (
-          <div className="w-full max-w-3xl mx-auto text-center space-y-10 animate-in fade-in slide-in-from-bottom-8 duration-1000">
-            <div className="space-y-6">
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white border border-indigo-100 text-indigo-600 text-xs font-semibold uppercase tracking-wider shadow-sm mb-4">
-                <Sparkles size={14} />
-                <span>Powered by AI</span>
+          <div className="home-content">
+            <section className="home-hero" aria-labelledby="home-title">
+              <div className="home-hero-copy">
+                <span className="home-eyebrow"><Sparkles size={16} /> SEU ESPAÇO PARA COMEÇAR</span>
+                <h1 id="home-title">Seu sonho pode virar <span className="brand-text">um plano possível.</span></h1>
+                <p className="home-lead">Dê nome ao que você quer viver. A gente ajuda a organizar o caminho em passos claros, no seu ritmo.</p>
+
+                <div className="home-form-card">
+                  <form onSubmit={handleStart}>
+                    <label htmlFor="main-goal">Qual sonho você quer tirar do papel?</label>
+                    <input
+                      ref={goalInputRef}
+                      id="main-goal"
+                      type="text"
+                      value={mainGoal}
+                      onChange={(e) => {
+                        setMainGoal(e.target.value);
+                        if (!e.target.value.trim()) {
+                          try { sessionStorage.removeItem(`mandalart.interview.${user.id}`); } catch {}
+                        }
+                      }}
+                      maxLength={300}
+                      placeholder="Ex.: correr uma maratona"
+                      aria-describedby="home-goal-hint"
+                    />
+                    <button type="submit" disabled={processing || !mainGoal.trim()} className="home-submit brand-button">
+                      {processing ? <Loader2 className="animate-spin" size={20} /> : <>{needsDreams ? 'Continuar meu sonho' : 'Criar meu plano'} <ArrowRight size={19} /></>}
+                    </button>
+                  </form>
+                  <p id="home-goal-hint" className="home-form-hint">
+                    <Check size={15} aria-hidden="true" />
+                    {needsDreams ? 'Seu objetivo fica salvo para continuar depois de escolher seus sonhos.' : 'São só 3 perguntas para personalizar seu plano.'}
+                  </p>
+                </div>
+                {error && <p role="alert" className="home-error">{error}</p>}
+                <div className="home-examples">
+                  <span>Precisa de inspiração?</span>
+                  <div className="home-example-list">
+                    {['Correr uma maratona', 'Virar Tech Lead', 'Morar no exterior'].map(example => (
+                      <button key={example} type="button" onClick={() => { setMainGoal(example); goalInputRef.current?.focus(); }}>
+                        {example}<ArrowRight size={14} aria-hidden="true" />
+                      </button>
+                    ))}
+                  </div>
+                </div>
               </div>
-              <h1 className="text-5xl sm:text-7xl font-extrabold tracking-tighter text-gray-900 leading-[1.1]">
-                <BrandWordmark />
-              </h1>
-              <p className="text-xl sm:text-2xl text-gray-500 max-w-2xl mx-auto font-light leading-relaxed">
-                Transforme sonhos vagos em planos de ação concretos.
-              </p>
-            </div>
-            <div className="max-w-xl mx-auto">
-              <div className="bg-white p-2 rounded-3xl shadow-xl border border-gray-100/50">
-                <form onSubmit={handleStart} className="flex flex-col sm:flex-row gap-2 items-center mb-0">
-                  <input
-                    type="text"
-                    value={mainGoal}
-                    onChange={(e) => setMainGoal(e.target.value)}
-                    maxLength={300}
-                    placeholder="Qual é o seu objetivo principal?"
-                    aria-label="Qual é o seu objetivo principal?"
-                    aria-describedby={needsDreams ? 'dream-purchase-hint' : undefined}
-                    className="w-full sm:flex-grow px-4 sm:px-6 py-4 text-[15px] sm:text-lg bg-transparent outline-none text-gray-900 placeholder:text-gray-400"
-                    autoFocus
-                  />
-                  <button
-                    type="submit"
-                    disabled={processing || !mainGoal.trim()}
-                    className="w-full sm:w-auto px-8 py-4 brand-button text-white font-bold rounded-2xl transition-all shadow-lg flex items-center justify-center gap-2 text-lg whitespace-nowrap"
-                  >
-                    {processing ? <Loader2 className="animate-spin" /> : <>{needsDreams ? 'Continuar' : 'Iniciar'} <ArrowRight size={20} /></>}
-                  </button>
-                </form>
+
+              <div className="home-art" aria-hidden="true">
+                <div className="home-art-note"><span className="home-art-note-icon"><Compass size={18} /></span> Um caminho de cada vez</div>
+                <div className="home-plan-card">
+                  <div className="home-plan-top"><span>SEU MANDALART</span><Sparkles size={18} /></div>
+                  <div className="home-plan-grid">
+                    {['Aprender', 'Preparar', 'Explorar', 'Praticar', 'Seu sonho', 'Cuidar', 'Organizar', 'Conectar', 'Avançar'].map((item, index) => (
+                      <span key={item} className={index === 4 ? 'home-plan-center' : ''}>{item}</span>
+                    ))}
+                  </div>
+                  <p>Uma visão mais clara do que importa agora.</p>
+                </div>
+                <div className="home-art-progress"><span className="home-art-progress-icon"><Check size={18} /></span><span><strong>Pequenos passos</strong><br />Grandes possibilidades.</span></div>
               </div>
-              {needsDreams && (
-                <p id="dream-purchase-hint" className="mt-5 px-3 text-sm leading-relaxed text-slate-500">
-                  Escreva seu objetivo. No próximo passo, escolha um pacote de sonhos para criar seu planner.
-                  <span className="block mt-1 font-medium text-slate-600">Seu texto fica guardado para continuar após a compra.</span>
-                </p>
-              )}
-            </div>
-            {error && <p className="text-red-500 bg-red-50 p-3 rounded-lg inline-block">{error}</p>}
-            <div className="pt-8 grid grid-cols-1 sm:grid-cols-3 gap-4 max-w-3xl mx-auto w-full px-4">
-               <div onClick={() => setMainGoal("Correr uma maratona")} className="flex flex-col items-center gap-3 p-4 bg-white/80 backdrop-blur-sm rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-all cursor-pointer group">
-                  <span className="bg-orange-50 p-3 rounded-xl text-2xl group-hover:scale-110 transition-transform">🏃</span>
-                  <span className="font-medium text-gray-700">Correr uma maratona</span>
-               </div>
-               <div onClick={() => setMainGoal("Virar Tech Lead")} className="flex flex-col items-center gap-3 p-4 bg-white/80 backdrop-blur-sm rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-all cursor-pointer group">
-                  <span className="bg-blue-50 p-3 rounded-xl text-2xl group-hover:scale-110 transition-transform">💼</span>
-                  <span className="font-medium text-gray-700">Virar Tech Lead</span>
-               </div>
-               <div onClick={() => setMainGoal("Morar no exterior")} className="flex flex-col items-center gap-3 p-4 bg-white/80 backdrop-blur-sm rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-all cursor-pointer group">
-                  <span className="bg-purple-50 p-3 rounded-xl text-2xl group-hover:scale-110 transition-transform">✈️</span>
-                  <span className="font-medium text-gray-700">Morar no exterior</span>
-               </div>
-            </div>
+            </section>
+
+            <section className="home-how" aria-labelledby="home-how-title">
+              <div className="home-how-heading">
+                <span className="home-eyebrow">DO SONHO AO PLANO</span>
+                <h2 id="home-how-title">Um começo simples, feito com você.</h2>
+              </div>
+              <ol>
+                <li><span className="home-how-icon"><Compass size={21} /></span><div><span className="home-how-number">01</span><h3>Conte seu objetivo</h3><p>Escreva do seu jeito, mesmo que a ideia ainda esteja tomando forma.</p></div></li>
+                <li><span className="home-how-icon"><BrainCircuit size={21} /></span><div><span className="home-how-number">02</span><h3>Responda 3 perguntas</h3><p>Ajudam a entender seu momento e deixar o plano mais pessoal.</p></div></li>
+                <li><span className="home-how-icon"><ListChecks size={21} /></span><div><span className="home-how-number">03</span><h3>Avance no seu ritmo</h3><p>Veja seus próximos passos e acompanhe cada conquista.</p></div></li>
+              </ol>
+              <p className="home-how-note">O planner completo usa 1 sonho. Você pode escolher um pacote antes de criá-lo, sem assinatura.</p>
+            </section>
           </div>
         )}
 
@@ -654,7 +671,7 @@ export default function Home() {
         )}
         
         {step === 'interview' && (
-          <div className="w-full max-w-2xl mx-auto space-y-8 animate-in fade-in slide-in-from-right-8 duration-500 pt-24">
+          <div className="w-full max-w-2xl mx-auto space-y-8 animate-in fade-in slide-in-from-right-8 duration-500">
             <div className="text-center space-y-2">
                <div className="bg-purple-100 p-3 rounded-full inline-block"><BrainCircuit className="w-8 h-8 text-purple-600" /></div>
                <h2 className="brand-text text-2xl font-bold">{previewId ? 'Seu próximo capítulo' : 'Entendendo Melhor'}</h2>
@@ -704,7 +721,7 @@ export default function Home() {
         )}
 
         {step === 'result' && mandalartData && (
-          <div className="pt-24 w-full flex flex-col items-center gap-3">
+          <div className="w-full flex flex-col items-center gap-3">
             {progressSaveError && (
               <div role="alert" className="mx-4 flex max-w-2xl items-center gap-3 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900 shadow-sm">
                 <span className="flex-1">{progressSaveError}</span>
@@ -727,11 +744,6 @@ export default function Home() {
         )}
       </main>
 
-      {step === 'input' && (
-        <footer className="py-6 text-center text-gray-400 text-sm">
-          <p>Experimente o poder do planejamento estruturado.</p>
-        </footer>
-      )}
     </div>
   );
 }
