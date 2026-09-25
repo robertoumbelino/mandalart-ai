@@ -1,47 +1,18 @@
 'use server'
 
 import bcrypt from 'bcryptjs'
-import jwt from 'jsonwebtoken'
-import { randomUUID } from 'node:crypto'
-import { OAuth2Client } from 'google-auth-library'
-import { cookies } from 'next/headers'
+import { auth } from '@/lib/auth/server'
 import { getDb } from '@/lib/db'
-import { credentialsSchema, googleLoginSchema } from '@/lib/validation'
+import { credentialsSchema } from '@/lib/validation'
 import type { User } from '@/types'
 
-const TOKEN_COOKIE = 'mandalart_token'
-const TOKEN_ISSUER = 'mandalart-ai'
-const TOKEN_AUDIENCE = 'mandalart-web'
-const TOKEN_MAX_AGE = 60 * 60 * 24 * 7
-
-type UserRow = {
+type UserRow = { id: string; email: string; name: string; avatar: string | null }
+type AuthProfile = {
   id: string
   email: string
   name: string
-  avatar: string | null
-  password_hash?: string | null
-}
-
-type GoogleProfile = {
-  subject: string
-  email: string
-  name: string
-  avatar: string | null
-}
-
-export type GoogleLoginResult =
-  | { status: 'authenticated'; user: User }
-  | { status: 'password_required'; email: string }
-  | { status: 'link_error'; message: string }
-
-const googleClient = new OAuth2Client()
-
-const getJwtSecret = () => {
-  const secret = process.env.JWT_SECRET
-  if (!secret || secret.length < 32) {
-    throw new Error('JWT_SECRET deve ter pelo menos 32 caracteres.')
-  }
-  return secret
+  image?: string | null
+  emailVerified: boolean
 }
 
 const toUser = (row: UserRow): User => ({
@@ -51,247 +22,129 @@ const toUser = (row: UserRow): User => ({
   avatar: row.avatar || undefined
 })
 
-const createSession = async (userId: string) => {
-  const token = jwt.sign({ userId }, getJwtSecret(), {
-    expiresIn: TOKEN_MAX_AGE,
-    issuer: TOKEN_ISSUER,
-    audience: TOKEN_AUDIENCE
-  })
-  const cookieStore = await cookies()
-  cookieStore.set(TOKEN_COOKIE, token, {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'lax',
-    path: '/',
-    maxAge: TOKEN_MAX_AGE
-  })
-}
-
-const getGoogleClientId = () => {
-  const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID
-  if (!clientId) {
-    throw new Error('Login com Google não está configurado.')
-  }
-  return clientId
-}
-
-const verifyGoogleCredential = async (credential: string): Promise<GoogleProfile> => {
-  const ticket = await googleClient.verifyIdToken({
-    idToken: credential,
-    audience: getGoogleClientId()
-  })
-  const payload = ticket.getPayload()
-
-  if (!payload?.sub || !payload.email || payload.email_verified !== true) {
-    throw new Error('A conta Google não possui um e-mail verificado.')
-  }
-
-  const email = payload.email.trim().toLowerCase()
-  const fallbackName = email.split('@')[0]
-
-  return {
-    subject: payload.sub,
-    email,
-    name: (payload.name?.trim() || fallbackName).slice(0, 255),
-    avatar: payload.picture || null
-  }
-}
-
-const findUserByGoogleSubject = async (subject: string) => {
+const linkedUser = async (authUserId: string): Promise<UserRow | null> => {
   const sql = getDb()
-  const users = await sql`
-    SELECT u.id, u.email, u.name, u.avatar, u.password_hash
-    FROM user_identities identity
-    JOIN users u ON u.id = identity.user_id
-    WHERE identity.provider = 'google'
-      AND identity.provider_account_id = ${subject}
-    LIMIT 1
-  ` as UserRow[]
-  return users[0] || null
-}
-
-const findUserByEmail = async (email: string) => {
-  const sql = getDb()
-  const users = await sql`
-    SELECT id, email, name, avatar, password_hash
-    FROM users
-    WHERE LOWER(email) = ${email}
-    LIMIT 1
-  ` as UserRow[]
-  return users[0] || null
-}
-
-const linkGoogleIdentity = async (user: UserRow, profile: GoogleProfile) => {
-  const sql = getDb()
-  const identities = await sql`
-    INSERT INTO user_identities (user_id, provider, provider_account_id, email)
-    VALUES (${user.id}, 'google', ${profile.subject}, ${profile.email})
-    ON CONFLICT (provider, provider_account_id)
-    DO UPDATE SET email = EXCLUDED.email, last_used_at = NOW()
-    RETURNING user_id
-  ` as Array<{ user_id: string }>
-
-  if (identities[0]?.user_id !== user.id) {
-    throw new Error('Esta conta Google já está vinculada a outra conta.')
-  }
-
-  if (!user.avatar && profile.avatar) {
-    await sql`UPDATE users SET avatar = ${profile.avatar} WHERE id = ${user.id}`
-    user.avatar = profile.avatar
-  }
-
-  return user
-}
-
-const createGoogleUser = async (profile: GoogleProfile) => {
-  const sql = getDb()
-  const userId = randomUUID()
-  const results = await sql.transaction(transaction => [
-    transaction`
-      INSERT INTO users (id, email, name, password_hash, avatar)
-      VALUES (${userId}, ${profile.email}, ${profile.name}, NULL, ${profile.avatar})
-      RETURNING id, email, name, avatar, password_hash
-    `,
-    transaction`
-      INSERT INTO user_identities (user_id, provider, provider_account_id, email)
-      VALUES (${userId}, 'google', ${profile.subject}, ${profile.email})
-    `
-  ])
-
-  return (results[0] as UserRow[])[0]
-}
-
-export const login = async (rawEmail: string, rawPassword: string): Promise<User> => {
-  const { email, password } = credentialsSchema.parse({
-    email: rawEmail,
-    password: rawPassword
-  })
-  const sql = getDb()
-  const users = await sql`
-    SELECT id, email, name, avatar, password_hash
-    FROM users
-    WHERE email = ${email}
-    LIMIT 1
-  ` as UserRow[]
-  const user = users[0]
-
-  if (!user?.password_hash || !(await bcrypt.compare(password, user.password_hash))) {
-    throw new Error('E-mail ou senha inválidos.')
-  }
-
-  await createSession(user.id)
-  return toUser(user)
-}
-
-export const register = async (rawEmail: string, rawPassword: string): Promise<User> => {
-  const { email, password } = credentialsSchema.parse({
-    email: rawEmail,
-    password: rawPassword
-  })
-  const sql = getDb()
-  const existing = await sql`
-    SELECT id FROM users WHERE email = ${email} LIMIT 1
-  ` as Array<{ id: string }>
-
-  if (existing.length > 0) {
-    throw new Error('Já existe uma conta com este e-mail.')
-  }
-
-  const passwordHash = await bcrypt.hash(password, 12)
-  const name = email.split('@')[0].slice(0, 80)
   const rows = await sql`
-    INSERT INTO users (email, name, password_hash)
-    VALUES (${email}, ${name}, ${passwordHash})
+    SELECT u.id, u.email, u.name, u.avatar
+    FROM auth_user_links link
+    JOIN users u ON u.id = link.user_id
+    WHERE link.auth_user_id = ${authUserId}::uuid
+    LIMIT 1
+  ` as UserRow[]
+  return rows[0] || null
+}
+
+const saveLink = async (authUserId: string, userId: string): Promise<UserRow> => {
+  const sql = getDb()
+  await sql`
+    INSERT INTO auth_user_links (auth_user_id, user_id)
+    VALUES (${authUserId}::uuid, ${userId}::uuid)
+    ON CONFLICT (auth_user_id) DO NOTHING
+  `
+  const linked = await linkedUser(authUserId)
+  if (!linked || linked.id !== userId) {
+    throw new Error('Esta identidade já está vinculada a outra conta.')
+  }
+  return linked
+}
+
+const resolveUser = async (profile: AuthProfile): Promise<User | null> => {
+  const existingLink = await linkedUser(profile.id)
+  if (existingLink) return toUser(existingLink)
+
+  const sql = getDb()
+  const { data: accounts, error: accountsError } = await auth.listAccounts()
+  if (accountsError) throw new Error('Não foi possível verificar as identidades da conta.')
+  const subject = accounts?.find(account => account.providerId === 'google')?.accountId
+
+  if (subject) {
+    const legacy = await sql`
+      SELECT u.id, u.email, u.name, u.avatar
+      FROM user_identities identity
+      JOIN users u ON u.id = identity.user_id
+      WHERE identity.provider = 'google'
+        AND identity.provider_account_id = ${subject}
+      LIMIT 1
+    ` as UserRow[]
+    if (legacy[0]) return toUser(await saveLink(profile.id, legacy[0].id))
+  }
+
+  // Um e-mail ainda não verificado nunca pode assumir uma conta antiga.
+  const matchedEmail = await sql`
+    SELECT id, email, name, avatar FROM users
+    WHERE LOWER(email) = ${profile.email.toLowerCase()}
+    LIMIT 1
+  ` as UserRow[]
+  if (matchedEmail[0]) {
+    // Um Google subject diferente não pode assumir uma identidade Google existente.
+    if (subject && matchedEmail[0].id !== profile.id) return null
+    if (!profile.emailVerified) return null
+    return toUser(await saveLink(profile.id, matchedEmail[0].id))
+  }
+
+  const newUsers = await sql`
+    INSERT INTO users (id, email, name, avatar, password_hash)
+    VALUES (${profile.id}::uuid, ${profile.email.toLowerCase()}, ${profile.name}, ${profile.image || null}, NULL)
+    ON CONFLICT DO NOTHING
     RETURNING id, email, name, avatar
   ` as UserRow[]
-  const user = rows[0]
+  const created = newUsers[0]
+  if (!created) return null
 
-  await createSession(user.id)
-  return toUser(user)
-}
-
-export const loginWithGoogle = async (
-  rawCredential: string,
-  rawLinkingPassword?: string
-): Promise<GoogleLoginResult> => {
-  const { credential, linkingPassword } = googleLoginSchema.parse({
-    credential: rawCredential,
-    linkingPassword: rawLinkingPassword || undefined
-  })
-  const profile = await verifyGoogleCredential(credential)
-
-  let user = await findUserByGoogleSubject(profile.subject)
-
-  if (user) {
-    const sql = getDb()
+  if (subject) {
     await sql`
-      UPDATE user_identities
-      SET email = ${profile.email}, last_used_at = NOW()
-      WHERE provider = 'google' AND provider_account_id = ${profile.subject}
+      INSERT INTO user_identities (user_id, provider, provider_account_id, email)
+      VALUES (${created.id}::uuid, 'google', ${subject}, ${profile.email.toLowerCase()})
+      ON CONFLICT (provider, provider_account_id) DO NOTHING
     `
-  } else {
-    user = await findUserByEmail(profile.email)
-
-    if (user) {
-      if (!user.password_hash) {
-        return {
-          status: 'link_error',
-          message: 'Não foi possível confirmar a conta existente para vinculá-la.'
-        }
-      }
-      if (!linkingPassword) {
-        return { status: 'password_required', email: profile.email }
-      }
-      if (!(await bcrypt.compare(linkingPassword, user.password_hash))) {
-        return {
-          status: 'link_error',
-          message: 'Senha incorreta. A conta Google ainda não foi vinculada.'
-        }
-      }
-
-      user = await linkGoogleIdentity(user, profile)
-    } else {
-      try {
-        user = await createGoogleUser(profile)
-      } catch {
-        // Uma requisição concorrente pode ter criado a conta entre a consulta e o insert.
-        user = await findUserByGoogleSubject(profile.subject)
-        if (!user) throw new Error('Não foi possível criar a conta com Google.')
-      }
-    }
   }
-
-  await createSession(user.id)
-  return { status: 'authenticated', user: toUser(user) }
+  return toUser(await saveLink(profile.id, created.id))
 }
 
 export const getCurrentUser = async (): Promise<User | null> => {
-  const cookieStore = await cookies()
-  const token = cookieStore.get(TOKEN_COOKIE)?.value
-  if (!token) return null
+  const { data: session, error } = await auth.getSession()
+  if (error || !session?.user?.email) return null
+  return resolveUser({ ...session.user, email: session.user.email })
+}
 
-  try {
-    const decoded = jwt.verify(token, getJwtSecret(), {
-      issuer: TOKEN_ISSUER,
-      audience: TOKEN_AUDIENCE
-    }) as jwt.JwtPayload
-    if (typeof decoded.userId !== 'string') return null
+export const login = async (rawEmail: string, rawPassword: string): Promise<void> => {
+  const { email, password } = credentialsSchema.parse({ email: rawEmail, password: rawPassword })
+  const signedIn = await auth.signIn.email({ email, password })
+  if (!signedIn.error) return
 
-    const sql = getDb()
-    const users = await sql`
-      SELECT id, email, name, avatar
-      FROM users
-      WHERE id = ${decoded.userId}
-      LIMIT 1
-    ` as UserRow[]
-
-    return users[0] ? toUser(users[0]) : null
-  } catch {
-    return null
+  // Migra a senha antiga quando o titular a comprovar no primeiro acesso.
+  const sql = getDb()
+  const legacy = await sql`
+    SELECT id, email, name, avatar, password_hash
+    FROM users WHERE LOWER(email) = ${email} LIMIT 1
+  ` as Array<UserRow & { password_hash: string | null }>
+  const oldUser = legacy[0]
+  if (!oldUser?.password_hash || !(await bcrypt.compare(password, oldUser.password_hash))) {
+    throw new Error('E-mail ou senha inválidos.')
   }
+
+  const migrated = await auth.signUp.email({ email, name: oldUser.name, password })
+  if (migrated.error || !migrated.data?.user) {
+    throw new Error('Entre com Google e redefina sua senha para continuar.')
+  }
+  await saveLink(migrated.data.user.id, oldUser.id)
+}
+
+export const register = async (rawEmail: string, rawPassword: string): Promise<void> => {
+  const { email, password } = credentialsSchema.parse({ email: rawEmail, password: rawPassword })
+  const sql = getDb()
+  const existing = await sql`SELECT id FROM users WHERE LOWER(email) = ${email} LIMIT 1`
+  if (existing.length) throw new Error('Já existe uma conta com este e-mail.')
+
+  const created = await auth.signUp.email({
+    email,
+    name: email.split('@')[0].slice(0, 80),
+    password
+  })
+  if (created.error) throw new Error(created.error.message || 'Não foi possível criar a conta.')
 }
 
 export const logout = async (): Promise<void> => {
-  const cookieStore = await cookies()
-  cookieStore.delete(TOKEN_COOKIE)
+  const result = await auth.signOut()
+  if (result.error) throw new Error('Não foi possível encerrar a sessão.')
 }

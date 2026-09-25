@@ -3,7 +3,6 @@ import {
   credentialsSchema,
   generatedMandalartSchema,
   goalSafetyOutputSchema,
-  googleLoginSchema,
   mandalartDataSchema,
   questionsOutputSchema
 } from './validation'
@@ -84,11 +83,4 @@ describe('credentials schema', () => {
       .toBe(false)
   })
 
-  it('accepts a Google ID token and validates an optional linking password', () => {
-    const credential = 'header.payload.signature'.repeat(10)
-
-    expect(googleLoginSchema.safeParse({ credential }).success).toBe(true)
-    expect(googleLoginSchema.safeParse({ credential, linkingPassword: 'short' }).success)
-      .toBe(false)
-  })
 })

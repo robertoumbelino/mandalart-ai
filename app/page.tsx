@@ -9,6 +9,7 @@ import { MandalartView } from '@/app/components/MandalartView';
 import { Auth } from '@/app/components/Auth';
 import { SafetyNotice } from '@/app/components/SafetyNotice';
 import { getCurrentUser, logout } from '@/actions/auth';
+import { authClient } from '@/lib/auth/client';
 import { getHistory, updateMandalart, deleteMandalart } from '@/actions/mandalarts';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -85,6 +86,9 @@ export default function Home() {
     let active = true;
     const load = async () => {
       try {
+        if (new URLSearchParams(window.location.search).has('neon_auth_session_verifier')) {
+          await authClient.getSession();
+        }
         const currentUser = await getCurrentUser();
         if (!active || !currentUser) return;
         activeUserIdRef.current = currentUser.id;
