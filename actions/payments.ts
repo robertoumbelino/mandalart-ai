@@ -12,6 +12,8 @@ import { DREAM_PACKS } from '@/lib/dream-packs'
 import { idSchema } from '@/lib/validation'
 import { reconcileCheckout, type DreamOrder } from '@/lib/payments'
 
+type CheckoutProvider = 'stripe' | 'kiwify'
+
 export async function getPaymentOptions() {
   try {
     const config = billingConfig()
@@ -26,10 +28,16 @@ export async function getPaymentOptions() {
         (await getStripe().accounts.retrieve(null)).charges_enabled)
     return {
       available: enabled,
+      provider: 'stripe' as CheckoutProvider,
       ...config,
     }
   } catch {
-    return { available: false, mode: 'test' as const, pix: false }
+    return {
+      available: false,
+      provider: 'stripe' as CheckoutProvider,
+      mode: 'test' as const,
+      pix: false,
+    }
   }
 }
 export async function startDreamCheckout(

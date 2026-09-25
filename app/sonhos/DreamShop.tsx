@@ -21,10 +21,16 @@ import {
   getPaymentOptions,
   startDreamCheckout,
 } from '@/actions/payments'
+import {
+  checkOnboardingPayment,
+  getOnboardingPaymentOptions,
+  startOnboardingCheckout,
+} from '@/actions/onboarding-checkout'
 import { DREAM_PACKS, type DreamPack } from '@/lib/dream-packs'
 import type { User } from '@/types'
 
 type Wallet = Awaited<ReturnType<typeof getDreamWallet>>
+const KIWIFY_ORDER_KEY = 'mandalart_kiwify_order'
 const transactionLabels: Record<string, string> = {
   purchase: 'Sonhos recebidos',
   payment_reversed: 'Ajuste por reembolso ou contestação',
@@ -43,6 +49,7 @@ export function DreamShop() {
   const [pack, setPack] = useState<DreamPack>(1)
   const [source, setSource] = useState<'comecar' | 'account'>('account')
   const [sessionId, setSessionId] = useState<string | null>(null)
+  const [kiwifyOrderId, setKiwifyOrderId] = useState<string | null>(null)
   const [paymentStatus, setPaymentStatus] = useState<string | null>(null)
   const [cancelled, setCancelled] = useState(false)
   const [busy, setBusy] = useState(false)
@@ -52,12 +59,23 @@ export function DreamShop() {
   useEffect(() => {
     let active = true
     const params = new URLSearchParams(window.location.search)
-    Promise.all([getCurrentUser(), getPaymentOptions()])
+    const fromOnboarding = params.get('origem') === 'comecar'
+    Promise.all([
+      getCurrentUser(),
+      fromOnboarding ? getOnboardingPaymentOptions() : getPaymentOptions(),
+    ])
       .then(([current, config]) => {
         if (active) {
           setPack(params.get('pacote') === '3' ? 3 : 1)
           setSource(params.get('origem') === 'comecar' ? 'comecar' : 'account')
           setSessionId(params.get('session_id'))
+          if (fromOnboarding && !params.has('session_id')) {
+            try {
+              setKiwifyOrderId(sessionStorage.getItem(KIWIFY_ORDER_KEY))
+            } catch {
+              // O saldo continua disponível mesmo sem armazenamento no navegador.
+            }
+          }
           setCancelled(params.has('cancelado'))
           setUser(current)
           setOptions(config)
@@ -89,6 +107,12 @@ export function DreamShop() {
           if (payment?.source === 'comecar') setSource('comecar')
           if (payment?.status === 'pending' && ++attempts < 40)
             timer = setTimeout(sync, 3000)
+        } else if (kiwifyOrderId) {
+          const payment = await checkOnboardingPayment(kiwifyOrderId)
+          if (!active) return
+          setPaymentStatus(payment.status)
+          if (payment.status === 'pending' && ++attempts < 40)
+            timer = setTimeout(sync, 3000)
         }
         const current = await getDreamWallet()
         if (active) {
@@ -107,7 +131,7 @@ export function DreamShop() {
       active = false
       clearTimeout(timer)
     }
-  }, [user, sessionId])
+  }, [user, sessionId, kiwifyOrderId])
 
   async function buy() {
     if (busy) return
@@ -118,11 +142,17 @@ export function DreamShop() {
         ? request.current
         : { id: crypto.randomUUID(), pack }
     try {
-      const checkout = await startDreamCheckout(
-        pack,
-        request.current.id,
-        source,
-      )
+      const checkout =
+        source === 'comecar'
+          ? await startOnboardingCheckout(pack, request.current.id)
+          : await startDreamCheckout(pack, request.current.id)
+      if (source === 'comecar' && options?.provider === 'kiwify') {
+        try {
+          sessionStorage.setItem(KIWIFY_ORDER_KEY, request.current.id)
+        } catch {
+          // O webhook associa a compra à conta; o retorno só perde a consulta rápida.
+        }
+      }
       window.location.assign(checkout.url)
     } catch {
       request.current = null
@@ -162,7 +192,8 @@ export function DreamShop() {
 
   const success = paymentStatus === 'paid'
   const balance = Math.max(0, wallet?.balance || 0)
-  const showShop = !sessionId || ['refunded', 'disputed', 'expired', 'failed'].includes(paymentStatus || '')
+  const hasPayment = Boolean(sessionId || kiwifyOrderId)
+  const showShop = !hasPayment || ['refunded', 'disputed', 'expired', 'failed'].includes(paymentStatus || '')
   return (
     <main className="dream-shop">
       <header className="shop-header">
@@ -188,7 +219,7 @@ export function DreamShop() {
             quiser.
           </p>
         )}
-        {sessionId && (
+        {hasPayment && (
           <section className="shop-payment" aria-live="polite">
             <span className="shop-symbol">
               {success ? <Check size={28} /> : <CreditCard size={28} />}
@@ -210,7 +241,7 @@ export function DreamShop() {
               {success
                 ? 'Seus sonhos foram adicionados à sua conta. Agora você pode transformar seu objetivo em um plano possível.'
                 : paymentStatus === 'pending' || !paymentStatus
-                  ? 'Os créditos aparecem assim que o Stripe confirma o pagamento. Você pode voltar depois; eles ficam na sua conta.'
+                  ? `Os créditos aparecem assim que ${kiwifyOrderId ? 'a Kiwify' : 'o Stripe'} confirma o pagamento. Você pode voltar depois; eles ficam na sua conta.`
                   : 'O saldo abaixo já considera a situação desta compra.'}
             </p>
             {success && (
@@ -226,6 +257,22 @@ export function DreamShop() {
                 Comprar mais sonhos
               </a>
             )}
+            {kiwifyOrderId && !success && paymentStatus === 'pending' && (
+              <button
+                className="shop-more-link"
+                onClick={() => {
+                  try {
+                    sessionStorage.removeItem(KIWIFY_ORDER_KEY)
+                  } catch {
+                    // O pedido continua associado à conta.
+                  }
+                  setKiwifyOrderId(null)
+                  setPaymentStatus(null)
+                }}
+              >
+                Voltar aos pacotes
+              </button>
+            )}
           </section>
         )}
         {showShop && (
@@ -234,7 +281,7 @@ export function DreamShop() {
               <span className="shop-eyebrow">
                 UM PASSO NA DIREÇÃO DO QUE IMPORTA
               </span>
-              {!sessionId && (
+              {!hasPayment && (
                 <h1>
                   Seus sonhos merecem
                   <br />
@@ -337,8 +384,10 @@ export function DreamShop() {
                 )}
               </button>
               <p>
-                <ShieldCheck size={15} /> Checkout seguro pelo Stripe ·{' '}
-                {options?.pix ? 'Cartão de crédito e Pix' : 'Cartão de crédito'}
+                <ShieldCheck size={15} /> Checkout seguro pela{' '}
+                {options?.provider === 'kiwify' ? 'Kiwify' : 'Stripe'}
+                {options?.provider !== 'kiwify' &&
+                  ` · ${options?.pix ? 'Cartão de crédito e Pix' : 'Cartão de crédito'}`}
               </p>
               <small>
                 Pagamento único. Sem assinatura. Cada novo planner usa 1 sonho.

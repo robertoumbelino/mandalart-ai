@@ -323,6 +323,9 @@
   font-size: 13px;
   text-decoration: underline;
   text-underline-offset: 4px;
+  background: none;
+  border: 0;
+  cursor: pointer;
 }
 .shop-more-link:hover {
   color: var(--brand-start);

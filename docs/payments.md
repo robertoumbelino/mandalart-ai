@@ -2,6 +2,18 @@
 
 O saldo pertence à conta, independentemente do provedor de pagamento. Hoje o Stripe confirma compras; a Kiwify poderá usar o mesmo domínio de pedidos e créditos quando for integrada.
 
+## Kiwify para novos visitantes de `/comecar`
+
+O CTA do `/comecar` consulta a sessão no clique. Quem já está logado vai ao checkout Stripe da conta; visitantes passam por `actions/onboarding-checkout.ts`, que por enquanto também chama o Stripe. A compra iniciada diretamente em `/sonhos` continua no Stripe.
+
+O checkout Kiwify fica desativado com `KIWIFY_ONBOARDING_ENABLED=false`. Configure os links completos das ofertas de 1 e 3 sonhos em `KIWIFY_CHECKOUT_ONE` e `KIWIFY_CHECKOUT_THREE` quando o produto for compartilhado. Cada oferta tem seu próprio link; use o link de afiliado com `afid` quando aplicável. `lib/kiwify-checkout.ts` preserva `afid` e outros parâmetros, acrescenta `email` e usa `sck` para o UUID do pedido; caso o link original já tenha `sck`, esse valor será substituído. Também são necessários `KIWIFY_PRODUCT_ID` e `KIWIFY_WEBHOOK_TOKEN`. Configurar esses valores por si só não altera o checkout ativo.
+
+`POST /api/kiwify/webhook` confere a assinatura HMAC-SHA1 sobre o JSON, como descrito pela Kiwify, e só concilia eventos cujo `sck`, ID do produto, link da oferta, valor e moeda correspondem a um pedido local Kiwify. A migration 005 adiciona o ID externo da venda com unicidade. A mesma função de carteira do Stripe garante idempotência e reversão em reembolso ou chargeback. O retorno do navegador consulta o pedido da conta; a URL de retorno não concede créditos. O produto precisa ter uma página de obrigado direcionando a `/sonhos?origem=comecar` para a melhor experiência após a compra. Sem esse redirecionamento, a pessoa pode abrir `/sonhos` depois e consultar o saldo.
+
+Em 24/09/2026, foi criado na conta Kiwify um produto interno separado, com ofertas de R$ 39,90 e R$ 99,90. Após a conclusão do cadastro da conta, os dois checkouts abriram com os preços corretos. O painel não apresentou um sandbox de pagamento. O recurso oficial **Testar Webhook** entregou um evento fictício de compra aprovada por HTTPS; a assinatura HMAC-SHA1 foi validada com o token gerado pela Kiwify. Esse evento fictício não contém `sck` nem `checkout_link` e usa outro ID de produto, portanto a aplicação deve ignorá-lo e não creditar um pedido. Os links foram desativados novamente após o teste, e nenhum webhook temporário foi salvo no painel. Os links e o ID do produto estão somente no `.env.local`; a ativação no app continua desligada. Testes locais validam assinatura, correlação do pedido, crédito idempotente e reversão em reembolso e chargeback. Antes de ligar a flag em produção, aplicar a migration 005 no banco de destino, configurar um webhook permanente para compra aprovada, reembolso e chargeback, testar uma compra aprovada real e seu estorno, e validar os links e permissões do produto compartilhado pelo influencer. Afiliados podem usar webhooks, mas os dados pessoais do comprador dependem da permissão do produtor; por isso é indispensável confirmar `sck` no evento recebido.
+
+Teste sintético com o Postgres local, após aplicar a migration 005: em um terminal, `KIWIFY_WEBHOOK_TOKEN=local-kiwify-fixture pnpm exec next dev -p 3001`; em outro, `pnpm test:kiwify`. O script cria um usuário temporário, chama a rota HTTP com evento assinado e falso, repete a aprovação, envia reembolso e chargeback, verifica o saldo e remove o usuário. Não realiza cobrança na Kiwify. A execução de 24/09/2026 passou.
+
 ## Ofertas
 
 - 1 sonho: R$ 39,90.

@@ -17,7 +17,8 @@
     "check": "pnpm lint && pnpm typecheck && pnpm test",
     "stripe:setup": "node scripts/setup-stripe-test.mjs",
     "stripe:listen": "node scripts/stripe-listen.mjs",
-    "test:credits": "node scripts/test-credits.mjs"
+    "test:credits": "node scripts/test-credits.mjs",
+    "test:kiwify": "node scripts/test-kiwify-local.mjs"
   },
   "dependencies": {
     "@neondatabase/serverless": "^1.1.0",

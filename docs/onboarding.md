@@ -2,11 +2,11 @@
 
 ## Experiência
 
-A página contém apresentação, seis perguntas com alternativas, entrada livre opcional, geração real de uma prévia com IA, primeira tarefa com três ações marcáveis, oito pilares expansíveis e oferta de 1 ou 3 sonhos. O CTA leva a `/sonhos`, onde o usuário entra na conta e compra créditos pelo Stripe. Pacotes: 1 sonho por R$ 39,90 ou 3 por R$ 99,90. A prévia gratuita permanece no navegador. Veja [payments.md](./payments.md).
+A página contém apresentação, seis perguntas com alternativas, entrada livre opcional, geração real de uma prévia com IA, primeira tarefa com três ações marcáveis, oito pilares expansíveis e oferta de 1 ou 3 sonhos. O CTA leva a `/sonhos`: visitantes entram na conta e passam pelo ponto de checkout exclusivo do `/comecar`; quem já estava logado segue pelo checkout Stripe da conta. Por enquanto ambos usam Stripe. Pacotes: 1 sonho por R$ 39,90 ou 3 por R$ 99,90. A prévia gratuita permanece no navegador. Veja [payments.md](./payments.md).
 
 O roteiro cobre área, sonho, ponto de partida, dificuldade, disponibilidade e horizonte dos primeiros avanços. Selecionar outra área remove o sonho anterior. Editar respostas invalida a prévia e o checklist. Voltar sem mudar as respostas preserva ambos.
 
-As fontes DM Sans e Lora são servidas localmente, com licenças OFL em `app/comecar/fonts`. A ilustração é vetorial, sem dependência de imagens remotas. Os estilos são limitados ao layout da rota. Há navegação por teclado, foco nos títulos, inputs nativos, modal nativo, estados selecionados que não dependem só de cor, layout de 320px em diante e respeito a movimento reduzido.
+A tipografia Poppins é compartilhada com o restante da aplicação e servida localmente, com licença OFL em `app/fonts`. A ilustração é vetorial, sem dependência de imagens remotas. Os estilos são limitados ao layout da rota. Há navegação por teclado, foco nos títulos, inputs nativos, modal nativo, estados selecionados que não dependem só de cor, layout de 320px em diante e respeito a movimento reduzido.
 
 ## Estado e retomada
 
@@ -32,7 +32,7 @@ Eventos de funil: `begin_view`, `begin_started`, `begin_question_completed`, `be
 
 A integração Stripe já confirma pagamento no servidor, credita a conta e permite gerar o planner com as respostas da prévia. A jornada de perguntas e prévia continua em `/comecar`; compra e saldo ficam em `/sonhos`. O retorno do Stripe não libera créditos por query string: consulta o pedido autenticado e verifica a confirmação no provedor. O usuário escolhe quando gerar o planner, consumindo um sonho.
 
-A Kiwify e a atribuição oficial de afiliados continuam pendentes. Ao gerar a partir da prévia, o servidor valida sua sessão e recupera os oito pilares e o primeiro passo originais. Eles são preservados no planner completo. A marcação do checklist gratuito não é transferida; o acompanhamento do planner começa do zero.
+O checkout do `/comecar` foi isolado em `actions/onboarding-checkout.ts`. A alternativa Kiwify está implementada, mas desligada por `KIWIFY_ONBOARDING_ENABLED=false` até validar o produto compartilhado, seus links de afiliado e um pagamento real. A confirmação assinada de pagamento e a conciliação de reembolso/contestação estão em `lib/kiwify.ts`; os créditos continuam dependentes do webhook. Veja [payments.md](./payments.md). Ao gerar a partir da prévia, o servidor valida sua sessão e recupera os oito pilares e o primeiro passo originais. Eles são preservados no planner completo. A marcação do checklist gratuito não é transferida; o acompanhamento do planner começa do zero.
 
 Jev foi avaliado como classificador opcional de sonhos livres. Não foi integrado: não há credencial TypeSafe configurada, e as alternativas atuais são tratadas por regras determinísticas. O gerador existente no AI Gateway produz a prévia. Não adicionar latência de uma chamada por pergunta; comparar Jev em português antes de ativar uma ramificação experimental.
 

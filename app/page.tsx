@@ -586,7 +586,7 @@ export default function Home() {
         </div>
       </div>
 
-      <main className="flex-grow flex flex-col items-center justify-center p-4 sm:p-8 w-full">
+      <main className="flex-grow flex flex-col items-center justify-center px-4 pb-4 pt-24 sm:p-8 w-full">
         {step === 'input' && (
           <div className="w-full max-w-3xl mx-auto text-center space-y-10 animate-in fade-in slide-in-from-bottom-8 duration-1000">
             <div className="space-y-6">
@@ -612,7 +612,7 @@ export default function Home() {
                     placeholder="Qual é o seu objetivo principal?"
                     aria-label="Qual é o seu objetivo principal?"
                     aria-describedby={needsDreams ? 'dream-purchase-hint' : undefined}
-                    className="w-full sm:flex-grow px-6 py-4 text-lg bg-transparent outline-none text-gray-900 placeholder:text-gray-400"
+                    className="w-full sm:flex-grow px-4 sm:px-6 py-4 text-[15px] sm:text-lg bg-transparent outline-none text-gray-900 placeholder:text-gray-400"
                     autoFocus
                   />
                   <button

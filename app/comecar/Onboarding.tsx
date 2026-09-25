@@ -39,6 +39,7 @@ import {
 } from '@/lib/onboarding'
 import { DreamIcon, HeroArtwork, MandalaBloom } from './Visuals'
 import { BrandLogo } from '@/app/components/Brand'
+import { getCurrentUser } from '@/actions/auth'
 import { Preview } from './Preview'
 
 type Screen = OnboardingDraft['screen']
@@ -360,9 +361,17 @@ export function Onboarding() {
     analytics('begin_started')
   }
 
-  function checkout() {
-    router.push(`/sonhos?pacote=${draft.pack}&origem=comecar`)
-    analytics('begin_offer_interest', { dreams: draft.pack })
+  async function checkout() {
+    try {
+      const currentUser = await getCurrentUser()
+      router.push(
+        `/sonhos?pacote=${draft.pack}&origem=${currentUser ? 'account' : 'comecar'}`,
+      )
+      analytics('begin_offer_interest', { dreams: draft.pack })
+    } catch {
+      // Se a consulta da sessão falhar, mantém o checkout Stripe existente.
+      router.push(`/sonhos?pacote=${draft.pack}&origem=account`)
+    }
   }
   const category = CATEGORIES.find((item) => item.id === draft.answers.category)
   const copy = QUESTION_COPY[draft.question]
