@@ -15,7 +15,7 @@ export default function PrivacyPage() {
         </Link>
 
         <h1 className="mt-8 text-3xl font-black tracking-tight text-slate-900">Política de Privacidade</h1>
-        <p className="mt-2 text-sm text-slate-500">Última atualização: 23 de setembro de 2026</p>
+        <p className="mt-2 text-sm text-slate-500">Última atualização: 25 de setembro de 2026</p>
 
         <div className="mt-8 space-y-7 leading-relaxed">
           <section>
@@ -46,6 +46,9 @@ export default function PrivacyPage() {
             <h2 className="text-lg font-bold text-slate-900">4. Compartilhamento e armazenamento</h2>
             <p className="mt-2">
               Não vendemos seus dados. Eles são compartilhados apenas com fornecedores essenciais de hospedagem, banco de dados, autenticação, processamento de IA e pagamentos, na medida necessária para operar o serviço e sujeitos às práticas de segurança desses fornecedores.
+            </p>
+            <p className="mt-2">
+              O Neon gerencia o login por Google ou e-mail e senha, as sessões e a recuperação de senha. Seus planos e créditos continuam associados à mesma conta do Mandalart.AI.
             </p>
           </section>
 
