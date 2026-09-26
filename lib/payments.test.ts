@@ -71,6 +71,14 @@ beforeEach(() => {
 describe('trusted checkout fulfillment', () => {
   it('validates the exact server-side offer', () =>
     expect(() => verifyCheckout(session, order, lines)).not.toThrow())
+  it('continues to reconcile an order created at the previous single-dream price', () => {
+    const previousOrder = { ...order, credits: 1 as const, amount: 3990, price_id: 'price_one_old' }
+    const previousSession = { ...session, amount_total: 3990 } as Stripe.Checkout.Session
+    const previousLines = [
+      { quantity: 1, price: { id: 'price_one_old' }, amount_total: 3990 },
+    ] as Stripe.LineItem[]
+    expect(() => verifyCheckout(previousSession, previousOrder, previousLines)).not.toThrow()
+  })
   it.each([
     { livemode: true },
     { amount_total: 1 },

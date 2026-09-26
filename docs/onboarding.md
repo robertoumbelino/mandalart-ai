@@ -2,7 +2,7 @@
 
 ## Experiência
 
-A página contém apresentação, seis perguntas com alternativas, entrada livre opcional, geração real de uma prévia com IA, primeira tarefa com três ações marcáveis, oito pilares expansíveis e oferta de 1 ou 3 sonhos. O CTA leva a `/sonhos`: visitantes entram na conta e passam pelo ponto de checkout exclusivo do `/comecar`; quem já estava logado segue pelo checkout Stripe da conta. Por enquanto ambos usam Stripe. Pacotes: 1 sonho por R$ 39,90 ou 3 por R$ 99,90. A prévia gratuita permanece no navegador. Veja [payments.md](./payments.md).
+A página contém apresentação, seis perguntas com alternativas, entrada livre opcional, geração real de uma prévia com IA, primeira tarefa com três ações marcáveis, oito pilares expansíveis e oferta de 1 ou 3 sonhos. O CTA leva a `/sonhos`: visitantes entram na conta e passam pelo ponto de checkout exclusivo do `/comecar`; quem já estava logado segue pelo checkout Stripe da conta. Por enquanto ambos usam Stripe. Pacotes: 1 sonho por R$ 37,00 ou 3 por R$ 99,90. A prévia gratuita permanece no navegador. Veja [payments.md](./payments.md).
 
 O roteiro cobre área, sonho, ponto de partida, dificuldade, disponibilidade e horizonte dos primeiros avanços. Selecionar outra área remove o sonho anterior. Editar respostas invalida a prévia e o checklist. Voltar sem mudar as respostas preserva ambos.
 

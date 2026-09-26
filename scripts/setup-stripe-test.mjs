@@ -23,7 +23,7 @@ const set = (name, value) => {
   env += `\n${name}=${value}\n`
 }
 for (const [credits, amount, key] of [
-  [1, 3990, 'STRIPE_PRICE_ONE'],
+  [1, 3700, 'STRIPE_PRICE_ONE'],
   [3, 9990, 'STRIPE_PRICE_THREE'],
 ]) {
   const lookup_key = `mandalart_dreams_${credits}_brl_${amount}`

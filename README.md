@@ -88,4 +88,4 @@ Depois, confirme `GET /api/health` (banco) e faça um fluxo completo de cadastro
 
 ## Compra e créditos de sonhos
 
-Veja [docs/payments.md](./docs/payments.md) para configurar os pacotes de R$ 39,90 e R$ 99,90, simular compras e entender saldo, devoluções e a disponibilidade do Pix. A cobrança requer a migration 004 no banco do ambiente.
+Veja [docs/payments.md](./docs/payments.md) para configurar os pacotes de R$ 37,00 e R$ 99,90, simular compras e entender saldo, devoluções e a disponibilidade do Pix. A cobrança requer a migration 004 no banco do ambiente.

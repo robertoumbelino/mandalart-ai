@@ -10,18 +10,18 @@ O checkout Kiwify fica desativado com `KIWIFY_ONBOARDING_ENABLED=false`. Configu
 
 `POST /api/kiwify/webhook` confere a assinatura HMAC-SHA1 sobre o JSON, como descrito pela Kiwify, e só concilia eventos cujo `sck`, ID do produto, link da oferta, valor e moeda correspondem a um pedido local Kiwify. A migration 005 adiciona o ID externo da venda com unicidade. A mesma função de carteira do Stripe garante idempotência e reversão em reembolso ou chargeback. O retorno do navegador consulta o pedido da conta; a URL de retorno não concede créditos. O produto precisa ter uma página de obrigado direcionando a `/sonhos?origem=comecar` para a melhor experiência após a compra. Sem esse redirecionamento, a pessoa pode abrir `/sonhos` depois e consultar o saldo.
 
-Em 24/09/2026, foi criado na conta Kiwify um produto interno separado, com ofertas de R$ 39,90 e R$ 99,90. Após a conclusão do cadastro da conta, os dois checkouts abriram com os preços corretos. O painel não apresentou um sandbox de pagamento. O recurso oficial **Testar Webhook** entregou um evento fictício de compra aprovada por HTTPS; a assinatura HMAC-SHA1 foi validada com o token gerado pela Kiwify. Esse evento fictício não contém `sck` nem `checkout_link` e usa outro ID de produto, portanto a aplicação deve ignorá-lo e não creditar um pedido. Os links foram desativados novamente após o teste, e nenhum webhook temporário foi salvo no painel. Os links e o ID do produto estão somente no `.env.local`; a ativação no app continua desligada. Testes locais validam assinatura, correlação do pedido, crédito idempotente e reversão em reembolso e chargeback. Antes de ligar a flag em produção, aplicar a migration 005 no banco de destino, configurar um webhook permanente para compra aprovada, reembolso e chargeback, testar uma compra aprovada real e seu estorno, e validar os links e permissões do produto compartilhado pelo influencer. Afiliados podem usar webhooks, mas os dados pessoais do comprador dependem da permissão do produtor; por isso é indispensável confirmar `sck` no evento recebido.
+Em 24/09/2026, foi criado na conta Kiwify um produto interno separado, com ofertas de R$ 39,90 e R$ 99,90. Após a conclusão do cadastro da conta, os dois checkouts abriram com esses preços. O painel não apresentou um sandbox de pagamento. O recurso oficial **Testar Webhook** entregou um evento fictício de compra aprovada por HTTPS; a assinatura HMAC-SHA1 foi validada com o token gerado pela Kiwify. Esse evento fictício não contém `sck` nem `checkout_link` e usa outro ID de produto, portanto a aplicação deve ignorá-lo e não creditar um pedido. Os links foram desativados novamente após o teste, e nenhum webhook temporário foi salvo no painel. Os links e o ID do produto estão somente no `.env.local`; a ativação no app continua desligada. **Antes de ativar a Kiwify, substituir a oferta antiga de 1 sonho por uma de R$ 37,00 e atualizar o link configurado.** Testes locais validam assinatura, correlação do pedido, crédito idempotente e reversão em reembolso e chargeback. Antes de ligar a flag em produção, aplicar a migration 005 no banco de destino, configurar um webhook permanente para compra aprovada, reembolso e chargeback, testar uma compra aprovada real e seu estorno, e validar os links e permissões do produto compartilhado pelo influencer. Afiliados podem usar webhooks, mas os dados pessoais do comprador dependem da permissão do produtor; por isso é indispensável confirmar `sck` no evento recebido.
 
 Teste sintético com o Postgres local, após aplicar a migration 005: em um terminal, `KIWIFY_WEBHOOK_TOKEN=local-kiwify-fixture pnpm exec next dev -p 3001`; em outro, `pnpm test:kiwify`. O script cria um usuário temporário, chama a rota HTTP com evento assinado e falso, repete a aprovação, envia reembolso e chargeback, verifica o saldo e remove o usuário. Não realiza cobrança na Kiwify. A execução de 24/09/2026 passou.
 
 ## Ofertas
 
-- 1 sonho: R$ 39,90.
-- 3 sonhos: R$ 99,90 (R$ 33,30 cada; economia de R$ 19,80).
+- 1 sonho: R$ 37,00.
+- 3 sonhos: R$ 99,90 (R$ 33,30 cada; economia de R$ 11,10 ou 10% frente a três compras avulsas).
 - Compra avulsa em BRL. Criar um planner completo consome 1 sonho. Consultar planners existentes e atualizar progresso não consome créditos.
 - Contas existentes começam com saldo zero e mantêm seus planners.
 
-`/sonhos` oferece compra, saldo e extrato. O visitante de `/comecar` entra na conta antes do checkout. A prévia permanece no navegador e o retorno leva as respostas para o planner; nada é gerado ou consumido automaticamente ao pagar.
+`/sonhos` oferece compra, saldo e extrato. O visitante de `/comecar` entra na conta antes do checkout. A prévia permanece no navegador e o retorno leva as respostas para o planner; nada é gerado ou consumido automaticamente ao pagar. A conciliação usa o valor e o ID de preço persistidos no pedido para continuar confirmando compras e estornos iniciados antes de uma mudança de preço.
 
 ## Desenvolvimento local
 
@@ -77,7 +77,7 @@ Na verificação de 24/09/2026, o cadastro Stripe estava enviado, mas cobranças
 Recursos live da conta `acct_1Q1RivRriv7eBAzw`:
 
 - Produto: `prod_VJoqQfKTP1cWpN`.
-- 1 sonho, R$ 39,90: `price_1UJBDERriv7eBAzwjDoAHxxG`.
+- 1 sonho, R$ 37,00: `price_1UJjBBRriv7eBAzwOBoXztmN` (preço anterior de R$ 39,90: `price_1UJBDERriv7eBAzwjDoAHxxG`).
 - 3 sonhos, R$ 99,90: `price_1UJBDERriv7eBAzwtEp9UoIi`.
 - Configuração própria de métodos: `pmc_1UJBDFRriv7eBAzwmEzQz7Ue` (somente cartão; Pix aguarda liberação).
 - Webhook: `we_1UJBDHRriv7eBAzwwMMXK5A1`, API `2026-08-26.dahlia`.

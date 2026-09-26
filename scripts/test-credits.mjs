@@ -22,7 +22,7 @@ const order = async (credits = 1) => {
   const id = randomUUID()
   await query(
     "INSERT INTO dream_orders(id,user_id,mode,credits,amount,price_id) VALUES($1,$2,'test',$3,$4,'price_test')",
-    [id, user, credits, credits === 1 ? 3990 : 9990],
+    [id, user, credits, credits === 1 ? 3700 : 9990],
   )
   return id
 }
@@ -128,7 +128,7 @@ try {
     ).rows[0].n,
     1,
   )
-  await reconcile(single, true, 3990, false, 2)
+  await reconcile(single, true, 3700, false, 2)
   await reconcile(single, true, 0, false, 1)
   assert.equal(
     await balance(),

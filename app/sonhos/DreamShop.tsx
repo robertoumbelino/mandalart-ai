@@ -335,7 +335,7 @@ export function DreamShop() {
                       {pack === value && <Check size={13} />}
                     </span>
                     <span>{DREAM_PACKS[value].label}</span>
-                    {value === 3 && <small>Economize R$ 19,80</small>}
+                    {value === 3 && <small>Economize R$ 11,10</small>}
                   </div>
                   <strong className="shop-price">{DREAM_PACKS[value].price}</strong>
                   <span className="shop-pack-description">

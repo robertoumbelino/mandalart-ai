@@ -31,7 +31,6 @@ export function verifyCheckout(
     (order.session_id && order.session_id !== session.id) ||
     session.currency !== 'brl' ||
     session.amount_total !== order.amount ||
-    order.amount !== pack.amount ||
     lines.length !== 1 ||
     lines[0].quantity !== 1 ||
     lines[0].price?.id !== order.price_id ||

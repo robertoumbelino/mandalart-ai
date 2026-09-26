@@ -255,7 +255,7 @@ export function Preview({
                     {pack === 1 && <span />}
                   </span>
                   <span>
-                    <strong>1 sonho · R$ 39,90</strong>
+                    <strong>1 sonho · R$ 37,00</strong>
                     <small>Um planner para o seu objetivo de agora.</small>
                   </span>
                   <Sprout size={22} />
@@ -273,7 +273,7 @@ export function Preview({
                   </span>
                   <span>
                     <strong>3 sonhos · R$ 99,90</strong>
-                    <small>Economize R$ 19,80. Use os sonhos no seu ritmo.</small>
+                    <small>Economize R$ 11,10. Use os sonhos no seu ritmo.</small>
                   </span>
                   <Layers3 size={22} />
                 </label>
@@ -356,7 +356,7 @@ export function Preview({
           <strong>
             {pack === 1 ? 'Seu próximo capítulo' : 'Espaço para 3 sonhos'}
           </strong>
-          <small>{pack === 1 ? 'R$ 39,90 · pagamento único' : 'R$ 99,90 · pagamento único'}</small>
+          <small>{pack === 1 ? 'R$ 37,00 · pagamento único' : 'R$ 99,90 · pagamento único'}</small>
         </span>
         <button onClick={onCheckout}>
           Quero continuar <ArrowRight size={16} />

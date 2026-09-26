@@ -111,7 +111,6 @@ export async function processKiwifyEvent(raw: unknown) {
     order.provider !== 'kiwify' ||
     order.mode !== billingMode() ||
     !DREAM_PACKS[credits] ||
-    Number(order.amount) !== DREAM_PACKS[credits].amount ||
     event.amount !== Number(order.amount) ||
     event.basePrice !== Number(order.amount) ||
     event.checkoutLink !== checkoutCode(credits) ||
