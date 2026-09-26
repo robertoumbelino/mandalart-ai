@@ -6,7 +6,7 @@ Aplicação que transforma um objetivo em uma matriz Mandalart 9×9: 8 subobjeti
 
 - Next.js 16 e React 19
 - Vercel AI SDK 7 com Vercel AI Gateway
-- `openai/gpt-5.6-luna` como modelo padrão de bom custo-benefício
+- `openai/gpt-6-luna` para prévia e plano; `openai/gpt-6-luna-fast` para descoberta do objetivo e classificação de segurança
 - Neon Postgres com `@neondatabase/serverless`
 - Tailwind CSS 4
 - Managed Better Auth do Neon para login Google e senha; Zod e JWT para a prévia anônima
@@ -41,6 +41,8 @@ As instruções de Neon acima se aplicam somente ao deploy. A jornada pública t
 
 Abra `http://localhost:3000/comecar`. Toda a experiência permanece nessa URL: apresentação, seis perguntas, geração, prévia e oferta. Login não é necessário para a prévia. A compra acontece em `/sonhos`, com login e checkout Stripe. Veja [docs/onboarding.md](./docs/onboarding.md) para regras de persistência, limites e pontos de integração.
 
+Na página principal, quem já tem um sonho disponível escreve o objetivo e recebe uma pergunta de cada vez, com opções geradas conforme as respostas. Objetivos curtos e amplos exigem mais contexto antes da confirmação; um objetivo amplo de negócio exige pelo menos três respostas. Depois disso, a IA encerra quando há base para um objetivo e uma primeira fase úteis; seis respostas são o limite técnico para evitar uma entrevista sem fim. A pessoa pode escolher "Ainda não sei" ou escrever em "Outro", revisar a proposta e só então gerar o planner, consumindo um sonho. A entrevista e a proposta ficam em `sessionStorage` para retomada no mesmo navegador. Quem chega pela prévia de `/comecar` confirma o sonho e o primeiro passo já apresentados antes da geração.
+
 ### Autenticação
 
 O login e as sessões usam o Managed Better Auth da mesma branch Neon do banco. Configure `NEON_AUTH_BASE_URL`, `NEON_AUTH_COOKIE_SECRET` e os domínios confiáveis no Neon. A migração começa com o cliente Google compartilhado do Neon, que mostra a marca Neon na tela de consentimento e é destinado a desenvolvimento. Para uso público contínuo, configure um cliente OAuth próprio no Neon e registre no Google Cloud a URI de retorno `{NEON_AUTH_BASE_URL}/callback/google`.
@@ -68,12 +70,13 @@ Use `contents/` para criar vídeos, imagens, áudios, roteiros e outros materiai
 | `JWT_SECRET` | Sim | Assinatura da sessão anônima da prévia; mínimo de 32 caracteres |
 | `NEON_AUTH_BASE_URL` | Sim | URL de Auth da mesma branch Neon do banco |
 | `NEON_AUTH_COOKIE_SECRET` | Sim | Assinatura dos cookies de autenticação; mínimo de 32 caracteres |
-| `AI_MODEL_NAME` | Não | Padrão: `openai/gpt-5.6-luna` |
+| `AI_PLAN_MODEL_NAME` | Não | Padrão: `openai/gpt-6-luna` para prévia e plano |
+| `AI_QUESTION_MODEL_NAME` | Não | Padrão: `openai/gpt-6-luna-fast` para perguntas e segurança |
 | `AI_GATEWAY_API_KEY` | Apenas local, se necessário | Autenticação do Gateway fora do OIDC da Vercel |
 
 ## Deploy na Vercel
 
-Vincule o repositório, configure `DATABASE_URL`, `JWT_SECRET`, `NEON_AUTH_BASE_URL`, `NEON_AUTH_COOKIE_SECRET` e `AI_MODEL_NAME`, e execute:
+Vincule o repositório, configure `DATABASE_URL`, `JWT_SECRET`, `NEON_AUTH_BASE_URL` e `NEON_AUTH_COOKIE_SECRET`; os modelos podem ser substituídos pelas variáveis opcionais acima. Execute:
 
 ```bash
 vercel --prod

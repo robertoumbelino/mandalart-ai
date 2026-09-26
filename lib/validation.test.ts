@@ -2,9 +2,10 @@ import { describe, expect, it } from 'vitest'
 import {
   credentialsSchema,
   generatedMandalartSchema,
+  goalDiscoveryOutputSchema,
+  goalProposalSchema,
   goalSafetyOutputSchema,
   mandalartDataSchema,
-  questionsOutputSchema
 } from './validation'
 
 const generatedTask = {
@@ -22,14 +23,17 @@ const generatedSubGoal = {
 }
 
 describe('AI output schemas', () => {
-  it('accepts exactly three interview questions', () => {
-    const result = questionsOutputSchema.safeParse({
-      questions: Array.from({ length: 3 }, (_, index) => ({
-        id: String(index + 1),
-        text: `Pergunta ${index + 1}?`
-      }))
-    })
-    expect(result.success).toBe(true)
+  it('accepts one question or a confirmed goal proposal', () => {
+    expect(goalDiscoveryOutputSchema.safeParse({
+      status: 'question',
+      question: { text: 'Qual resultado você busca?', options: ['Uma opção', 'Outra opção'] },
+      proposal: null
+    }).success).toBe(true)
+    expect(goalProposalSchema.safeParse({
+      goal: 'Criar uma renda extra mensal',
+      successSignal: 'Receber o primeiro pagamento recorrente',
+      firstPhase: 'Explorar e testar opções viáveis'
+    }).success).toBe(true)
   })
 
   it('only accepts supported goal safety classifications', () => {

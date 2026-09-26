@@ -5,6 +5,7 @@ import { cookies, headers } from 'next/headers'
 import { generateText, Output } from 'ai'
 import { getDb } from '@/lib/db'
 import { classifyGoalSafety } from '@/lib/goal-safety'
+import { PLAN_MODEL } from '@/lib/ai-models'
 import {
   answersKey,
   getAnswerContext,
@@ -94,7 +95,7 @@ export async function generatePreview(
       }
   }
   const result = await generateText({
-    model: process.env.AI_MODEL_NAME || 'openai/gpt-5.6-luna',
+    model: PLAN_MODEL,
     reasoning: 'low',
     maxRetries: 1,
     maxOutputTokens: 2200,

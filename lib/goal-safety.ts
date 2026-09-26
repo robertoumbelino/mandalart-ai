@@ -1,13 +1,12 @@
 import { generateText, Output } from 'ai'
 import { goalSafetyOutputSchema } from '@/lib/validation'
-
-const MODEL = process.env.AI_MODEL_NAME || 'openai/gpt-5.6-luna'
+import { QUICK_MODEL } from '@/lib/ai-models'
 
 export const classifyGoalSafety = async (
   mainGoal: string
 ): Promise<'allowed' | 'illegal' | 'self_harm'> => {
   const result = await generateText({
-    model: MODEL,
+    model: QUICK_MODEL,
     reasoning: 'low',
     maxRetries: 2,
     maxOutputTokens: 80,

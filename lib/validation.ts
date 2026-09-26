@@ -17,11 +17,25 @@ export const idSchema = z.string().uuid()
 
 export const questionSchema = z.object({
   id: z.string().trim().min(1).max(40),
-  text: detailText
+  text: detailText,
+  options: z.array(z.string().trim().min(2).max(120)).min(2).max(4)
 })
 
-export const questionsOutputSchema = z.object({
-  questions: z.array(questionSchema).length(3)
+export const goalProposalSchema = z.object({
+  goal: goalSchema,
+  successSignal: z.string().trim().min(5).max(200),
+  firstPhase: z.string().trim().min(5).max(200)
+})
+
+export const discoveryQuestionSchema = z.object({
+  text: detailText,
+  options: z.array(z.string().trim().min(2).max(120)).min(2).max(4)
+})
+
+export const goalDiscoveryOutputSchema = z.object({
+  status: z.enum(['question', 'ready']),
+  question: discoveryQuestionSchema.nullable(),
+  proposal: goalProposalSchema.nullable()
 })
 
 export const goalSafetyOutputSchema = z.object({
@@ -41,13 +55,29 @@ const generatedTaskSchema = z.object({
   checklist: z.array(shortText).length(3)
 })
 
+const generatedPillarOutlineSchema = z.object({
+  title: gridTitle,
+  description: detailText,
+  advice: detailText,
+})
+
+export const generatedMandalartOutlineSchema = z.object({
+  mainGoal: compactGoalTitleSchema,
+  subGoals: z.array(generatedPillarOutlineSchema).length(8),
+})
+
+export const generatedMandalartTaskBatchSchema = z.object({
+  pillars: z.array(z.object({ tasks: z.array(generatedTaskSchema).length(8) })).length(2),
+})
+
+export const generatedMandalartPillarTasksSchema = z.object({
+  tasks: z.array(generatedTaskSchema).length(8),
+})
+
 export const generatedMandalartSchema = z.object({
   mainGoal: compactGoalTitleSchema,
   subGoals: z.array(
-    z.object({
-      title: gridTitle,
-      description: detailText,
-      advice: detailText,
+    generatedPillarOutlineSchema.extend({
       tasks: z.array(generatedTaskSchema).length(8)
     })
   ).length(8)

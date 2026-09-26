@@ -34,15 +34,23 @@ export interface MandalartData {
 export interface Question {
   id: string;
   text: string;
+  options: string[];
 }
 
 export type GoalSafetyCategory = 'illegal' | 'self-harm';
 
-export type QuestionGenerationResult =
-  | { status: 'allowed'; questions: Question[] }
+export interface GoalProposal {
+  goal: string;
+  successSignal: string;
+  firstPhase: string;
+}
+
+export type GoalDiscoveryResult =
+  | { status: 'question'; question: Question }
+  | { status: 'ready'; proposal: GoalProposal }
   | { status: 'blocked'; category: GoalSafetyCategory };
 
-export type AppStep = 'input' | 'safety' | 'interview' | 'generating' | 'result';
+export type AppStep = 'input' | 'safety' | 'interview' | 'confirm' | 'generating' | 'result';
 
 export interface InterviewAnswer {
   questionId: string;

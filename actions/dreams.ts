@@ -14,11 +14,12 @@ import { loadPaidPreview } from '@/lib/paid-preview'
 import { buildMandalartData } from '@/lib/plan-generation'
 import {
   goalSchema,
+  goalProposalSchema,
   idSchema,
   interviewAnswerSchema,
   mandalartDataSchema,
 } from '@/lib/validation'
-import type { HistoryItem, InterviewAnswer } from '@/types'
+import type { GoalProposal, HistoryItem, InterviewAnswer } from '@/types'
 
 async function requireUser() {
   const user = await getCurrentUser()
@@ -70,14 +71,16 @@ export async function generateDream(
   rawGoal: string,
   rawAnswers: InterviewAnswer[],
   rawPreviewId?: string,
+  rawProposal?: GoalProposal,
 ): Promise<GenerationResponse> {
   const user = await requireUser()
   const id = idSchema.parse(rawId)
   const goal = goalSchema.parse(rawGoal)
-  const answers = interviewAnswerSchema.array().length(3).parse(rawAnswers)
+  const answers = interviewAnswerSchema.array().max(6).parse(rawAnswers)
+  const proposal = rawProposal ? goalProposalSchema.parse(rawProposal) : undefined
   const previewId = rawPreviewId ? idSchema.parse(rawPreviewId) : undefined
   const hash = createHash('sha256')
-    .update(JSON.stringify({ goal, answers, previewId }))
+    .update(JSON.stringify({ goal, answers, previewId, proposal }))
     .digest('hex')
   const reservation = await reserveDream(user.id, id, hash)
   if (reservation.status === 'completed')
@@ -89,24 +92,28 @@ export async function generateDream(
         'Você precisa de mais um sonho. Escolha seu pacote para continuar.',
     }
   if (reservation.status !== 'reserved') return getDreamGeneration(id)
+  const startedAt = Date.now()
   try {
     const preview = previewId
       ? await loadPaidPreview(previewId, goal)
       : undefined
     const data = mandalartDataSchema.parse(
-      await buildMandalartData(goal, answers, preview),
+      await buildMandalartData(goal, answers, preview, proposal),
     )
     const item = await completeDream(user.id, id, data)
     if (item) return { status: 'completed', item }
   } catch (error) {
-    console.error('dream_generation_failed', {
+    console.error('dream_generation_failed', JSON.stringify({
       id,
       reason: error instanceof Error ? error.name : 'UnknownError',
+      durationMs: Date.now() - startedAt,
+      finishReason: (error as { finishReason?: string }).finishReason,
+      outputTokens: (error as { usage?: { outputTokens?: number } }).usage?.outputTokens,
       cause:
         error instanceof Error && error.cause instanceof Error
           ? error.cause.name
           : undefined,
-    })
+    }))
     // Só devolve uma reserva ainda pendente. Sucesso persistido nunca é desfeito.
     await failDream(user.id, id)
   }

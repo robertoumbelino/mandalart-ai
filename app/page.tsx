@@ -3,8 +3,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { BrandLogo } from '@/app/components/Brand';
 import { ArrowRight, Sparkles, BrainCircuit, Loader2, History, X, Trash2, Calendar, LogOut, Check, Compass, ListChecks } from 'lucide-react';
-import { generateQuestions } from '@/actions/ai';
-import { MandalartData, Question, AppStep, GoalSafetyCategory, InterviewAnswer, HistoryItem, User } from '@/types';
+import { discoverGoal } from '@/actions/ai';
+import { MandalartData, Question, AppStep, GoalProposal, GoalSafetyCategory, InterviewAnswer, HistoryItem, User } from '@/types';
 import { MandalartView } from '@/app/components/MandalartView';
 import { Auth } from '@/app/components/Auth';
 import { SafetyNotice } from '@/app/components/SafetyNotice';
@@ -58,6 +58,9 @@ export default function Home() {
   const [safetyCategory, setSafetyCategory] = useState<GoalSafetyCategory | null>(null);
   const [questions, setQuestions] = useState<Question[]>([]);
   const [answers, setAnswers] = useState<InterviewAnswer[]>([]);
+  const [proposal, setProposal] = useState<GoalProposal | null>(null);
+  const [selectedAnswer, setSelectedAnswer] = useState('');
+  const [customAnswer, setCustomAnswer] = useState('');
   const [mandalartData, setMandalartData] = useState<MandalartData | null>(null);
   const [currentMandalartId, setCurrentMandalartId] = useState<string | null>(null);
   const [processing, setProcessing] = useState(false);
@@ -69,10 +72,11 @@ export default function Home() {
   const [wallet, setWallet] = useState<Awaited<ReturnType<typeof getDreamWallet>> | null>(null);
   const needsDreams = wallet !== null && wallet.balance < 1;
   const [recoverGeneration, setRecoverGeneration] = useState(0);
+  const [interviewRestored, setInterviewRestored] = useState(false);
   const [history, setHistory] = useState<HistoryItem[]>([]);
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
-  const generationRecoveryRef = useRef<{ id: string; goal: string; answers: InterviewAnswer[]; previewId?: string } | null>(null);
+  const generationRecoveryRef = useRef<{ id: string; goal: string; answers: InterviewAnswer[]; proposal: GoalProposal; previewId?: string } | null>(null);
   const activeUserIdRef = useRef<string | null>(null);
   const userMenuRef = useRef<HTMLDivElement>(null);
   const historyButtonRef = useRef<HTMLButtonElement>(null);
@@ -87,6 +91,11 @@ export default function Home() {
 
   useEffect(() => {
     let active = true;
+    const accountTimeout = window.setTimeout(() => {
+      if (!active) return;
+      setLoading(false);
+      setError('A verificação da conta está demorando. Você pode tentar entrar novamente.');
+    }, 10_000);
     const load = async () => {
       try {
         if (new URLSearchParams(window.location.search).has('neon_auth_session_verifier')) {
@@ -100,15 +109,20 @@ export default function Home() {
         if (!active || !currentUser) return;
         activeUserIdRef.current = currentUser.id;
         setUser(currentUser);
-        const userHistory = await getHistory();
-        if (active) setHistory(userHistory);
+        setError(null);
+        void getHistory().then((userHistory) => {
+          if (active) setHistory(userHistory);
+        }).catch(() => {});
+      } catch {
+        if (active) setError('Não foi possível verificar sua conta. Atualize a página para tentar novamente.');
       } finally {
+        window.clearTimeout(accountTimeout);
         if (active) setLoading(false);
       }
     };
 
     void load();
-    return () => { active = false; };
+    return () => { active = false; window.clearTimeout(accountTimeout); };
   }, []);
 
   useEffect(() => {
@@ -133,7 +147,7 @@ export default function Home() {
             setMandalartData(result.item.data); setCurrentMandalartId(result.item.id); setStep('result'); setError(null);
             try { sessionStorage.removeItem(`mandalart.interview.${result.item.userId}`); } catch {}
           } else {
-            setStep('interview'); setError(result.message);
+            setStep('confirm'); setError(result.message);
           }
           setProcessing(false);
           void getDreamWallet().then(value => { if (active) setWallet(value); }).catch(() => {});
@@ -156,23 +170,29 @@ export default function Home() {
           const saved = JSON.parse(pending);
           if (typeof saved.id === 'string' && typeof saved.goal === 'string' && Array.isArray(saved.answers)) {
             setMainGoal(saved.goal); setAnswers(saved.answers); setPreviewId(saved.previewId);
-            setQuestions(saved.answers.map((a: InterviewAnswer) => ({ id: a.questionId, text: a.questionText })));
+            setProposal(saved.proposal ?? { goal: saved.goal, successSignal: 'Avançar no objetivo escolhido', firstPhase: 'Definir os próximos passos' });
             setStep('generating'); setProcessing(true); void recover(saved.id);
           }
         } else if (new URLSearchParams(window.location.search).get('continuar') === 'sonho') {
           const raw = localStorage.getItem(DRAFT_STORAGE_KEY);
           const draft = raw ? restoreDraft(JSON.parse(raw)) : null;
           const parsed = answersSchema.safeParse(draft?.answers);
-          if (parsed.success) {
+          if (parsed.success && draft?.result) {
             const context = getAnswerContext(parsed.data);
             const restoredAnswers = [
               { questionId: 'context', questionText: 'Onde você está hoje?', answer: `${context.category}. ${context.stage}` },
               { questionId: 'obstacle', questionText: 'O que mais precisa de atenção?', answer: context.obstacle },
               { questionId: 'rhythm', questionText: 'Qual ritmo faz sentido para você?', answer: `${context.time}. ${context.horizon}` }
             ];
-            setMainGoal(context.dream); setAnswers(restoredAnswers); setPreviewId(draft?.result?.id);
-            setQuestions(restoredAnswers.map(a => ({ id: a.questionId, text: a.questionText })));
-            setStep('interview');
+            setMainGoal(context.dream); setAnswers(restoredAnswers); setPreviewId(draft.result.id);
+            setProposal({
+              goal: context.dream,
+              successSignal: 'Concluir o primeiro passo apresentado na prévia',
+              firstPhase: draft.result.preview.firstStep.title,
+            });
+            setStep('confirm');
+          } else if (parsed.success) {
+            setMainGoal(getAnswerContext(parsed.data).dream);
           }
         } else if (guestGoal) {
           setMainGoal(guestGoal.slice(0, 300));
@@ -180,23 +200,26 @@ export default function Home() {
           const saved = sessionStorage.getItem(`mandalart.interview.${user.id}`);
           if (saved) {
             const interview = JSON.parse(saved);
-            if (typeof interview.goal === 'string' && Array.isArray(interview.answers)) {
+            if (interview.version === 2 && typeof interview.goal === 'string' && Array.isArray(interview.answers) && Array.isArray(interview.questions)) {
               setMainGoal(interview.goal); setAnswers(interview.answers); setPreviewId(interview.previewId);
-              setQuestions(interview.answers.map((a: InterviewAnswer) => ({ id: a.questionId, text: a.questionText })));
-              setStep(interview.answers.length === 3 ? 'interview' : 'input');
+              setQuestions(interview.questions); setProposal(interview.proposal ?? null);
+              setStep(interview.proposal ? 'confirm' : interview.questions.length > interview.answers.length ? 'interview' : 'input');
+            } else if (typeof interview.goal === 'string') {
+              setMainGoal(interview.goal);
             }
           }
         }
       } catch { /* O planner pode continuar sem armazenamento no navegador. */ }
+      if (active) setInterviewRestored(true);
     }
     void restore();
     return () => { active = false; clearTimeout(timer); window.removeEventListener('focus', refreshWallet); };
   }, [user, recoverGeneration]);
 
   useEffect(() => {
-    if (!user || !mainGoal.trim() || !['input', 'interview'].includes(step)) return;
-    try { sessionStorage.setItem(`mandalart.interview.${user.id}`, JSON.stringify({ goal: mainGoal, answers, previewId })); } catch {}
-  }, [user, mainGoal, answers, step, previewId]);
+    if (!user || !interviewRestored || !mainGoal.trim() || !['input', 'interview', 'confirm'].includes(step)) return;
+    try { sessionStorage.setItem(`mandalart.interview.${user.id}`, JSON.stringify({ version: 2, goal: mainGoal, answers, questions, proposal, previewId })); } catch {}
+  }, [user, interviewRestored, mainGoal, answers, questions, proposal, step, previewId]);
 
   useEffect(() => {
     if (step !== 'generating') return;
@@ -285,6 +308,7 @@ export default function Home() {
 
   const handleLogin = async (newUser: User) => {
     activeUserIdRef.current = newUser.id;
+    setInterviewRestored(false);
     setWallet(null);
     setUser(newUser);
     setShowAuth(false);
@@ -298,9 +322,13 @@ export default function Home() {
     generationRecoveryRef.current = null;
     setWallet(null);
     setUser(null);
+    setInterviewRestored(false);
     setMainGoal('');
     setAnswers([]);
     setQuestions([]);
+    setProposal(null);
+    setSelectedAnswer('');
+    setCustomAnswer('');
     setPreviewId(undefined);
     setHistory([]);
     setStep('input');
@@ -386,7 +414,7 @@ export default function Home() {
 
   const handleStart = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!mainGoal.trim() || processing) return;
+    if (!mainGoal.trim() || processing || loading) return;
     if (!user) {
       openAuth();
       return;
@@ -407,42 +435,94 @@ export default function Home() {
         return;
       }
       setPreviewId(undefined);
-      const result = await generateQuestions(mainGoal);
+      setAnswers([]);
+      setQuestions([]);
+      setProposal(null);
+      setSelectedAnswer('');
+      setCustomAnswer('');
+      const result = await discoverGoal(mainGoal, []);
       if (result.status === 'blocked') {
         setSafetyCategory(result.category);
         setStep('safety');
         return;
       }
-
-      const q = result.questions;
-      setQuestions(q);
-      setAnswers(q.map(item => ({ questionId: item.id, questionText: item.text, answer: '' })));
-      setStep('interview');
+      if (result.status === 'question') {
+        setQuestions([result.question]);
+        setStep('interview');
+      } else {
+        setProposal(result.proposal);
+        setStep('confirm');
+      }
     } catch {
-      setError('Não foi possível gerar as perguntas. Tente novamente.');
+      setError('Não foi possível preparar seu objetivo. Tente novamente.');
     } finally {
       setProcessing(false);
     }
   };
 
-  const handleAnswerChange = (index: number, value: string) => {
-    setAnswers(current => current.map((answer, answerIndex) =>
-      answerIndex === index ? { ...answer, answer: value } : answer
-    ));
+  const handleAnswer = async () => {
+    const question = questions[answers.length];
+    const answer = selectedAnswer === 'other' ? customAnswer.trim() : selectedAnswer;
+    if (!question || !answer || processing) return;
+    if (answer.length > 1000) { setError('Escreva uma resposta mais curta.'); return; }
+    const nextAnswers = [...answers, { questionId: question.id, questionText: question.text, answer }];
+    setProcessing(true); setError(null);
+    try {
+      const result = await discoverGoal(mainGoal, nextAnswers);
+      setAnswers(nextAnswers);
+      setSelectedAnswer('');
+      setCustomAnswer('');
+      if (result.status === 'blocked') {
+        setSafetyCategory(result.category);
+        setStep('safety');
+      } else if (result.status === 'question') {
+        setQuestions(current => [...current, result.question]);
+      } else {
+        setProposal(result.proposal);
+        setStep('confirm');
+      }
+    } catch {
+      setError('Não foi possível continuar agora. Sua resposta continua selecionada; tente novamente.');
+    } finally {
+      setProcessing(false);
+    }
+  };
+
+  const handleBackQuestion = () => {
+    if (answers.length === 0) { setStep('input'); return; }
+    const previous = answers[answers.length - 1].answer;
+    const previousQuestion = questions[questions.length - 2];
+    setAnswers(current => current.slice(0, -1));
+    setQuestions(current => current.slice(0, -1));
+    setSelectedAnswer(previousQuestion?.options.includes(previous) || previous === 'Ainda não sei' ? previous : 'other');
+    setCustomAnswer(previousQuestion?.options.includes(previous) ? '' : previous);
+    setError(null);
+  };
+
+  const handleAdjustGoal = () => {
+    setProposal(null);
+    setError(null);
+    if (previewId) { router.push('/comecar'); return; }
+    if (answers.length === 0) { setStep('input'); return; }
+    const previous = answers[answers.length - 1].answer;
+    const previousQuestion = questions[questions.length - 1];
+    setAnswers(current => current.slice(0, -1));
+    setSelectedAnswer(previousQuestion?.options.includes(previous) || previous === 'Ainda não sei' ? previous : 'other');
+    setCustomAnswer(previousQuestion?.options.includes(previous) ? '' : previous);
+    setStep('interview');
   };
 
   const handleGenerate = async () => {
-    if (processing || !user) return;
-    if (answers.some(a => !a.answer.trim())) { setError('Responda todas as perguntas.'); return; }
-    try { sessionStorage.setItem(`mandalart.interview.${user.id}`, JSON.stringify({ goal: mainGoal, answers, previewId })); } catch {}
+    if (processing || !user || !proposal || step !== 'confirm') return;
+    try { sessionStorage.setItem(`mandalart.interview.${user.id}`, JSON.stringify({ version: 2, goal: mainGoal, answers, questions, proposal, previewId })); } catch {}
     if (!wallet || wallet.balance < 1) { router.push('/sonhos'); return; }
     const id = crypto.randomUUID();
     const key = `mandalart.generation.${user.id}`;
-    generationRecoveryRef.current = { id, goal: mainGoal, answers, previewId };
-    try { sessionStorage.setItem(key, JSON.stringify({ id, goal: mainGoal, answers, previewId })); } catch {}
+    generationRecoveryRef.current = { id, goal: mainGoal, answers, proposal, previewId };
+    try { sessionStorage.setItem(key, JSON.stringify({ id, goal: mainGoal, answers, proposal, previewId })); } catch {}
     setGenerationMessageIndex(0); setStep('generating'); setProcessing(true); setError(null);
     try {
-      const result = await generateDream(id, mainGoal, answers, previewId);
+      const result = await generateDream(id, mainGoal, answers, previewId, previewId ? undefined : proposal);
       if (activeUserIdRef.current !== user.id) return;
       if (result.status === 'completed') {
         setMandalartData(result.item.data); setCurrentMandalartId(result.item.id); setStep('result');
@@ -452,7 +532,7 @@ export default function Home() {
         setRecoverGeneration(value => value + 1); return;
       } else {
         try { sessionStorage.removeItem(key); } catch {}
-        setError(result.message); setStep('interview');
+        setError(result.message); setStep('confirm');
       }
       generationRecoveryRef.current = null;
       setProcessing(false);
@@ -473,20 +553,15 @@ export default function Home() {
     setSafetyCategory(null);
     setQuestions([]);
     setAnswers([]);
+    setProposal(null);
+    setSelectedAnswer('');
+    setCustomAnswer('');
     setMandalartData(null);
     setCurrentMandalartId(null);
     setError(null);
     setProgressSaveError(null);
     setStep('input');
   };
-
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <Loader2 className="animate-spin" size={48} />
-      </div>
-    );
-  }
 
   if (!user && showAuth) {
     return <Auth onLogin={handleLogin} onBack={() => setShowAuth(false)} goal={mainGoal.trim()} />;
@@ -505,7 +580,7 @@ export default function Home() {
           )}
 
           <nav className="home-header-actions" aria-label={user ? 'Sua conta' : 'Acesso'}>
-            {user ? <>
+            {loading ? <span className="home-account-placeholder" aria-label="Verificando sua conta" /> : user ? <>
             <Link href="/sonhos" className={`home-wallet-link ${needsDreams ? 'home-wallet-empty' : ''}`} aria-label={needsDreams ? 'Comprar sonhos' : 'Ver saldo e comprar sonhos'}>
               <Sparkles size={16} aria-hidden="true" />
               <span>{needsDreams ? 'Comprar sonhos' : wallet ? `${wallet.balance} ${wallet.balance === 1 ? 'sonho disponível' : 'sonhos disponíveis'}` : 'Meus sonhos'}</span>
@@ -667,13 +742,13 @@ export default function Home() {
                       placeholder="Ex.: correr uma maratona"
                       aria-describedby="home-goal-hint"
                     />
-                    <button type="submit" disabled={processing || !mainGoal.trim()} className="home-submit brand-button">
-                      {processing ? <Loader2 className="animate-spin" size={20} /> : <>{needsDreams ? 'Continuar meu sonho' : 'Criar meu plano'} <ArrowRight size={19} /></>}
+                    <button type="submit" disabled={loading || processing || !mainGoal.trim()} className="home-submit brand-button">
+                      {loading ? 'Preparando sua conta...' : processing ? <Loader2 className="animate-spin" size={20} /> : <>{needsDreams ? 'Continuar meu sonho' : 'Criar meu plano'} <ArrowRight size={19} /></>}
                     </button>
                   </form>
                   <p id="home-goal-hint" className="home-form-hint">
                     <Check size={15} aria-hidden="true" />
-                    {user && needsDreams ? 'Seu objetivo fica salvo para continuar depois de escolher seus sonhos.' : 'São só 3 perguntas para personalizar seu plano.'}
+                    {user && needsDreams ? 'Seu objetivo fica salvo para continuar depois de escolher seus sonhos.' : 'Perguntas rápidas, só quando ajudam a entender seu objetivo.'}
                   </p>
                 </div>
                 {error && <p role="alert" className="home-error">{error}</p>}
@@ -711,7 +786,7 @@ export default function Home() {
               </div>
               <ol>
                 <li><span className="home-how-icon"><Compass size={21} /></span><div><span className="home-how-number">01</span><h3>Conte seu objetivo</h3><p>Escreva do seu jeito, mesmo que a ideia ainda esteja tomando forma.</p></div></li>
-                <li><span className="home-how-icon"><BrainCircuit size={21} /></span><div><span className="home-how-number">02</span><h3>Responda 3 perguntas</h3><p>Ajudam a entender seu momento e deixar o plano mais pessoal.</p></div></li>
+                <li><span className="home-how-icon"><BrainCircuit size={21} /></span><div><span className="home-how-number">02</span><h3>Escolha o que faz sentido</h3><p>Responda só às perguntas que ajudam a definir seu caminho.</p></div></li>
                 <li><span className="home-how-icon"><ListChecks size={21} /></span><div><span className="home-how-number">03</span><h3>Avance no seu ritmo</h3><p>Veja seus próximos passos e acompanhe cada conquista.</p></div></li>
               </ol>
               <p className="home-how-note">O planner completo usa 1 sonho. Você pode escolher um pacote antes de criá-lo, sem assinatura.</p>
@@ -723,33 +798,63 @@ export default function Home() {
           <SafetyNotice category={safetyCategory} onBack={handleReset} />
         )}
         
-        {step === 'interview' && (
-          <div className="w-full max-w-2xl mx-auto space-y-8 animate-in fade-in slide-in-from-right-8 duration-500">
+        {step === 'interview' && questions[answers.length] && (
+          <div className="w-full max-w-2xl mx-auto space-y-6 animate-in fade-in slide-in-from-right-8 duration-500">
             <div className="text-center space-y-2">
-               <div className="bg-purple-100 p-3 rounded-full inline-block"><BrainCircuit className="w-8 h-8 text-purple-600" /></div>
-               <h2 className="brand-text text-2xl font-bold">{previewId ? 'Seu próximo capítulo' : 'Entendendo Melhor'}</h2>
-               <p className="text-gray-500">{previewId ? 'Suas respostas já estão aqui. Confira e dê o próximo passo.' : 'Responda a essas perguntas rápidas para personalizar seu plano.'}</p>
-               {previewId && <p className="text-sm font-semibold text-indigo-700">{mainGoal}</p>}
+              <div className="bg-purple-100 p-3 rounded-full inline-block"><BrainCircuit className="w-8 h-8 text-purple-600" /></div>
+              <p className="text-sm font-semibold text-indigo-700">Entendendo seu objetivo · pergunta {answers.length + 1}</p>
+              <h2 className="brand-text text-2xl font-bold">Um passo de cada vez</h2>
+              <p className="text-gray-500">Seu objetivo: {mainGoal}</p>
             </div>
-            <div className="space-y-6">
-              {questions.map((q, idx) => (
-                <div key={q.id} className="bg-white/80 backdrop-blur-sm p-6 rounded-2xl shadow-sm border border-gray-200/60">
-                  <label htmlFor={`answer-${q.id}`} className="block text-lg font-medium text-gray-900 mb-4">{q.text}</label>
-                  <textarea
-                    id={`answer-${q.id}`}
-                    value={answers[idx]?.answer || ''}
-                    onChange={(e) => handleAnswerChange(idx, e.target.value)}
-                    maxLength={1000}
-                    className="w-full p-3 border border-gray-300 rounded-xl outline-none focus:ring-2 ring-indigo-500 transition-all h-24 bg-white text-gray-900"
-                    placeholder="Sua resposta..."
-                  />
-                </div>
-              ))}
+            <fieldset aria-labelledby="interview-question" className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm sm:p-7" disabled={processing}>
+              <h3 id="interview-question" className="text-lg font-semibold leading-snug text-gray-900">{questions[answers.length].text}</h3>
+              <div className="mt-5 space-y-3">
+                {questions[answers.length].options.map((option, index) => (
+                  <label key={`${index}-${option}`} className={`flex min-h-14 cursor-pointer items-center gap-3 rounded-xl border px-4 py-3 text-gray-900 transition ${selectedAnswer === option ? 'border-indigo-600 bg-indigo-50 ring-2 ring-indigo-200' : 'border-gray-200 hover:border-indigo-300'}`}>
+                    <input type="radio" name="goal-answer" value={option} checked={selectedAnswer === option} onChange={() => setSelectedAnswer(option)} className="accent-indigo-600" />
+                    <span>{option}</span>
+                  </label>
+                ))}
+                <label className={`flex min-h-14 cursor-pointer items-center gap-3 rounded-xl border px-4 py-3 text-gray-900 transition ${selectedAnswer === 'Ainda não sei' ? 'border-indigo-600 bg-indigo-50 ring-2 ring-indigo-200' : 'border-gray-200 hover:border-indigo-300'}`}>
+                  <input type="radio" name="goal-answer" value="Ainda não sei" checked={selectedAnswer === 'Ainda não sei'} onChange={() => setSelectedAnswer('Ainda não sei')} className="accent-indigo-600" />
+                  <span>Ainda não sei</span>
+                </label>
+                <label className={`flex min-h-14 cursor-pointer items-center gap-3 rounded-xl border px-4 py-3 text-gray-900 transition ${selectedAnswer === 'other' ? 'border-indigo-600 bg-indigo-50 ring-2 ring-indigo-200' : 'border-gray-200 hover:border-indigo-300'}`}>
+                  <input type="radio" name="goal-answer" value="other" checked={selectedAnswer === 'other'} onChange={() => setSelectedAnswer('other')} className="accent-indigo-600" />
+                  <span>Outro — quero explicar</span>
+                </label>
+                {selectedAnswer === 'other' && (
+                  <textarea value={customAnswer} onChange={(event) => setCustomAnswer(event.target.value)} maxLength={1000} autoFocus aria-label="Conte do seu jeito" placeholder="Conte do seu jeito..." className="min-h-24 w-full rounded-xl border border-gray-300 p-3 text-gray-900 outline-none focus:ring-2 focus:ring-indigo-500" />
+                )}
+              </div>
+            </fieldset>
+            <div className="flex flex-col-reverse gap-3 sm:flex-row">
+              <button type="button" onClick={handleBackQuestion} disabled={processing} className="min-h-12 rounded-xl border border-gray-300 px-5 font-semibold text-gray-700 disabled:opacity-50">Voltar</button>
+              <button type="button" onClick={() => void handleAnswer()} disabled={processing || !selectedAnswer || (selectedAnswer === 'other' && !customAnswer.trim())} className="brand-button flex min-h-12 flex-1 items-center justify-center gap-2 rounded-xl px-5 font-bold text-white disabled:opacity-50">
+                {processing ? <><Loader2 className="animate-spin" size={20} /> Preparando próximo passo</> : <>Continuar <ArrowRight size={19} /></>}
+              </button>
             </div>
-            <button onClick={handleGenerate} disabled={processing} className="w-full py-4 brand-button text-white font-bold rounded-2xl shadow-lg flex items-center justify-center gap-2 text-lg">
-              {processing ? <Loader2 className="animate-spin" /> : <>{wallet && wallet.balance > 0 ? 'Gerar meu planner · 1 sonho' : 'Escolher meus sonhos'} <Sparkles /></>}
+            {error && <p role="alert" className="rounded-xl bg-red-50 p-3 text-center text-red-700">{error}</p>}
+          </div>
+        )}
+
+        {step === 'confirm' && proposal && (
+          <div className="w-full max-w-2xl mx-auto space-y-6 animate-in fade-in slide-in-from-right-8 duration-500">
+            <div className="text-center space-y-2">
+              <div className="bg-purple-100 p-3 rounded-full inline-block"><Compass className="w-8 h-8 text-purple-600" /></div>
+              <h2 className="brand-text text-2xl font-bold">Seu objetivo está quase pronto</h2>
+              <p className="text-gray-500">Confira se esse é o caminho que você quer seguir. Se estiver tudo certo, vamos transformar em um plano.</p>
+            </div>
+            <div className="space-y-5 rounded-2xl border border-gray-200 bg-white p-6 shadow-sm sm:p-8">
+              <div><p className="text-xs font-bold uppercase tracking-wider text-indigo-600">Seu objetivo</p><p className="mt-1 text-xl font-semibold text-gray-900">{proposal.goal}</p></div>
+              {!previewId && <div><p className="text-xs font-bold uppercase tracking-wider text-indigo-600">Como perceber o avanço</p><p className="mt-1 text-gray-700">{proposal.successSignal}</p></div>}
+              <div><p className="text-xs font-bold uppercase tracking-wider text-indigo-600">{previewId ? 'Primeiro passo da prévia' : 'Por onde começar'}</p><p className="mt-1 text-gray-700">{proposal.firstPhase}</p></div>
+            </div>
+            <button type="button" onClick={() => void handleGenerate()} disabled={processing} className="brand-button flex w-full min-h-14 items-center justify-center gap-2 rounded-2xl px-5 text-lg font-bold text-white disabled:opacity-50">
+              {wallet && wallet.balance > 0 ? 'Confirmar e gerar meu plano · 1 sonho' : 'Continuar e escolher meus sonhos'} <Sparkles size={19} />
             </button>
-            {error && <p role="alert" className="text-center text-red-600 bg-red-50 p-3 rounded-xl">{error}</p>}
+            <button type="button" onClick={handleAdjustGoal} className="w-full rounded-xl py-2 font-semibold text-indigo-700 hover:underline">Quero ajustar minhas respostas</button>
+            {error && <p role="alert" className="rounded-xl bg-red-50 p-3 text-center text-red-700">{error}</p>}
           </div>
         )}
 
