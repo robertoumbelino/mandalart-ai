@@ -571,7 +571,7 @@ export default function Home() {
       </header>
 
       {user && isHistoryOpen && (
-        <div className="fixed inset-0 bg-black/20 backdrop-blur-sm z-50 transition-opacity" onClick={() => setIsHistoryOpen(false)} />
+        <div className="history-backdrop" onClick={() => setIsHistoryOpen(false)} />
       )}
       {user && <div
         ref={historyDrawerRef}
@@ -580,42 +580,58 @@ export default function Home() {
         aria-label="Histórico de planos"
         aria-hidden={!isHistoryOpen}
         inert={!isHistoryOpen}
-        className={`fixed inset-y-0 right-0 w-80 bg-white shadow-2xl z-50 transform transition-transform duration-300 ${isHistoryOpen ? 'translate-x-0' : 'translate-x-full'}`}
+        className={`history-drawer ${isHistoryOpen ? 'history-drawer-open' : ''}`}
       >
-        <div className="flex flex-col h-full">
-          <div className="p-5 border-b flex items-center justify-between">
-            <h2 className="font-bold flex items-center gap-2"><History className="text-indigo-600"/> Histórico de {user.name}</h2>
-            <button ref={historyCloseButtonRef} aria-label="Fechar histórico" onClick={() => setIsHistoryOpen(false)} className="p-1 hover:bg-gray-100 rounded-full"><X size={20}/></button>
+        <div className="history-drawer-layout">
+          <div className="history-drawer-header">
+            <div className="history-drawer-heading">
+              <span className="history-drawer-icon"><History size={23} aria-hidden="true" /></span>
+              <div>
+                <span className="history-drawer-eyebrow">SEU ESPAÇO DE CONQUISTAS</span>
+                <h2>Seus planos<span className="brand-text">.</span></h2>
+              </div>
+            </div>
+            <button ref={historyCloseButtonRef} type="button" aria-label="Fechar histórico" onClick={() => setIsHistoryOpen(false)} className="history-drawer-close"><X size={20}/></button>
+            <p className="history-drawer-subtitle">{user.name}, cada passo seu merece um lugar para continuar.</p>
           </div>
-          <div className="flex-1 overflow-y-auto p-4 space-y-3">
+          <div className="history-drawer-scroll">
+            <div className="history-drawer-summary">
+              <div><span className="history-drawer-summary-icon"><Sparkles size={18} aria-hidden="true" /></span><span>Um sonho de cada vez</span></div>
+              <strong>{history.length} {history.length === 1 ? 'plano' : 'planos'}</strong>
+            </div>
             {history.length === 0 ? (
-              <div className="text-center py-20 text-gray-400">Nenhum plano salvo ainda.</div>
+              <div className="history-empty">
+                <span><Compass size={25} aria-hidden="true" /></span>
+                <h3>Seu primeiro plano começa aqui.</h3>
+                <p>Quando você criar um Mandalart, ele aparecerá neste espaço para continuar no seu ritmo.</p>
+              </div>
             ) : (
-              history.map(item => {
+              <div className="history-list">{history.map((item, index) => {
                 const progress = getJourneyProgress(item.data)
                 return (
-                  <div key={item.id} className="group relative">
+                  <article key={item.id} className="history-card">
                     <button
                       type="button"
                       onClick={() => loadHistoryItem(item)}
-                      className="w-full rounded-xl border border-gray-100 bg-white p-4 text-left shadow-sm transition-all hover:border-indigo-200 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
+                      className="history-card-open"
                     >
-                      <h3 className="font-bold text-gray-800 line-clamp-2 pr-6">{item.data.mainGoal}</h3>
-                      <div className="mt-3 flex items-center justify-between text-[11px] font-bold">
-                        <span className={progress.percentage === 100 ? 'text-emerald-600' : 'text-indigo-600'}>
+                      <span className="history-card-kicker">SONHO {String(index + 1).padStart(2, '0')}</span>
+                      <h3>{item.data.mainGoal}</h3>
+                      <span className="history-card-date"><Calendar size={14} aria-hidden="true" /> {new Date(item.timestamp).toLocaleDateString('pt-BR')}</span>
+                      <span className="history-card-progress-row">
+                        <strong className={progress.percentage === 100 ? 'history-progress-done' : ''}>
                           {progress.percentage === 100 ? 'Jornada concluída' : `${progress.percentage}% da jornada`}
-                        </span>
-                        <span className="text-gray-400">{progress.completedTasks}/64 etapas</span>
-                      </div>
-                      <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-slate-100">
-                        <div className={`h-full rounded-full ${progress.percentage === 100 ? 'bg-emerald-500' : 'brand-surface'}`} style={{ width: `${progress.percentage}%` }} />
-                      </div>
-                      <div className="flex items-center gap-1 mt-3 text-xs text-gray-400"><Calendar size={12}/> {new Date(item.timestamp).toLocaleDateString()}</div>
+                        </strong><span>{progress.completedTasks}/64 etapas</span>
+                      </span>
+                      <span className="history-progress-track" role="progressbar" aria-label={`Progresso de ${item.data.mainGoal}`} aria-valuenow={progress.percentage} aria-valuemin={0} aria-valuemax={100}>
+                        <span className={progress.percentage === 100 ? 'history-progress-fill history-progress-fill-done' : 'history-progress-fill'} style={{ width: `${progress.percentage}%` }} />
+                      </span>
+                      <span className="history-card-action">Continuar meu plano <ArrowRight size={16} aria-hidden="true" /></span>
                     </button>
-                    <button aria-label={`Excluir ${item.data.mainGoal}`} onClick={(e) => deleteHistoryItem(item.id, e)} className="absolute top-3 right-3 p-1.5 text-gray-300 hover:text-red-500 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-all"><Trash2 size={16}/></button>
-                  </div>
+                    <button type="button" aria-label={`Excluir ${item.data.mainGoal}`} title="Excluir plano" onClick={(e) => deleteHistoryItem(item.id, e)} className="history-card-delete"><Trash2 size={17}/></button>
+                  </article>
                 )
-              })
+              })}</div>
             )}
           </div>
         </div>
