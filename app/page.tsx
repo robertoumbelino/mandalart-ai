@@ -45,10 +45,13 @@ const GENERATION_MESSAGES = [
   }
 ] as const;
 
+const GUEST_GOAL_KEY = 'mandalart.guest.goal';
+
 export default function Home() {
   const router = useRouter();
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const [showAuth, setShowAuth] = useState(false);
   const [step, setStep] = useState<AppStep>('input');
   const [mainGoal, setMainGoal] = useState('');
   const [previewId, setPreviewId] = useState<string | undefined>(undefined);
@@ -90,6 +93,10 @@ export default function Home() {
           await authClient.getSession();
         }
         const currentUser = await getCurrentUser();
+        try {
+          const guestGoal = sessionStorage.getItem(GUEST_GOAL_KEY);
+          if (active && guestGoal) setMainGoal(guestGoal.slice(0, 300));
+        } catch { /* O formulário continua funcionando sem armazenamento no navegador. */ }
         if (!active || !currentUser) return;
         activeUserIdRef.current = currentUser.id;
         setUser(currentUser);
@@ -142,6 +149,8 @@ export default function Home() {
       try {
         let pending: string | null = null;
         try { pending = sessionStorage.getItem(key); } catch {}
+        const guestGoal = sessionStorage.getItem(GUEST_GOAL_KEY);
+        if (guestGoal) sessionStorage.removeItem(GUEST_GOAL_KEY);
         pending ||= generationRecoveryRef.current ? JSON.stringify(generationRecoveryRef.current) : null;
         if (pending) {
           const saved = JSON.parse(pending);
@@ -165,6 +174,8 @@ export default function Home() {
             setQuestions(restoredAnswers.map(a => ({ id: a.questionId, text: a.questionText })));
             setStep('interview');
           }
+        } else if (guestGoal) {
+          setMainGoal(guestGoal.slice(0, 300));
         } else {
           const saved = sessionStorage.getItem(`mandalart.interview.${user.id}`);
           if (saved) {
@@ -276,6 +287,7 @@ export default function Home() {
     activeUserIdRef.current = newUser.id;
     setWallet(null);
     setUser(newUser);
+    setShowAuth(false);
     await refreshHistory();
   };
 
@@ -292,6 +304,16 @@ export default function Home() {
     setPreviewId(undefined);
     setHistory([]);
     setStep('input');
+    setShowAuth(false);
+    try { sessionStorage.removeItem(GUEST_GOAL_KEY); } catch {}
+  };
+
+  const openAuth = () => {
+    try {
+      if (mainGoal.trim()) sessionStorage.setItem(GUEST_GOAL_KEY, mainGoal.trim());
+      else sessionStorage.removeItem(GUEST_GOAL_KEY);
+    } catch {}
+    setShowAuth(true);
   };
 
   const flushMandalartUpdates = async () => {
@@ -364,7 +386,11 @@ export default function Home() {
 
   const handleStart = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!mainGoal.trim() || processing || !user) return;
+    if (!mainGoal.trim() || processing) return;
+    if (!user) {
+      openAuth();
+      return;
+    }
     setProcessing(true);
     setError(null);
     try {
@@ -462,8 +488,8 @@ export default function Home() {
     );
   }
 
-  if (!user) {
-    return <Auth onLogin={handleLogin} />;
+  if (!user && showAuth) {
+    return <Auth onLogin={handleLogin} onBack={() => setShowAuth(false)} goal={mainGoal.trim()} />;
   }
 
   return (
@@ -478,7 +504,8 @@ export default function Home() {
             </button>
           )}
 
-          <nav className="home-header-actions" aria-label="Sua conta">
+          <nav className="home-header-actions" aria-label={user ? 'Sua conta' : 'Acesso'}>
+            {user ? <>
             <Link href="/sonhos" className={`home-wallet-link ${needsDreams ? 'home-wallet-empty' : ''}`} aria-label={needsDreams ? 'Comprar sonhos' : 'Ver saldo e comprar sonhos'}>
               <Sparkles size={16} aria-hidden="true" />
               <span>{needsDreams ? 'Comprar sonhos' : wallet ? `${wallet.balance} ${wallet.balance === 1 ? 'sonho disponível' : 'sonhos disponíveis'}` : 'Meus sonhos'}</span>
@@ -536,14 +563,17 @@ export default function Home() {
               </div>
             )}
           </div>
+          </> : (
+            <button type="button" className="home-login-button" onClick={openAuth}>Entrar <ArrowRight size={16} aria-hidden="true" /></button>
+          )}
           </nav>
         </div>
       </header>
 
-      {isHistoryOpen && (
+      {user && isHistoryOpen && (
         <div className="fixed inset-0 bg-black/20 backdrop-blur-sm z-50 transition-opacity" onClick={() => setIsHistoryOpen(false)} />
       )}
-      <div
+      {user && <div
         ref={historyDrawerRef}
         role="dialog"
         aria-modal="true"
@@ -589,7 +619,7 @@ export default function Home() {
             )}
           </div>
         </div>
-      </div>
+      </div>}
 
       <main className={step === 'input' ? 'home-main' : 'flex-grow flex flex-col items-center justify-center px-4 pb-8 pt-8 sm:p-8 w-full'}>
         {step === 'input' && (
@@ -611,7 +641,10 @@ export default function Home() {
                       onChange={(e) => {
                         setMainGoal(e.target.value);
                         if (!e.target.value.trim()) {
-                          try { sessionStorage.removeItem(`mandalart.interview.${user.id}`); } catch {}
+                          try { sessionStorage.removeItem(GUEST_GOAL_KEY); } catch {}
+                          if (user) {
+                            try { sessionStorage.removeItem(`mandalart.interview.${user.id}`); } catch {}
+                          }
                         }
                       }}
                       maxLength={300}
@@ -624,7 +657,7 @@ export default function Home() {
                   </form>
                   <p id="home-goal-hint" className="home-form-hint">
                     <Check size={15} aria-hidden="true" />
-                    {needsDreams ? 'Seu objetivo fica salvo para continuar depois de escolher seus sonhos.' : 'São só 3 perguntas para personalizar seu plano.'}
+                    {user && needsDreams ? 'Seu objetivo fica salvo para continuar depois de escolher seus sonhos.' : 'São só 3 perguntas para personalizar seu plano.'}
                   </p>
                 </div>
                 {error && <p role="alert" className="home-error">{error}</p>}

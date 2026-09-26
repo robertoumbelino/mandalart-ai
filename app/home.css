@@ -41,6 +41,26 @@
   gap: 10px;
 }
 
+.home-login-button {
+  min-height: 43px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  padding: 0 18px;
+  border: 1px solid #ddd9ff;
+  border-radius: 999px;
+  background: #f5f3ff;
+  color: #4f39f6;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 160ms, border-color 160ms;
+}
+
+.home-login-button:hover { border-color: #c4b5fd; background: #ede9fe; }
+
 .home-wallet-link {
   min-height: 43px;
   display: inline-flex;
@@ -565,6 +585,11 @@
   .home-header-actions > button {
     grid-column: 2;
     grid-row: 1;
+  }
+
+  .home-header-actions > .home-login-button {
+    grid-column: 2 / 4;
+    min-height: 39px;
   }
 
   .home-header-actions > div {

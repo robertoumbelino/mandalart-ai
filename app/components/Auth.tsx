@@ -1,19 +1,22 @@
 'use client'
 
 import React, { useState } from 'react'
-import { BrandIcon, BrandWordmark } from './Brand'
 import Image from 'next/image'
 import Link from 'next/link'
-import { Mail, Lock, LogIn, UserPlus, Loader2 } from 'lucide-react'
+import { ArrowLeft, ArrowRight, Check, Loader2, LockKeyhole, Mail, Sparkles } from 'lucide-react'
+import { BrandLogo } from './Brand'
 import { getCurrentUser, login, register } from '@/actions/auth'
 import { authClient } from '@/lib/auth/client'
 import type { User } from '@/types'
+import './auth.css'
 
 interface AuthProps {
   onLogin: (user: User) => Promise<void>
+  onBack?: () => void
+  goal?: string
 }
 
-export const Auth: React.FC<AuthProps> = ({ onLogin }) => {
+export const Auth: React.FC<AuthProps> = ({ onLogin, onBack, goal }) => {
   const [mode, setMode] = useState<'login' | 'register' | 'forgot'>('login')
   const [loading, setLoading] = useState(false)
   const [email, setEmail] = useState('')
@@ -31,10 +34,7 @@ export const Auth: React.FC<AuthProps> = ({ onLogin }) => {
     setLoading(true)
     setError(null)
     try {
-      const { error: authError } = await authClient.signIn.social({
-        provider: 'google',
-        callbackURL: window.location.origin
-      })
+      const { error: authError } = await authClient.signIn.social({ provider: 'google', callbackURL: window.location.origin })
       if (authError) throw new Error(authError.message)
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : 'Não foi possível entrar com Google.')
@@ -49,10 +49,7 @@ export const Auth: React.FC<AuthProps> = ({ onLogin }) => {
     setMessage(null)
     try {
       if (mode === 'forgot') {
-        const { error: authError } = await authClient.requestPasswordReset({
-          email,
-          redirectTo: `${window.location.origin}/redefinir-senha`
-        })
+        const { error: authError } = await authClient.requestPasswordReset({ email, redirectTo: `${window.location.origin}/redefinir-senha` })
         if (authError) throw new Error(authError.message)
         setMessage('Se houver uma conta com esse e-mail, enviaremos um link para definir sua senha.')
         return
@@ -69,81 +66,69 @@ export const Auth: React.FC<AuthProps> = ({ onLogin }) => {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-6 bg-slate-50">
-      <div className="w-full max-w-md animate-in fade-in zoom-in duration-500">
-        <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-20 h-20 mb-4 drop-shadow-xl">
-            <BrandIcon size={80} />
+    <main className="auth-screen">
+      <header className="auth-header">
+        {onBack ? <button type="button" onClick={onBack} className="auth-brand" aria-label="Mandalart.AI, início"><BrandLogo iconSize={28} /></button> : <Link href="/" className="auth-brand" aria-label="Mandalart.AI, início"><BrandLogo iconSize={28} /></Link>}
+        {onBack && <button type="button" onClick={onBack} className="auth-back"><ArrowLeft size={17} /> Voltar ao início</button>}
+      </header>
+
+      <div className="auth-content">
+        <section className="auth-story" aria-labelledby="auth-title">
+          <span className="auth-eyebrow"><Sparkles size={17} /> UM PASSO DE CADA VEZ</span>
+          <h1 id="auth-title">Seu sonho merece <span className="brand-text">um lugar para crescer.</span></h1>
+          <p>Entre para guardar suas ideias, criar seu Mandalart e acompanhar cada passo do seu caminho.</p>
+          {goal && <div className="auth-goal"><span>O sonho que você trouxe</span><strong>{goal}</strong><small><Check size={15} /> Vai continuar aqui depois de entrar.</small></div>}
+          <div className="auth-illustration" aria-hidden="true">
+            <div className="auth-orbit" />
+            <div className="auth-plan">
+              <span className="auth-plan-label">SEU MANDALART <Sparkles size={16} /></span>
+              <div className="auth-plan-grid">
+                {['Aprender', 'Preparar', 'Explorar', 'Praticar', 'Seu sonho', 'Cuidar', 'Organizar', 'Conectar', 'Avançar'].map((item, index) => <span key={item} className={index === 4 ? 'auth-plan-center' : ''}>{item}</span>)}
+              </div>
+            </div>
           </div>
-          <h1 className="text-4xl font-black tracking-tight text-slate-900"><BrandWordmark /></h1>
-          <p className="text-slate-500 mt-2 font-medium">Sua estratégia começa aqui.</p>
-        </div>
+        </section>
 
-        <div className="bg-white p-8 rounded-[2.5rem] shadow-2xl border border-slate-100">
+        <section className="auth-panel" aria-labelledby="auth-panel-title">
+          <div className="auth-panel-heading">
+            <span className="auth-panel-icon"><Sparkles size={21} /></span>
+            <h2 id="auth-panel-title">{mode === 'register' ? 'Crie seu espaço' : mode === 'forgot' ? 'Recupere seu acesso' : 'Que bom ter você aqui'}</h2>
+            <p>{mode === 'register' ? 'Comece a transformar seus sonhos em passos possíveis.' : mode === 'forgot' ? 'Enviaremos um link para você definir uma nova senha.' : 'Entre para continuar de onde seu sonho começou.'}</p>
+          </div>
+
           {mode !== 'forgot' ? (
-            <div className="flex bg-slate-100 p-1 rounded-xl mb-6">
-              <button type="button" disabled={loading} onClick={() => selectMode('login')} className={`flex-1 py-2 text-sm font-bold rounded-lg transition-all ${mode === 'login' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}>
-                Entrar
-              </button>
-              <button type="button" disabled={loading} onClick={() => selectMode('register')} className={`flex-1 py-2 text-sm font-bold rounded-lg transition-all ${mode === 'register' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}>
-                Criar conta
-              </button>
+            <div className="auth-tabs" role="group" aria-label="Escolha como continuar">
+              <button type="button" disabled={loading} onClick={() => selectMode('login')} aria-pressed={mode === 'login'}>Entrar</button>
+              <button type="button" disabled={loading} onClick={() => selectMode('register')} aria-pressed={mode === 'register'}>Criar conta</button>
             </div>
-          ) : (
-            <div className="mb-6">
-              <button type="button" onClick={() => selectMode('login')} className="text-sm font-semibold text-indigo-600 hover:text-indigo-700">← Voltar para entrar</button>
-              <h2 className="mt-4 text-xl font-black text-slate-900">Definir uma senha</h2>
-              <p className="mt-2 text-sm text-slate-500">Enviaremos um link para seu e-mail.</p>
-            </div>
-          )}
+          ) : <button type="button" className="auth-inline-back" onClick={() => selectMode('login')}><ArrowLeft size={15} /> Voltar para entrar</button>}
 
-          {mode !== 'forgot' && (
-            <>
-              <button type="button" onClick={handleGoogle} disabled={loading} className="w-full min-h-11 rounded-full border border-slate-300 bg-white px-4 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-60 flex items-center justify-center gap-3">
-                <Image src="/google-g.png" alt="" aria-hidden="true" width={20} height={21} className="h-auto w-5 shrink-0" />
-                Continuar com Google
-              </button>
-              <div className="my-6 flex items-center gap-3" aria-hidden="true">
-                <div className="h-px flex-1 bg-slate-100" />
-                <span className="text-xs font-bold uppercase tracking-wide text-slate-300">ou use seu e-mail</span>
-                <div className="h-px flex-1 bg-slate-100" />
-              </div>
-            </>
-          )}
+          {mode !== 'forgot' && <>
+            <button type="button" onClick={handleGoogle} disabled={loading} className="auth-google">
+              <Image src="/google-g.png" alt="" aria-hidden="true" width={20} height={21} className="auth-google-icon" />
+              Continuar com Google
+            </button>
+            <div className="auth-divider"><span>ou use seu e-mail</span></div>
+          </>}
 
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="space-y-1">
-              <label htmlFor="email" className="text-xs font-bold text-slate-400 uppercase px-1">E-mail</label>
-              <div className="relative">
-                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-300" size={18} />
-                <input id="email" type="email" required maxLength={254} autoComplete="email" disabled={loading} value={email} onChange={event => setEmail(event.target.value)} className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-100 rounded-xl focus:ring-2 focus:ring-indigo-500/20 focus:bg-white text-slate-900 transition-all outline-none font-medium disabled:opacity-60" placeholder="exemplo@email.com" />
-              </div>
-            </div>
-            {mode !== 'forgot' && (
-              <div className="space-y-1">
-                <label htmlFor="password" className="text-xs font-bold text-slate-400 uppercase px-1">Senha</label>
-                <div className="relative">
-                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-300" size={18} />
-                  <input id="password" type="password" required minLength={8} maxLength={72} autoComplete={mode === 'login' ? 'current-password' : 'new-password'} disabled={loading} value={password} onChange={event => setPassword(event.target.value)} className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-100 rounded-xl focus:ring-2 focus:ring-indigo-500/20 focus:bg-white text-slate-900 transition-all outline-none font-medium disabled:opacity-60" placeholder="Mínimo de 8 caracteres" />
-                </div>
-              </div>
-            )}
-            {error && <p role="alert" className="text-sm text-red-700 bg-red-50 border border-red-100 p-3 rounded-xl">{error}</p>}
-            {message && <p role="status" className="text-sm text-emerald-700 bg-emerald-50 border border-emerald-100 p-3 rounded-xl">{message}</p>}
-            <button type="submit" disabled={loading} className="w-full py-4 brand-button text-white font-bold rounded-2xl shadow-lg shadow-indigo-100 transition-all flex items-center justify-center gap-2 mt-2">
-              {loading ? <Loader2 className="animate-spin" /> : mode === 'register' ? <><UserPlus size={20} /> Criar conta</> : mode === 'forgot' ? <><Mail size={20} /> Enviar link</> : <><LogIn size={20} /> Entrar</>}
+          <form onSubmit={handleSubmit} className="auth-form">
+            <label htmlFor="email">E-mail</label>
+            <div className="auth-field"><Mail size={18} aria-hidden="true" /><input id="email" type="email" required maxLength={254} autoComplete="email" disabled={loading} value={email} onChange={event => setEmail(event.target.value)} placeholder="seu@email.com" /></div>
+            {mode !== 'forgot' && <>
+              <label htmlFor="password">Senha</label>
+              <div className="auth-field"><LockKeyhole size={18} aria-hidden="true" /><input id="password" type="password" required minLength={8} maxLength={72} autoComplete={mode === 'login' ? 'current-password' : 'new-password'} disabled={loading} value={password} onChange={event => setPassword(event.target.value)} placeholder={mode === 'register' ? 'Mínimo de 8 caracteres' : 'Sua senha'} /></div>
+            </>}
+            {error && <p role="alert" className="auth-feedback auth-error">{error}</p>}
+            {message && <p role="status" className="auth-feedback auth-success">{message}</p>}
+            <button type="submit" disabled={loading} className="auth-submit brand-button">
+              {loading ? <Loader2 className="animate-spin" size={20} /> : <>{mode === 'register' ? 'Criar minha conta' : mode === 'forgot' ? 'Enviar link' : 'Entrar e continuar'} <ArrowRight size={19} /></>}
             </button>
           </form>
 
-          {mode === 'login' && <button type="button" onClick={() => selectMode('forgot')} className="mt-4 w-full text-center text-sm font-semibold text-indigo-600 hover:text-indigo-700">Esqueci minha senha</button>}
-          <p className="mt-6 text-center text-xs leading-relaxed text-slate-400">
-            Ao continuar, você concorda com os{' '}
-            <Link href="/termos" className="font-semibold text-slate-500 hover:text-indigo-600">Termos de Uso</Link>
-            {' '}e a{' '}
-            <Link href="/privacidade" className="font-semibold text-slate-500 hover:text-indigo-600">Política de Privacidade</Link>.
-          </p>
-        </div>
+          {mode === 'login' && <button type="button" onClick={() => selectMode('forgot')} className="auth-forgot">Esqueci minha senha</button>}
+          <p className="auth-legal">Ao continuar, você concorda com os <Link href="/termos">Termos de Uso</Link> e a <Link href="/privacidade">Política de Privacidade</Link>.</p>
+        </section>
       </div>
-    </div>
+    </main>
   )
 }
