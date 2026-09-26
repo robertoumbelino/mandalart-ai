@@ -167,3 +167,6 @@ vite.config.ts.timestamp-*
 .vercel
 .env*
 !.env.example
+
+# Local video and other generated content
+/contents/
