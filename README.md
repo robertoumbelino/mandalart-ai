@@ -56,6 +56,10 @@ pnpm build
 
 `check` executa ESLint, TypeScript e testes Vitest.
 
+## Conteúdo local
+
+Use `contents/` para criar vídeos, imagens, áudios, roteiros e outros materiais de conteúdo. Crie a pasta quando necessário em um checkout novo. Ela está no `.gitignore`, incluindo arquivos de trabalho, dependências locais e exports. Ferramentas usadas apenas para gerar conteúdo ficam no `contents/package.json`, sem alterar as dependências da aplicação.
+
 ## Variáveis de ambiente
 
 | Variável | Obrigatória | Uso |
