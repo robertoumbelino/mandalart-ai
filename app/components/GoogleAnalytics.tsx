@@ -9,7 +9,7 @@ const pendingEvents: Array<[string, Record<string, string | number> | undefined]
 
 declare global {
   interface Window {
-    dataLayer?: unknown[][]
+    dataLayer?: unknown[]
     gtag?: (...args: unknown[]) => void
     mandalartGaConfigured?: boolean
   }
@@ -21,7 +21,7 @@ export function sendGoogleAnalyticsEvent(
 ) {
   if (!PRODUCTION_HOSTS.has(window.location.hostname)) return
   if (window.mandalartGaConfigured) {
-    window.gtag?.('event', name, properties)
+    window.gtag?.('event', name, { ...properties, send_to: MEASUREMENT_ID })
   } else {
     pendingEvents.push([name, properties])
   }
@@ -45,8 +45,10 @@ export function GoogleAnalytics() {
     }
 
     window.dataLayer ??= []
-    window.gtag ??= (...args: unknown[]) => {
-      window.dataLayer?.push(args)
+    window.gtag ??= function () {
+      // Google tag consumes the Arguments object used by its standard snippet.
+      // eslint-disable-next-line prefer-rest-params
+      window.dataLayer?.push(arguments)
     }
 
     if (!window.mandalartGaConfigured) {
@@ -67,10 +69,11 @@ export function GoogleAnalytics() {
       page_path: pathname,
       page_referrer: pageReferrer,
       page_title: document.title,
+      send_to: MEASUREMENT_ID,
     })
     previousPage.current = pageLocation
     for (const [name, properties] of pendingEvents.splice(0)) {
-      window.gtag('event', name, properties)
+      window.gtag('event', name, { ...properties, send_to: MEASUREMENT_ID })
     }
 
     if (!document.getElementById('mandalart-google-analytics')) {
