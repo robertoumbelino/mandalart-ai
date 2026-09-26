@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import { track } from '@vercel/analytics'
+import { sendGoogleAnalyticsEvent } from '@/app/components/GoogleAnalytics'
 import {
   ArrowLeft,
   ArrowRight,
@@ -98,6 +99,11 @@ const QUESTION_COPY = [
 function analytics(name: string, properties?: Record<string, string | number>) {
   try {
     track(name, properties)
+  } catch {
+    /* Analytics must never interrupt the journey. */
+  }
+  try {
+    sendGoogleAnalyticsEvent(name, properties)
   } catch {
     /* Analytics must never interrupt the journey. */
   }

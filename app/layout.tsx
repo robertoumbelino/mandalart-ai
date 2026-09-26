@@ -2,6 +2,7 @@ import React from 'react';
 import type { Metadata } from 'next';
 import localFont from 'next/font/local';
 import { Analytics } from '@vercel/analytics/next';
+import { GoogleAnalytics } from './components/GoogleAnalytics';
 import './globals.css';
 
 export const maxDuration = 180;
@@ -37,6 +38,7 @@ export default function RootLayout({
       <body>
         {children}
         <Analytics />
+        <GoogleAnalytics />
       </body>
     </html>
   );

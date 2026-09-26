@@ -15,7 +15,7 @@ export default function PrivacyPage() {
         </Link>
 
         <h1 className="mt-8 text-3xl font-black tracking-tight text-slate-900">Política de Privacidade</h1>
-        <p className="mt-2 text-sm text-slate-500">Última atualização: 25 de setembro de 2026</p>
+        <p className="mt-2 text-sm text-slate-500">Última atualização: 26 de setembro de 2026</p>
 
         <div className="mt-8 space-y-7 leading-relaxed">
           <section>
@@ -39,6 +39,9 @@ export default function PrivacyPage() {
             </p>
             <p className="mt-2">
               Na prévia sem cadastro, em /comecar, guardamos as respostas e o progresso neste navegador por até 7 dias desde o último uso. Ao solicitar a geração, as respostas também são processadas pela IA e a prévia fica associada a uma sessão anônima em nosso servidor. Usamos um cookie protegido para recuperar a mesma prévia, referências da campanha para identificar sua origem e um identificador de rede protegido por hash para limitar abusos. Os eventos de uso da jornada não contêm o texto do seu sonho nem suas respostas.
+            </p>
+            <p className="mt-2">
+              Usamos Vercel Analytics e Google Analytics para entender visitas, páginas acessadas e etapas de uso do site. As URLs enviadas ao Google não incluem parâmetros de consulta, e os eventos de uso não incluem o texto dos seus sonhos ou respostas. O Google pode tratar identificadores do navegador e dados técnicos conforme sua própria política de privacidade. A medição do Google Analytics ocorre apenas em mandalart.com.br.
             </p>
           </section>
 
