@@ -41,7 +41,7 @@ export function startPostHog() {
     autocapture: false,
     session_recording: {
       maskAllInputs: true,
-      maskTextSelector: '*',
+      maskTextSelector: '.ph-mask',
       recordHeaders: false,
       recordBody: false,
       captureJsonLd: false,

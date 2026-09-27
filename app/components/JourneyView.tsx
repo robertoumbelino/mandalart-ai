@@ -120,7 +120,7 @@ export const JourneyView: React.FC<JourneyViewProps> = ({
             <div className="mb-4 inline-flex items-center gap-2 rounded-full bg-indigo-50 px-3 py-1.5 text-xs font-black uppercase tracking-[0.16em] text-indigo-700">
               <Map size={14} /> Sua jornada
             </div>
-            <h1 className="brand-text max-w-3xl text-4xl font-black leading-[1.05] tracking-[-0.04em] sm:text-6xl">
+            <h1 className="ph-mask brand-text max-w-3xl text-4xl font-black leading-[1.05] tracking-[-0.04em] sm:text-6xl">
               {data.mainGoal}
             </h1>
             <p className="mt-4 max-w-2xl text-base leading-relaxed text-slate-500 sm:text-lg">
@@ -174,10 +174,10 @@ export const JourneyView: React.FC<JourneyViewProps> = ({
                     <p className="mb-2 text-xs font-bold text-white/85">
                       Capítulo {nextTask.subGoalIndex + 1} · Etapa {nextTask.stepNumber} de {progress.totalTasks}
                     </p>
-                    <h2 className="text-2xl font-black leading-tight tracking-tight sm:text-3xl">
+                    <h2 className="ph-mask text-2xl font-black leading-tight tracking-tight sm:text-3xl">
                       {nextTask.task.title}
                     </h2>
-                    <p className="mt-3 max-w-xl text-sm leading-relaxed text-white/90 sm:text-base">
+                    <p className="ph-mask mt-3 max-w-xl text-sm leading-relaxed text-white/90 sm:text-base">
                       {nextTask.task.description}
                     </p>
                   </div>
@@ -244,8 +244,6 @@ export const JourneyView: React.FC<JourneyViewProps> = ({
                     <button
                       type="button"
                       onClick={() => goToStage(stageIndex)}
-                      aria-label={`Abrir capítulo ${stageIndex + 1}: ${subGoal.title}`}
-                      title={subGoal.title}
                       className={`group flex flex-col items-center gap-2 rounded-2xl px-2 py-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 ${isCurrent ? 'text-indigo-700' : 'text-slate-400'}`}
                     >
                       <span className={`grid h-9 w-9 place-items-center rounded-full border-2 text-xs font-black transition ${
@@ -257,7 +255,7 @@ export const JourneyView: React.FC<JourneyViewProps> = ({
                       }`}>
                         {isComplete ? <Check size={16} strokeWidth={3} /> : stageIndex + 1}
                       </span>
-                      <span className="min-h-9 w-32 text-center text-xs font-bold leading-tight line-clamp-3">{subGoal.title}</span>
+                      <span className="ph-mask min-h-9 w-32 text-center text-xs font-bold leading-tight line-clamp-3">{subGoal.title}</span>
                     </button>
                     {stageIndex < data.subGoals.length - 1 && (
                       <span className={`mb-5 h-0.5 w-7 sm:w-12 ${isComplete ? 'bg-emerald-300' : 'bg-slate-200'}`} aria-hidden="true" />
@@ -319,7 +317,7 @@ export const JourneyView: React.FC<JourneyViewProps> = ({
                     </span>
                     <span className="min-w-0 flex-1">
                       <span className="flex flex-wrap items-center gap-2">
-                        <span className="text-lg font-black leading-tight text-slate-900 sm:text-xl">{subGoal.title}</span>
+                        <span className="ph-mask text-lg font-black leading-tight text-slate-900 sm:text-xl">{subGoal.title}</span>
                         {isCurrent && <span className={`rounded-full ${theme.soft} px-2 py-1 text-[10px] font-black uppercase tracking-wider ${theme.text}`}>Você está aqui</span>}
                       </span>
                       <span className="mt-1 block text-xs text-slate-500">{stage.completedTasks} de {stage.totalTasks} etapas · {stage.percentage}% concluído</span>
@@ -334,7 +332,7 @@ export const JourneyView: React.FC<JourneyViewProps> = ({
 
                   {isOpen && (
                     <div className="border-t border-slate-100 px-5 pb-7 pt-6 sm:px-7">
-                      <p className="mb-6 max-w-3xl text-sm leading-relaxed text-slate-500">{subGoal.description}</p>
+                      <p className="ph-mask mb-6 max-w-3xl text-sm leading-relaxed text-slate-500">{subGoal.description}</p>
                       <ol className="journey-task-list">
                         {subGoal.tasks.map((task, taskIndex) => {
                           const checkedCount = task.checklist.filter(item => item.checked).length
@@ -365,7 +363,7 @@ export const JourneyView: React.FC<JourneyViewProps> = ({
                                 }`}
                               >
                                 <span className="min-w-0 flex-1">
-                                  <span className={`block text-sm font-bold leading-snug ${isTaskComplete ? 'text-emerald-800' : 'text-slate-800'}`}>{task.title}</span>
+                                  <span className={`ph-mask block text-sm font-bold leading-snug ${isTaskComplete ? 'text-emerald-800' : 'text-slate-800'}`}>{task.title}</span>
                                   <span className="mt-1 flex items-center gap-1.5 text-[11px] text-slate-400">
                                     {isTaskCurrent && <span className={`font-black uppercase tracking-wider ${theme.text}`}>Agora ·</span>}
                                     {checkedCount}/{task.checklist.length} ações
@@ -386,7 +384,7 @@ export const JourneyView: React.FC<JourneyViewProps> = ({
                       </ol>
                       <div className={`mt-5 flex items-start gap-3 rounded-2xl ${theme.soft} px-4 py-3 text-sm leading-relaxed ${theme.text}`}>
                         <Flag size={17} className="mt-0.5 shrink-0" />
-                        <p><strong>Dica do capítulo:</strong> {subGoal.advice}</p>
+                        <p><strong>Dica do capítulo:</strong> <span className="ph-mask">{subGoal.advice}</span></p>
                       </div>
                     </div>
                   )}

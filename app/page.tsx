@@ -630,7 +630,7 @@ export default function Home() {
               aria-haspopup="menu"
               className="home-icon-button home-avatar"
             >
-              {user.name.trim().charAt(0) || user.email.charAt(0)}
+              <span className="ph-mask">{user.name.trim().charAt(0) || user.email.charAt(0)}</span>
             </button>
 
             {isUserMenuOpen && (
@@ -640,10 +640,10 @@ export default function Home() {
               >
                 <div className="px-3 py-2.5 border-b border-gray-100">
                   <p className="text-xs font-semibold text-gray-800 truncate">
-                    {user.name}
+                    <span className="ph-mask">{user.name}</span>
                   </p>
                   <p className="mt-0.5 text-xs text-gray-500 break-all">
-                    {user.email}
+                    <span className="ph-mask">{user.email}</span>
                   </p>
                 </div>
                 <button
@@ -687,7 +687,7 @@ export default function Home() {
               </div>
             </div>
             <button ref={historyCloseButtonRef} type="button" aria-label="Fechar histórico" onClick={() => setIsHistoryOpen(false)} className="history-drawer-close"><X size={20}/></button>
-            <p className="history-drawer-subtitle">{user.name}, cada passo seu merece um lugar para continuar.</p>
+            <p className="history-drawer-subtitle"><span className="ph-mask">{user.name}</span>, cada passo seu merece um lugar para continuar.</p>
           </div>
           <div className="history-drawer-scroll">
             <div className="history-drawer-summary">
@@ -711,19 +711,19 @@ export default function Home() {
                       className="history-card-open"
                     >
                       <span className="history-card-kicker">SONHO {String(index + 1).padStart(2, '0')}</span>
-                      <h3>{item.data.mainGoal}</h3>
+                      <h3 className="ph-mask">{item.data.mainGoal}</h3>
                       <span className="history-card-date"><Calendar size={14} aria-hidden="true" /> {new Date(item.timestamp).toLocaleDateString('pt-BR')}</span>
                       <span className="history-card-progress-row">
                         <strong className={progress.percentage === 100 ? 'history-progress-done' : ''}>
                           {progress.percentage === 100 ? 'Jornada concluída' : `${progress.percentage}% da jornada`}
                         </strong><span>{progress.completedTasks}/64 etapas</span>
                       </span>
-                      <span className="history-progress-track" role="progressbar" aria-label={`Progresso de ${item.data.mainGoal}`} aria-valuenow={progress.percentage} aria-valuemin={0} aria-valuemax={100}>
+                      <span className="history-progress-track" role="progressbar" aria-label={`Progresso do plano ${index + 1}`} aria-valuenow={progress.percentage} aria-valuemin={0} aria-valuemax={100}>
                         <span className={progress.percentage === 100 ? 'history-progress-fill history-progress-fill-done' : 'history-progress-fill'} style={{ width: `${progress.percentage}%` }} />
                       </span>
                       <span className="history-card-action">Continuar meu plano <ArrowRight size={16} aria-hidden="true" /></span>
                     </button>
-                    <button type="button" aria-label={`Excluir ${item.data.mainGoal}`} title="Excluir plano" onClick={(e) => deleteHistoryItem(item.id, e)} className="history-card-delete"><Trash2 size={17}/></button>
+                    <button type="button" aria-label={`Excluir plano ${index + 1}`} title="Excluir plano" onClick={(e) => deleteHistoryItem(item.id, e)} className="history-card-delete"><Trash2 size={17}/></button>
                   </article>
                 )
               })}</div>
@@ -775,7 +775,7 @@ export default function Home() {
                   </p>
                   {(!user || needsDreams) && <Link href="/reembolso" className="home-guarantee"><ShieldCheck size={16} aria-hidden="true" /> Se não gostar do seu plano, peça seus {DREAM_PACKS[1].price} de volta em até 7 dias após a compra.</Link>}
                 </div>
-                {error && <p role="alert" className="home-error">{error}</p>}
+                {error && <p role="alert" className="ph-mask home-error">{error}</p>}
                 <div className="home-examples">
                   <span>Precisa de inspiração?</span>
                   <div className="home-example-list">
@@ -832,15 +832,15 @@ export default function Home() {
               <div className="bg-purple-100 p-3 rounded-full inline-block"><BrainCircuit className="w-8 h-8 text-purple-600" /></div>
               <p className="text-sm font-semibold text-indigo-700">Entendendo seu objetivo · pergunta {answers.length + 1}</p>
               <h2 className="brand-text text-2xl font-bold">Um passo de cada vez</h2>
-              <p className="text-gray-500">Seu objetivo: {mainGoal}</p>
+              <p className="text-gray-500">Seu objetivo: <span className="ph-mask">{mainGoal}</span></p>
             </div>
             <fieldset aria-labelledby="interview-question" className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm sm:p-7" disabled={processing}>
-              <h3 id="interview-question" className="text-lg font-semibold leading-snug text-gray-900">{questions[answers.length].text}</h3>
+              <h3 id="interview-question" className="ph-mask text-lg font-semibold leading-snug text-gray-900">{questions[answers.length].text}</h3>
               <div className="mt-5 space-y-3">
                 {questions[answers.length].options.map((option, index) => (
                   <label key={`${index}-${option}`} className={`flex min-h-14 cursor-pointer items-center gap-3 rounded-xl border px-4 py-3 text-gray-900 transition ${selectedAnswer === option ? 'border-indigo-600 bg-indigo-50 ring-2 ring-indigo-200' : 'border-gray-200 hover:border-indigo-300'}`}>
                     <input type="radio" name="goal-answer" value={option} checked={selectedAnswer === option} onChange={() => setSelectedAnswer(option)} className="accent-indigo-600" />
-                    <span>{option}</span>
+                    <span className="ph-mask">{option}</span>
                   </label>
                 ))}
                 <label className={`flex min-h-14 cursor-pointer items-center gap-3 rounded-xl border px-4 py-3 text-gray-900 transition ${selectedAnswer === 'Ainda não sei' ? 'border-indigo-600 bg-indigo-50 ring-2 ring-indigo-200' : 'border-gray-200 hover:border-indigo-300'}`}>
@@ -862,7 +862,7 @@ export default function Home() {
                 {processing ? <><Loader2 className="animate-spin" size={20} /> Preparando próximo passo</> : <>Continuar <ArrowRight size={19} /></>}
               </button>
             </div>
-            {error && <p role="alert" className="rounded-xl bg-red-50 p-3 text-center text-red-700">{error}</p>}
+            {error && <p role="alert" className="ph-mask rounded-xl bg-red-50 p-3 text-center text-red-700">{error}</p>}
           </div>
         )}
 
@@ -874,15 +874,15 @@ export default function Home() {
               <p className="text-gray-500">Confira se esse é o caminho que você quer seguir. Se estiver tudo certo, vamos transformar em um plano.</p>
             </div>
             <div className="space-y-5 rounded-2xl border border-gray-200 bg-white p-6 shadow-sm sm:p-8">
-              <div><p className="text-xs font-bold uppercase tracking-wider text-indigo-600">Seu objetivo</p><p className="mt-1 text-xl font-semibold text-gray-900">{proposal.goal}</p></div>
-              {!previewId && <div><p className="text-xs font-bold uppercase tracking-wider text-indigo-600">Como perceber o avanço</p><p className="mt-1 text-gray-700">{proposal.successSignal}</p></div>}
-              <div><p className="text-xs font-bold uppercase tracking-wider text-indigo-600">{previewId ? 'Primeiro passo da prévia' : 'Por onde começar'}</p><p className="mt-1 text-gray-700">{proposal.firstPhase}</p></div>
+              <div><p className="text-xs font-bold uppercase tracking-wider text-indigo-600">Seu objetivo</p><p className="ph-mask mt-1 text-xl font-semibold text-gray-900">{proposal.goal}</p></div>
+              {!previewId && <div><p className="text-xs font-bold uppercase tracking-wider text-indigo-600">Como perceber o avanço</p><p className="ph-mask mt-1 text-gray-700">{proposal.successSignal}</p></div>}
+              <div><p className="text-xs font-bold uppercase tracking-wider text-indigo-600">{previewId ? 'Primeiro passo da prévia' : 'Por onde começar'}</p><p className="ph-mask mt-1 text-gray-700">{proposal.firstPhase}</p></div>
             </div>
             <button type="button" onClick={() => void handleGenerate()} disabled={processing} className="brand-button flex w-full min-h-14 items-center justify-center gap-2 rounded-2xl px-5 text-lg font-bold text-white disabled:opacity-50">
               {wallet && wallet.balance > 0 ? 'Confirmar e gerar meu plano · 1 sonho' : 'Continuar e escolher meus sonhos'} <Sparkles size={19} />
             </button>
             <button type="button" onClick={handleAdjustGoal} className="w-full rounded-xl py-2 font-semibold text-indigo-700 hover:underline">Quero ajustar minhas respostas</button>
-            {error && <p role="alert" className="rounded-xl bg-red-50 p-3 text-center text-red-700">{error}</p>}
+            {error && <p role="alert" className="ph-mask rounded-xl bg-red-50 p-3 text-center text-red-700">{error}</p>}
           </div>
         )}
 
@@ -901,7 +901,7 @@ export default function Home() {
                 <p className="text-gray-500">
                   {GENERATION_MESSAGES[generationMessageIndex].description}
                 </p>
-                {error && <p role="status" className="text-sm text-indigo-700">{error}</p>}
+                {error && <p role="status" className="ph-mask text-sm text-indigo-700">{error}</p>}
               </div>
           </div>
         )}
@@ -910,7 +910,7 @@ export default function Home() {
           <div className="w-full flex flex-col items-center gap-3">
             {progressSaveError && (
               <div role="alert" className="mx-4 flex max-w-2xl items-center gap-3 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900 shadow-sm">
-                <span className="flex-1">{progressSaveError}</span>
+                <span className="ph-mask flex-1">{progressSaveError}</span>
                 <button
                   type="button"
                   onClick={() => void flushMandalartUpdates()}

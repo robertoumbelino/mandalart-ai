@@ -31,6 +31,12 @@ it('captures without an advertising choice and respects the analytics opt-out', 
   const { captureProductEvent, stopPostHog, resumePostHog, POSTHOG_OPTOUT_KEY } = await import('./posthog')
 
   expect(captureProductEvent('screen_view', { screen: 'onboarding_start' })).toBe(true)
+  expect(posthog.init).toHaveBeenCalledWith('test-token', expect.objectContaining({
+    session_recording: expect.objectContaining({
+      maskAllInputs: true,
+      maskTextSelector: '.ph-mask',
+    }),
+  }))
   expect(posthog.capture).toHaveBeenCalledWith('screen_view', {
     screen: 'onboarding_start', site_environment: 'production',
   })
