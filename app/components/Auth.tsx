@@ -5,19 +5,23 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { ArrowLeft, ArrowRight, Check, Loader2, LockKeyhole, Mail, Sparkles } from 'lucide-react'
 import { BrandLogo } from './Brand'
-import { getCurrentUser, login, register } from '@/actions/auth'
+import { getCurrentUserWithCreation, login, register } from '@/actions/auth'
 import { authClient } from '@/lib/auth/client'
+import { trackMetaEvent } from '@/lib/meta-events'
+import { captureProductEvent, identifyProductUser } from '@/lib/posthog'
 import type { User } from '@/types'
+import { CAREER_PLAN } from '@/lib/example-plan'
 import './auth.css'
 
 interface AuthProps {
   onLogin: (user: User) => Promise<void>
   onBack?: () => void
   goal?: string
+  initialMode?: 'login' | 'register'
 }
 
-export const Auth: React.FC<AuthProps> = ({ onLogin, onBack, goal }) => {
-  const [mode, setMode] = useState<'login' | 'register' | 'forgot'>('login')
+export const Auth: React.FC<AuthProps> = ({ onLogin, onBack, goal, initialMode = 'register' }) => {
+  const [mode, setMode] = useState<'login' | 'register' | 'forgot'>(initialMode)
   const [loading, setLoading] = useState(false)
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -34,7 +38,8 @@ export const Auth: React.FC<AuthProps> = ({ onLogin, onBack, goal }) => {
     setLoading(true)
     setError(null)
     try {
-      const { error: authError } = await authClient.signIn.social({ provider: 'google', callbackURL: window.location.origin })
+      const callbackURL = `${window.location.origin}${window.location.pathname}${window.location.search}`
+      const { error: authError } = await authClient.signIn.social({ provider: 'google', callbackURL })
       if (authError) throw new Error(authError.message)
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : 'Não foi possível entrar com Google.')
@@ -55,9 +60,12 @@ export const Auth: React.FC<AuthProps> = ({ onLogin, onBack, goal }) => {
         return
       }
       await (mode === 'login' ? login : register)(email, password)
-      const user = await getCurrentUser()
-      if (!user) throw new Error('Não foi possível confirmar o acesso. Confira seu e-mail ou entre com Google.')
-      await onLogin(user)
+      const account = await getCurrentUserWithCreation()
+      if (!account) throw new Error('Não foi possível confirmar o acesso. Confira seu e-mail ou entre com Google.')
+      identifyProductUser(account.user.id)
+      captureProductEvent(account.created ? 'registration_completed' : 'login_completed', { method: 'email' })
+      if (account.created) trackMetaEvent({ name: 'CompleteRegistration', onceKey: `registration.${account.user.id}`, eventId: `registration-${account.user.id}` })
+      await onLogin(account.user)
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : 'Não foi possível continuar.')
     } finally {
@@ -76,14 +84,14 @@ export const Auth: React.FC<AuthProps> = ({ onLogin, onBack, goal }) => {
         <section className="auth-story" aria-labelledby="auth-title">
           <span className="auth-eyebrow"><Sparkles size={17} /> UM PASSO DE CADA VEZ</span>
           <h1 id="auth-title">Seu sonho merece <span className="brand-text">um lugar para crescer.</span></h1>
-          <p>Entre para guardar suas ideias, criar seu Mandalart e acompanhar cada passo do seu caminho.</p>
-          {goal && <div className="auth-goal"><span>O sonho que você trouxe</span><strong>{goal}</strong><small><Check size={15} /> Vai continuar aqui depois de entrar.</small></div>}
+          <p>Crie sua conta para guardar seu objetivo, montar seu plano e acompanhar cada passo do caminho.</p>
+          {goal && <div className="auth-goal"><span>O sonho que você trouxe</span><strong>{goal}</strong><small><Check size={15} /> Vai continuar aqui depois de {mode === 'register' ? 'criar sua conta' : 'entrar'}.</small></div>}
           <div className="auth-illustration" aria-hidden="true">
             <div className="auth-orbit" />
             <div className="auth-plan">
               <span className="auth-plan-label">SEU MANDALART <Sparkles size={16} /></span>
               <div className="auth-plan-grid">
-                {['Aprender', 'Preparar', 'Explorar', 'Praticar', 'Seu sonho', 'Cuidar', 'Organizar', 'Conectar', 'Avançar'].map((item, index) => <span key={item} className={index === 4 ? 'auth-plan-center' : ''}>{item}</span>)}
+                {CAREER_PLAN.pillars.map((item, index) => <span key={item} className={index === 4 ? 'auth-plan-center' : ''}>{item}</span>)}
               </div>
             </div>
           </div>
@@ -92,8 +100,8 @@ export const Auth: React.FC<AuthProps> = ({ onLogin, onBack, goal }) => {
         <section className="auth-panel" aria-labelledby="auth-panel-title">
           <div className="auth-panel-heading">
             <span className="auth-panel-icon"><Sparkles size={21} /></span>
-            <h2 id="auth-panel-title">{mode === 'register' ? 'Crie seu espaço' : mode === 'forgot' ? 'Recupere seu acesso' : 'Que bom ter você aqui'}</h2>
-            <p>{mode === 'register' ? 'Comece a transformar seus sonhos em passos possíveis.' : mode === 'forgot' ? 'Enviaremos um link para você definir uma nova senha.' : 'Entre para continuar de onde seu sonho começou.'}</p>
+            <h2 id="auth-panel-title">{mode === 'register' ? 'Crie sua conta para montar seu plano' : mode === 'forgot' ? 'Recupere seu acesso' : 'Que bom ter você aqui'}</h2>
+            <p>{mode === 'register' ? 'Seu objetivo fica salvo e você continua de onde parou.' : mode === 'forgot' ? 'Enviaremos um link para você definir uma nova senha.' : 'Entre para continuar de onde parou.'}</p>
           </div>
 
           {mode !== 'forgot' ? (
@@ -107,6 +115,7 @@ export const Auth: React.FC<AuthProps> = ({ onLogin, onBack, goal }) => {
             <button type="button" onClick={handleGoogle} disabled={loading} className="auth-google">
               <Image src="/google-g.png" alt="" aria-hidden="true" width={20} height={21} className="auth-google-icon" />
               Continuar com Google
+              {mode === 'register' && <span className="auth-google-fast">Mais rápido</span>}
             </button>
             <div className="auth-divider"><span>ou use seu e-mail</span></div>
           </>}

@@ -24,6 +24,7 @@ import { MandalartData, Task } from '@/types'
 import { GridCell } from '@/app/components/GridCell'
 import { JourneyView } from '@/app/components/JourneyView'
 import { getJourneyProgress } from '@/lib/journey'
+import { captureProductEvent } from '@/lib/posthog'
 
 interface MandalartViewProps {
   data: MandalartData
@@ -166,6 +167,7 @@ export const MandalartView: React.FC<MandalartViewProps> = ({
       document.body.appendChild(link)
       link.click()
       link.remove()
+      captureProductEvent('planner_image_downloaded')
     } catch (err) {
       console.error('Export failed:', err)
       alert('Não foi possível gerar a imagem. Tente novamente.')
@@ -201,6 +203,7 @@ export const MandalartView: React.FC<MandalartViewProps> = ({
     }
 
     onDataUpdate(newData)
+    if (updatedTask.isCompleted && !task.isCompleted) captureProductEvent('task_completed')
     setSelectedTask({ ...selectedTask, task: updatedTask })
   }
 
@@ -508,7 +511,7 @@ export const MandalartView: React.FC<MandalartViewProps> = ({
             </div>
             <button
               type="button"
-              onClick={() => setViewMode('journey')}
+              onClick={() => { setViewMode('journey'); captureProductEvent('journey_opened') }}
               className="group flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-white px-5 text-sm font-black text-indigo-700 shadow-lg transition hover:-translate-y-0.5 hover:bg-indigo-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-indigo-600"
             >
               {journeyProgress.percentage > 0 ? <Play size={17} fill="currentColor" /> : <Compass size={18} />}

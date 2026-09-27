@@ -15,7 +15,7 @@ export default function TermsPage() {
         </Link>
 
         <h1 className="mt-8 text-3xl font-black tracking-tight text-slate-900">Termos de Uso</h1>
-        <p className="mt-2 text-sm text-slate-500">Última atualização: 13 de setembro de 2026</p>
+        <p className="mt-2 text-sm text-slate-500">Última atualização: 27 de setembro de 2026</p>
 
         <div className="mt-8 space-y-7 leading-relaxed">
           <section>
@@ -57,6 +57,12 @@ export default function TermsPage() {
             <h2 className="text-lg font-bold text-slate-900">6. Alterações</h2>
             <p className="mt-2">
               Estes Termos podem ser atualizados para refletir mudanças no produto ou na legislação. A data no início da página indica a versão vigente.
+            </p>
+          </section>
+          <section id="reembolso">
+            <h2 className="text-lg font-bold text-slate-900">7. Garantia e reembolso</h2>
+            <p className="mt-2">
+              Você pode solicitar o reembolso integral de uma compra feita pelo Stripe em até 7 dias após a confirmação do pagamento, sem precisar justificar. Acesse a <Link href="/reembolso" className="font-semibold text-indigo-700 underline">página de reembolso</Link> com a mesma conta usada na compra. O reembolso é iniciado pelo Stripe no meio de pagamento original; o prazo para o valor aparecer depende do banco ou provedor. Os créditos daquela compra são ajustados após a confirmação do estorno. Planos já salvos permanecem acessíveis.
             </p>
           </section>
         </div>

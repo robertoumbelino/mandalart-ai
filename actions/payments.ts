@@ -11,6 +11,7 @@ import {
 import { DREAM_PACKS } from '@/lib/dream-packs'
 import { idSchema } from '@/lib/validation'
 import { reconcileCheckout, type DreamOrder } from '@/lib/payments'
+import { cleanAttribution, type Attribution } from '@/lib/attribution'
 
 type CheckoutProvider = 'stripe' | 'kiwify'
 
@@ -44,6 +45,7 @@ export async function startDreamCheckout(
   rawPack: number,
   rawId: string,
   source: 'comecar' | 'account' = 'account',
+  rawAttribution: Attribution = {},
 ) {
   const user = await getCurrentUser()
   if (!user)
@@ -55,6 +57,7 @@ export async function startDreamCheckout(
     process.env[rawPack === 1 ? 'STRIPE_PRICE_ONE' : 'STRIPE_PRICE_THREE']
   if (!price) throw new Error('Este pacote ainda não está disponível.')
   const mode = billingMode()
+  const attribution = cleanAttribution(rawAttribution)
   const sql = getDb()
   const [count] =
     await sql`SELECT count(*)::int AS n FROM dream_orders WHERE user_id=${user.id} AND created_at>now()-interval '1 hour'`
@@ -62,7 +65,7 @@ export async function startDreamCheckout(
     throw new Error(
       'Muitas tentativas. Aguarde um pouco antes de tentar de novo.',
     )
-  await sql`INSERT INTO dream_orders(id,user_id,mode,credits,amount,price_id) VALUES(${id}::uuid,${user.id},${mode},${rawPack},${pack.amount},${price}) ON CONFLICT DO NOTHING`
+  await sql`INSERT INTO dream_orders(id,user_id,mode,credits,amount,price_id,attribution) VALUES(${id}::uuid,${user.id},${mode},${rawPack},${pack.amount},${price},${JSON.stringify(attribution)}::jsonb) ON CONFLICT DO NOTHING`
   const [order] =
     (await sql`SELECT * FROM dream_orders WHERE id=${id}::uuid`) as DreamOrder[]
   if (
@@ -134,7 +137,7 @@ export async function startDreamCheckout(
         card: { restrictions: { funding_types_blocked: ['debit', 'prepaid'] } },
       },
       wallet_options: { link: { display: 'never' } },
-      metadata: { app: 'mandalart', order_id: id, source: safeSource },
+      metadata: { app: 'mandalart', order_id: id, source: safeSource, ...cleanAttribution(order.attribution) },
       payment_intent_data: { metadata: { app: 'mandalart', order_id: id } },
       success_url: `${origin}/sonhos?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${origin}/sonhos?cancelado=1&pacote=${rawPack}&origem=${safeSource}`,

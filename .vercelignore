@@ -4,3 +4,6 @@
 
 # Explorações de design locais não fazem parte da aplicação publicada.
 design/
+
+# Materiais de conteúdo têm dependências próprias e não fazem parte do app.
+contents/

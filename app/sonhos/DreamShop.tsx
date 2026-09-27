@@ -14,7 +14,11 @@ import {
 } from 'lucide-react'
 import { BrandLogo } from '@/app/components/Brand'
 import { Auth } from '@/app/components/Auth'
-import { getCurrentUser } from '@/actions/auth'
+import { getCurrentUserWithCreation } from '@/actions/auth'
+import { authClient } from '@/lib/auth/client'
+import { captureAttribution } from '@/lib/attribution'
+import { trackMetaEvent } from '@/lib/meta-events'
+import { captureProductEvent, identifyProductUser } from '@/lib/posthog'
 import { getDreamWallet } from '@/actions/dreams'
 import {
   checkDreamPayment,
@@ -51,6 +55,7 @@ export function DreamShop() {
   const [sessionId, setSessionId] = useState<string | null>(null)
   const [kiwifyOrderId, setKiwifyOrderId] = useState<string | null>(null)
   const [paymentStatus, setPaymentStatus] = useState<string | null>(null)
+  const [paymentOrder, setPaymentOrder] = useState<{ id: string; amount: number; mode: string } | null>(null)
   const [cancelled, setCancelled] = useState(false)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -60,12 +65,19 @@ export function DreamShop() {
     let active = true
     const params = new URLSearchParams(window.location.search)
     const fromOnboarding = params.get('origem') === 'comecar'
+    captureAttribution()
     Promise.all([
-      getCurrentUser(),
+      (async () => {
+        if (params.has('neon_auth_session_verifier')) await authClient.getSession()
+        return getCurrentUserWithCreation()
+      })(),
       fromOnboarding ? getOnboardingPaymentOptions() : getPaymentOptions(),
     ])
-      .then(([current, config]) => {
+      .then(([account, config]) => {
         if (active) {
+          if (account?.created) trackMetaEvent({ name: 'CompleteRegistration', onceKey: `registration.${account.user.id}`, eventId: `registration-${account.user.id}` })
+          if (account?.user) identifyProductUser(account.user.id)
+          if (account?.created) captureProductEvent('registration_completed', { method: 'google' })
           setPack(params.get('pacote') === '3' ? 3 : 1)
           setSource(params.get('origem') === 'comecar' ? 'comecar' : 'account')
           setSessionId(params.get('session_id'))
@@ -77,7 +89,7 @@ export function DreamShop() {
             }
           }
           setCancelled(params.has('cancelado'))
-          setUser(current)
+          setUser(account?.user ?? null)
           setOptions(config)
         }
       })
@@ -104,6 +116,7 @@ export function DreamShop() {
           const payment = await checkDreamPayment(sessionId)
           if (!active) return
           setPaymentStatus(payment?.status || 'pending')
+          if (payment) setPaymentOrder({ id: payment.id, amount: payment.amount, mode: payment.mode })
           if (payment?.source === 'comecar') setSource('comecar')
           if (payment?.status === 'pending' && ++attempts < 40)
             timer = setTimeout(sync, 3000)
@@ -111,6 +124,7 @@ export function DreamShop() {
           const payment = await checkOnboardingPayment(kiwifyOrderId)
           if (!active) return
           setPaymentStatus(payment.status)
+          setPaymentOrder({ id: payment.id, amount: payment.amount, mode: payment.mode })
           if (payment.status === 'pending' && ++attempts < 40)
             timer = setTimeout(sync, 3000)
         }
@@ -133,6 +147,25 @@ export function DreamShop() {
     }
   }, [user, sessionId, kiwifyOrderId])
 
+  useEffect(() => {
+    if (paymentStatus === 'paid' && paymentOrder?.mode === 'live') {
+      try {
+        const key = `mandalart.posthog.purchase.${paymentOrder.id}`
+        if (!sessionStorage.getItem(key)) {
+          if (captureProductEvent('purchase_confirmed', { source })) sessionStorage.setItem(key, '1')
+        }
+      } catch {
+        captureProductEvent('purchase_confirmed', { source })
+      }
+      trackMetaEvent({
+        name: 'Purchase',
+        data: { value: paymentOrder.amount / 100, currency: 'BRL' },
+        onceKey: `purchase.${paymentOrder.id}`,
+        eventId: `purchase-${paymentOrder.id}`,
+      })
+    }
+  }, [paymentStatus, paymentOrder, source])
+
   async function buy() {
     if (busy) return
     setBusy(true)
@@ -144,8 +177,8 @@ export function DreamShop() {
     try {
       const checkout =
         source === 'comecar'
-          ? await startOnboardingCheckout(pack, request.current.id)
-          : await startDreamCheckout(pack, request.current.id)
+          ? await startOnboardingCheckout(pack, request.current.id, captureAttribution())
+          : await startDreamCheckout(pack, request.current.id, 'account', captureAttribution())
       if (source === 'comecar' && options?.provider === 'kiwify') {
         try {
           sessionStorage.setItem(KIWIFY_ORDER_KEY, request.current.id)
@@ -153,6 +186,9 @@ export function DreamShop() {
           // O webhook associa a compra à conta; o retorno só perde a consulta rápida.
         }
       }
+      trackMetaEvent({ name: 'InitiateCheckout', data: { value: DREAM_PACKS[pack].amount / 100, currency: 'BRL' }, onceKey: `checkout.${request.current.id}`, eventId: `checkout-${request.current.id}` })
+      captureProductEvent('checkout_started', { source, pack })
+      if (window.fbq) await new Promise((resolve) => setTimeout(resolve, 150))
       window.location.assign(checkout.url)
     } catch {
       request.current = null
@@ -177,7 +213,7 @@ export function DreamShop() {
             <ArrowLeft size={16} /> Voltar
           </Link>
           <p>
-            Entre ou crie sua conta para guardar seus sonhos.
+            Crie sua conta para guardar seus sonhos. Já tem conta? Use a aba Entrar.
             {source === 'comecar' &&
               ' Sua prévia continua salva neste navegador.'}
           </p>
@@ -257,6 +293,7 @@ export function DreamShop() {
                 Comprar mais sonhos
               </a>
             )}
+            {success && <Link className="shop-more-link" href="/reembolso">Conhecer a garantia de 7 dias</Link>}
             {kiwifyOrderId && !success && paymentStatus === 'pending' && (
               <button
                 className="shop-more-link"
@@ -390,10 +427,11 @@ export function DreamShop() {
                   ` · ${options?.pix ? 'Cartão de crédito e Pix' : 'Cartão de crédito'}`}
               </p>
               <small>
-                Pagamento único. Sem assinatura. Cada novo planner usa 1 sonho.
+                Pagamento único. Sem assinatura. Cada plano é criado para um sonho.
                 <br />
-                Consultar e atualizar seus planners não gasta créditos.
+                Quer planejar mais de um? Você pode comprar pacotes depois.
               </small>
+              <Link href="/reembolso" className="shop-guarantee"><ShieldCheck size={17} /> Garantia de 7 dias: se não gostar do plano, peça reembolso integral do pacote.</Link>
               {!options?.available && (
                 <p role="status">
                   Estamos preparando as compras. Volte em breve para começar seu sonho.

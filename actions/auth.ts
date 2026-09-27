@@ -48,9 +48,9 @@ const saveLink = async (authUserId: string, userId: string): Promise<UserRow> =>
   return linked
 }
 
-const resolveUser = async (profile: AuthProfile): Promise<User | null> => {
+const resolveUser = async (profile: AuthProfile): Promise<{ user: User; created: boolean } | null> => {
   const existingLink = await linkedUser(profile.id)
-  if (existingLink) return toUser(existingLink)
+  if (existingLink) return { user: toUser(existingLink), created: false }
 
   const sql = getDb()
   const { data: accounts, error: accountsError } = await auth.listAccounts()
@@ -66,7 +66,7 @@ const resolveUser = async (profile: AuthProfile): Promise<User | null> => {
         AND identity.provider_account_id = ${subject}
       LIMIT 1
     ` as UserRow[]
-    if (legacy[0]) return toUser(await saveLink(profile.id, legacy[0].id))
+    if (legacy[0]) return { user: toUser(await saveLink(profile.id, legacy[0].id)), created: false }
   }
 
   // Um e-mail ainda não verificado nunca pode assumir uma conta antiga.
@@ -79,7 +79,7 @@ const resolveUser = async (profile: AuthProfile): Promise<User | null> => {
     // Um Google subject diferente não pode assumir uma identidade Google existente.
     if (subject && matchedEmail[0].id !== profile.id) return null
     if (!profile.emailVerified) return null
-    return toUser(await saveLink(profile.id, matchedEmail[0].id))
+    return { user: toUser(await saveLink(profile.id, matchedEmail[0].id)), created: false }
   }
 
   const newUsers = await sql`
@@ -98,14 +98,17 @@ const resolveUser = async (profile: AuthProfile): Promise<User | null> => {
       ON CONFLICT (provider, provider_account_id) DO NOTHING
     `
   }
-  return toUser(await saveLink(profile.id, created.id))
+  return { user: toUser(await saveLink(profile.id, created.id)), created: true }
 }
 
-export const getCurrentUser = async (): Promise<User | null> => {
+export const getCurrentUserWithCreation = async (): Promise<{ user: User; created: boolean } | null> => {
   const { data: session, error } = await auth.getSession()
   if (error || !session?.user?.email) return null
   return resolveUser({ ...session.user, email: session.user.email })
 }
+
+export const getCurrentUser = async (): Promise<User | null> =>
+  (await getCurrentUserWithCreation())?.user ?? null
 
 export const login = async (rawEmail: string, rawPassword: string): Promise<void> => {
   const { email, password } = credentialsSchema.parse({ email: rawEmail, password: rawPassword })

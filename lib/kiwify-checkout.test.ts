@@ -14,12 +14,14 @@ afterEach(() => {
 describe('Kiwify offer link preparation', () => {
   it('keeps the affiliate link and adds the buyer and order reference', () => {
     process.env.KIWIFY_CHECKOUT_ONE =
-      'https://pay.kiwify.com.br/abc123?afid=partner&src=campaign'
-    const url = new URL(kiwifyCheckoutLink(1, 'buyer@example.com', orderId))
+      'https://pay.kiwify.com.br/abc123?afid=partner&src=campaign&utm_source=old'
+    const url = new URL(kiwifyCheckoutLink(1, 'buyer@example.com', orderId, { utm_source: 'meta', utm_campaign: 'career', afid: 'untrusted', sck: 'untrusted' }))
     expect(url.searchParams.get('afid')).toBe('partner')
     expect(url.searchParams.get('src')).toBe('campaign')
     expect(url.searchParams.get('email')).toBe('buyer@example.com')
     expect(url.searchParams.get('sck')).toBe(orderId)
+    expect(url.searchParams.get('utm_source')).toBe('meta')
+    expect(url.searchParams.get('utm_campaign')).toBe('career')
   })
 
   it.each([

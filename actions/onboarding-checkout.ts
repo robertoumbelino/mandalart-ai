@@ -8,6 +8,7 @@ import { kiwifyCheckoutLink } from '@/lib/kiwify-checkout'
 import { kiwifyOnboardingEnabled } from '@/lib/kiwify'
 import { billingMode } from '@/lib/stripe'
 import { idSchema } from '@/lib/validation'
+import { cleanAttribution, type Attribution } from '@/lib/attribution'
 
 // Ponto exclusivo do funil /comecar. Compras iniciadas pela conta usam Stripe.
 export async function getOnboardingPaymentOptions() {
@@ -22,9 +23,10 @@ export async function getOnboardingPaymentOptions() {
   return getPaymentOptions()
 }
 
-export async function startOnboardingCheckout(pack: number, id: string) {
+export async function startOnboardingCheckout(pack: number, id: string, rawAttribution: Attribution = {}) {
+  const attribution = cleanAttribution(rawAttribution)
   if (process.env.KIWIFY_ONBOARDING_ENABLED !== 'true')
-    return startDreamCheckout(pack, id, 'comecar')
+    return startDreamCheckout(pack, id, 'comecar', attribution)
   if (!kiwifyOnboardingEnabled())
     throw new Error('Checkout da Kiwify ainda não disponível.')
 
@@ -33,7 +35,7 @@ export async function startOnboardingCheckout(pack: number, id: string) {
   if (pack !== 1 && pack !== 3) throw new Error('Pacote inválido.')
   const orderId = idSchema.parse(id)
   const offer = DREAM_PACKS[pack]
-  const url = kiwifyCheckoutLink(pack, user.email, orderId)
+  const url = kiwifyCheckoutLink(pack, user.email, orderId, attribution)
   const checkoutCode = new URL(url).pathname.slice(1).replace(/\/$/, '')
   const mode = billingMode()
   const sql = getDb()
@@ -45,8 +47,8 @@ export async function startOnboardingCheckout(pack: number, id: string) {
     throw new Error('Muitas tentativas. Aguarde um pouco antes de tentar de novo.')
 
   await sql`
-    INSERT INTO dream_orders(id,user_id,mode,provider,credits,amount,price_id)
-    VALUES(${orderId}::uuid,${user.id},${mode},'kiwify',${pack},${offer.amount},${checkoutCode})
+    INSERT INTO dream_orders(id,user_id,mode,provider,credits,amount,price_id,attribution)
+    VALUES(${orderId}::uuid,${user.id},${mode},'kiwify',${pack},${offer.amount},${checkoutCode},${JSON.stringify(attribution)}::jsonb)
     ON CONFLICT DO NOTHING
   `
   const [order] = await sql`
@@ -72,9 +74,9 @@ export async function checkOnboardingPayment(rawId: string) {
   if (!user) throw new Error('Faça login para consultar sua compra.')
   const id = idSchema.parse(rawId)
   const [order] = await getDb()`
-    SELECT status, credited FROM dream_orders
+    SELECT id, status, credited, amount, mode FROM dream_orders
     WHERE id=${id}::uuid AND user_id=${user.id} AND mode=${billingMode()} AND provider='kiwify'
   `
   if (!order) throw new Error('Compra não encontrada nesta conta.')
-  return { status: String(order.status), credits: Number(order.credited) }
+  return { id: String(order.id), status: String(order.status), credits: Number(order.credited), amount: Number(order.amount), mode: String(order.mode) }
 }

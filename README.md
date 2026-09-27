@@ -36,10 +36,12 @@ Ao importar variáveis da Vercel, preserve o `DATABASE_URL` local. Nunca execute
 Antes da primeira execução, aplique, em ordem, as migrations de `migrations/` em uma conexão direta do banco. O runtime pode usar a URL com pooler. Em uma base já existente, aplique somente as migrations pendentes; a [migration de vínculo com Neon Auth](./migrations/005_neon_auth_links.sql) preserva os IDs usados por planos, créditos e compras.
 
 As instruções de Neon acima se aplicam somente ao deploy. A jornada pública também requer [migrations/003_onboarding.sql](./migrations/003_onboarding.sql), a ser aplicada no ambiente de destino antes de publicar. Nenhuma migration de produção é executada automaticamente.
+Antes de publicar a medição do funil e a atribuição de campanhas, aplique também [migrations/006_order_attribution.sql](./migrations/006_order_attribution.sql) no banco do ambiente de destino. O checkout grava UTMs no pedido e depende dessa coluna.
 
 ## Jornada pública
 
 Abra `http://localhost:3000/comecar`. Toda a experiência permanece nessa URL: apresentação, seis perguntas, geração, prévia e oferta. Login não é necessário para a prévia. A compra acontece em `/sonhos`, com login e checkout Stripe. Veja [docs/onboarding.md](./docs/onboarding.md) para regras de persistência, limites e pontos de integração.
+Compras Stripe confirmadas podem ser reembolsadas pela própria pessoa em `/reembolso` por até 7 dias após a confirmação; a conciliação do saldo usa o mesmo fluxo seguro dos demais estornos. Veja [docs/payments.md](./docs/payments.md).
 
 Na página principal, quem já tem um sonho disponível escreve o objetivo e recebe uma pergunta de cada vez, com opções geradas conforme as respostas. Objetivos curtos e amplos exigem mais contexto antes da confirmação; um objetivo amplo de negócio exige pelo menos três respostas. Depois disso, a IA encerra quando há base para um objetivo e uma primeira fase úteis; seis respostas são o limite técnico para evitar uma entrevista sem fim. A pessoa pode escolher "Ainda não sei" ou escrever em "Outro", revisar a proposta e só então gerar o planner, consumindo um sonho. A entrevista e a proposta ficam em `sessionStorage` para retomada no mesmo navegador. Quem chega pela prévia de `/comecar` confirma o sonho e o primeiro passo já apresentados antes da geração.
 

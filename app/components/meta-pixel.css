@@ -1,0 +1,22 @@
+.marketing-consent {
+  position: fixed;
+  z-index: 100;
+  right: clamp(16px, 3vw, 32px);
+  bottom: clamp(16px, 3vw, 32px);
+  width: min(430px, calc(100vw - 32px));
+  display: grid;
+  gap: 18px;
+  padding: 22px;
+  border: 1px solid #ddd9f5;
+  border-radius: 20px;
+  background: #fff;
+  box-shadow: 0 20px 55px rgb(31 28 75 / .18);
+  color: #26334a;
+}
+.marketing-consent strong { font-size: 15px; line-height: 1.35; }
+.marketing-consent p { margin: 7px 0 0; color: #5c6b80; font-size: 12px; line-height: 1.6; }
+.marketing-consent a { color: #5239e9; font-weight: 700; }
+.marketing-consent-actions { display: flex; justify-content: flex-end; gap: 9px; }
+.marketing-consent button { min-height: 40px; padding: 8px 16px; border: 1px solid #dedaf3; border-radius: 10px; background: #fff; color: #4636aa; font: inherit; font-size: 12px; font-weight: 700; cursor: pointer; }
+.marketing-consent button:last-child { border-color: #5a3df3; background: #5a3df3; color: #fff; }
+.marketing-consent button:focus-visible { outline: 3px solid #a5b4fc; outline-offset: 2px; }

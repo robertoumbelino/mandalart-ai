@@ -5,6 +5,8 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import { track } from '@vercel/analytics'
 import { sendGoogleAnalyticsEvent } from '@/app/components/GoogleAnalytics'
+import { ANALYTICS_CONSENT_EVENT, captureProductEvent } from '@/lib/posthog'
+import { captureAttribution } from '@/lib/attribution'
 import {
   ArrowLeft,
   ArrowRight,
@@ -23,7 +25,6 @@ import {
   answerFields,
   answersKey,
   answersSchema,
-  ATTRIBUTION_KEYS,
   CATEGORIES,
   DRAFT_STORAGE_KEY,
   getDream,
@@ -97,6 +98,7 @@ const QUESTION_COPY = [
 ]
 
 function analytics(name: string, properties?: Record<string, string | number>) {
+  captureProductEvent(name, properties)
   try {
     track(name, properties)
   } catch {
@@ -137,13 +139,7 @@ export function Onboarding() {
         attribution: {},
         savedAt: Date.now()
       }
-      const params = new URLSearchParams(window.location.search)
-      if (!Object.keys(initial.attribution).length) {
-        for (const key of ATTRIBUTION_KEYS) {
-          const value = params.get(key)
-          if (value) initial.attribution[key] = value.slice(0, 150)
-        }
-      }
+      initial.attribution = { ...initial.attribution, ...captureAttribution() }
       const state = window.history.state?.mandalartBegin
       if (state && ['welcome', 'questions', 'preview'].includes(state.screen)) {
         if (state.screen === 'welcome') initial.screen = 'welcome'
@@ -204,6 +200,17 @@ export function Onboarding() {
       requestRef.current?.abort()
     }
   }, [])
+
+  useEffect(() => {
+    if (!hydrated) return
+    const captureScreen = () => captureProductEvent('screen_view', {
+      screen: `onboarding_${draft.screen}`,
+      step: draft.screen === 'questions' ? draft.question + 1 : 0,
+    })
+    captureScreen()
+    window.addEventListener(ANALYTICS_CONSENT_EVENT, captureScreen)
+    return () => window.removeEventListener(ANALYTICS_CONSENT_EVENT, captureScreen)
+  }, [draft.screen, draft.question, hydrated])
 
   useEffect(() => {
     if (!hydrated) return

@@ -14,7 +14,7 @@ A tipografia Poppins é compartilhada com o restante da aplicação e servida lo
 - Etapas em `history.state`, mantendo o pathname `/comecar`; perguntas e prévia não aparecem na URL. Os botões voltar/avançar do navegador navegam entre etapas.
 - Interrupção da geração retorna às respostas, sem disparar outra chamada automaticamente.
 - A primeira tarefa e o pacote escolhido permanecem no navegador. Ainda não há sincronização de checklist entre aparelhos.
-- `afid`, `ref`, UTMs, `src` e `sck` são preservados como origem inicial do rascunho e persistidos com a prévia. Isso não constitui atribuição ou comissão Kiwify; o checkout futuro precisa validar o vínculo oficial do afiliado.
+- `afid`, `ref`, UTMs, `src` e `sck` são guardados no navegador por até 30 dias e associados ao pedido no checkout. A prévia também guarda a origem. Os parâmetros continuam disponíveis após cadastro e redirecionamento externo. Na Kiwify, o `afid` configurado no link de afiliado é preservado e `sck` identifica o pedido; parâmetros recebidos do visitante não substituem esses vínculos.
 
 ## Geração e proteção de custo
 

@@ -4,6 +4,7 @@ import localFont from 'next/font/local';
 import { Analytics } from '@vercel/analytics/next';
 import { GoogleAnalytics } from './components/GoogleAnalytics';
 import { MetaPixel } from './components/MetaPixel';
+import { PostHogAnalytics } from './components/PostHogAnalytics';
 import './globals.css';
 
 export const maxDuration = 180;
@@ -41,16 +42,7 @@ export default function RootLayout({
         <Analytics />
         <GoogleAnalytics />
         <MetaPixel />
-        <noscript>
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            height="1"
-            width="1"
-            style={{ display: 'none' }}
-            src="https://www.facebook.com/tr?id=975897138891298&ev=PageView&noscript=1"
-            alt=""
-          />
-        </noscript>
+        <PostHogAnalytics />
       </body>
     </html>
   );

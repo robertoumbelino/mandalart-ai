@@ -13,6 +13,7 @@ export type DreamOrder = {
   price_id: string
   session_id: string | null
   status: string
+  attribution?: unknown
 }
 export function verifyCheckout(
   session: Stripe.Checkout.Session,
@@ -106,8 +107,11 @@ export async function reconcileCheckout(
   const [updated] =
     await sql`SELECT status,credited FROM dream_orders WHERE id=${order.id}::uuid`
   return {
+    id: order.id,
     status: String(updated.status),
     credits: Number(updated.credited),
+    amount: order.amount,
+    mode: order.mode,
     source: session.metadata.source === 'comecar' ? 'comecar' : 'account',
   }
 }

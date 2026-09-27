@@ -243,6 +243,21 @@
   font-size: 12px;
   line-height: 1.8;
 }
+.shop-guarantee {
+  display: inline-flex;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 7px;
+  max-width: 520px;
+  margin: 15px auto 0;
+  color: #5541a3;
+  font-size: 12px;
+  font-weight: 650;
+  line-height: 1.5;
+  text-decoration: none;
+}
+.shop-guarantee:hover { text-decoration: underline; }
+.shop-guarantee svg { flex: none; margin-top: 1px; }
 .shop-faq,
 .shop-history {
   border-bottom: 1px solid #e2e8f0;

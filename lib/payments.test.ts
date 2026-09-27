@@ -134,11 +134,12 @@ describe('trusted checkout fulfillment', () => {
     expect(call[2]).toBe(false)
   })
   it('credits only after authoritative payment verification', async () => {
-    await reconcileCheckout(session.id)
+    const confirmed = await reconcileCheckout(session.id)
     const call = mocks.sql.mock.calls.find((c) =>
       c[0].join('').includes('dream_reconcile_order'),
     )!
     expect(call.slice(1, 5)).toEqual([order.id, true, 0, false])
+    expect(confirmed).toMatchObject({ id: order.id, status: 'paid', amount: 9990, mode: 'test' })
   })
   it('forwards async success to the same idempotent reconciliation', async () => {
     await processStripeEvent({

@@ -1357,6 +1357,19 @@
   padding: 12px 10px;
   gap: 10px;
 }
+.purchase-guarantee {
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 7px;
+  margin-top: 13px;
+  color: #5845a3;
+  font-size: 11px;
+  line-height: 1.5;
+  text-decoration: none;
+}
+.purchase-guarantee:hover { text-decoration: underline; }
+.purchase-guarantee svg { flex: none; margin-top: 1px; }
 .checkout-unavailable {
   display: flex;
   align-items: center;

@@ -2,6 +2,12 @@
 
 O saldo pertence à conta, independentemente do provedor de pagamento. Hoje o Stripe confirma compras; a Kiwify poderá usar o mesmo domínio de pedidos e créditos quando for integrada.
 
+## Origem da campanha e medição
+
+A página inicial e `/comecar` guardam os parâmetros de campanha presentes no link por até 30 dias neste navegador. Ao iniciar uma compra, o servidor valida e grava a origem em `dream_orders.attribution` (migration 006); no Stripe, ela também entra nos metadados da sessão. O checkout Kiwify preserva o link de afiliado configurado e recebe os parâmetros de campanha permitidos, sem trocar `afid` nem o `sck` do pedido. Consulte a coluna do pedido para atribuir a venda mesmo quando o cliente sai do site para pagar.
+
+O Pixel da Meta depende da escolha do visitante. `CompleteRegistration` é enviado após uma nova conta ser confirmada, inclusive via Google; `InitiateCheckout` após obter a URL de pagamento; `Purchase` somente na tela de confirmação, após a consulta autenticada retornar `paid`. O valor corresponde ao pedido (R$ 37,00 ou R$ 99,90). O navegador lembra o ID de cada compra já enviada para evitar repetir o evento ao recarregar a tela. Compras de teste não enviam `Purchase`.
+
 ## Kiwify para novos visitantes de `/comecar`
 
 O CTA do `/comecar` consulta a sessão no clique. Quem já está logado vai ao checkout Stripe da conta; visitantes passam por `actions/onboarding-checkout.ts`, que por enquanto também chama o Stripe. A compra iniciada diretamente em `/sonhos` continua no Stripe.
@@ -52,7 +58,7 @@ As funções da migration 004 usam bloqueios na carteira para serializar concili
 
 Reembolso integral revoga os créditos do pedido. Em reembolso parcial, revoga-se proporcionalmente, arredondando para cima. Uma contestação bloqueia os créditos daquele pedido até encerramento favorável. Créditos já utilizados podem produzir saldo negativo, compensado em compras seguintes. Planners existentes permanecem acessíveis. O livro de movimentações explica cada ajuste.
 
-Não há processo de reembolso dentro do aplicativo: os reembolsos são iniciados no Stripe. O webhook sincroniza o saldo. Mantenha entrega de eventos, logs e retentativas monitorados em produção.
+Compras Stripe confirmadas nos últimos 7 dias aparecem em `/reembolso`. A pessoa autenticada pode iniciar o reembolso integral sem justificar; a ação verifica a titularidade, usa o PaymentIntent original e uma chave de idempotência específica do pedido. A consulta ao Stripe tenta atualizar o saldo de imediato e o webhook assinado concilia quando o processamento termina. Antes de ativar Kiwify, disponibilize um fluxo equivalente de solicitação e reembolso para esse provedor. Mantenha entrega de eventos, logs e retentativas monitorados em produção.
 
 ## Validação
 

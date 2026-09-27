@@ -1,5 +1,7 @@
 'use client'
 
+import Link from 'next/link'
+
 import {
   ArrowDown,
   ArrowRight,
@@ -12,6 +14,7 @@ import {
   LockKeyhole,
   Map,
   PencilLine,
+  ShieldCheck,
   Sparkles,
   Sprout
 } from 'lucide-react'
@@ -281,7 +284,7 @@ export function Preview({
               <p className="purchase-explainer">
                 Pagamento único, sem assinatura.
                 <br />
-                Cada novo planner usa um sonho.
+                Cada plano é criado para um sonho. Quer planejar mais de um? Você pode comprar pacotes depois.
               </p>
               <button className="begin-primary offer-cta" onClick={onCheckout}>
                 {pack === 1
@@ -289,6 +292,7 @@ export function Preview({
                   : 'Escolher meus 3 sonhos'}
                 <ArrowRight size={18} />
               </button>
+              <Link className="purchase-guarantee" href="/reembolso"><ShieldCheck size={16} /> Se o plano não fizer sentido para você, peça o reembolso em até 7 dias após a compra.</Link>
               <p className="checkout-unavailable">
                 <LockKeyhole size={12} /> Seus créditos ficam na sua conta
               </p>

@@ -126,6 +126,7 @@
 .home-header button:focus-visible,
 .home-header a:focus-visible,
 .home-main button:focus-visible,
+.home-main a:focus-visible,
 .home-main input:focus-visible {
   outline: 3px solid var(--color-indigo-400);
   outline-offset: 3px;
@@ -263,6 +264,33 @@
   line-height: 1.55;
 }
 
+.home-offer-price {
+  grid-column: 1 / -1;
+  margin: 1px 0 0;
+  color: #59667b;
+  font-size: 12px;
+  line-height: 1.55;
+}
+.home-offer-price strong { color: #3325a2; font-weight: 750; }
+
+.home-guarantee {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin-top: 15px;
+  padding: 11px 12px;
+  border: 1px solid #e1dbff;
+  border-radius: 12px;
+  background: #f8f6ff;
+  color: #4933ad;
+  font-size: 11px;
+  font-weight: 650;
+  line-height: 1.5;
+  text-decoration: none;
+}
+.home-guarantee:hover { border-color: #b9aaff; background: #f3efff; }
+.home-guarantee svg { flex: none; margin-top: 1px; }
+
 .home-form-hint svg {
   flex-shrink: 0;
   margin-top: 1px;
@@ -321,7 +349,7 @@
 .home-art {
   position: relative;
   width: 100%;
-  min-height: 515px;
+  min-height: 550px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -340,13 +368,21 @@
 }
 
 .home-plan-card {
-  width: min(100% - 48px, 405px);
+  width: min(100% - 48px, 425px);
   padding: 23px;
   border: 1px solid #eceafa;
   border-radius: 26px;
   background: rgb(255 255 255 / 0.95);
   box-shadow: 0 25px 70px rgb(56 44 127 / 0.12), 0 4px 12px rgb(56 44 127 / 0.05);
-  transform: rotate(-3deg);
+  transform: rotate(-2deg);
+}
+
+.home-plan-title {
+  margin-top: 10px;
+  color: #273449;
+  font-size: 21px;
+  font-weight: 750;
+  letter-spacing: -.04em;
 }
 
 .home-plan-top {
@@ -367,11 +403,11 @@
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 6px;
-  margin-top: 19px;
+  margin-top: 15px;
 }
 
 .home-plan-grid span {
-  min-height: 91px;
+  min-height: 67px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -398,12 +434,11 @@
   font-weight: 700;
 }
 
-.home-plan-card > p {
-  margin-top: 18px;
-  color: #758094;
-  font-size: 11px;
-  text-align: center;
-}
+.home-plan-tasks { margin-top: 18px; padding-top: 15px; border-top: 1px solid #e9e7f5; }
+.home-plan-tasks > strong { color: #3f3489; font-size: 11px; font-weight: 750; }
+.home-plan-tasks ol { display: grid; gap: 8px; margin-top: 9px; }
+.home-plan-tasks li { display: flex; align-items: flex-start; gap: 8px; color: #536278; font-size: 10px; line-height: 1.4; }
+.home-plan-tasks svg { flex: none; margin-top: 1px; color: #6551ef; }
 
 .home-art-note,
 .home-art-progress {
@@ -423,7 +458,7 @@
 }
 
 .home-art-note {
-  top: 23px;
+  top: -12px;
   left: 0;
   transform: rotate(3deg);
 }
@@ -441,7 +476,7 @@
 
 .home-art-progress {
   right: -8px;
-  bottom: 22px;
+  bottom: -10px;
   transform: rotate(3deg);
   line-height: 1.5;
 }
@@ -649,7 +684,7 @@
   }
 
   .home-art {
-    min-height: 450px;
+    min-height: 520px;
   }
 
   .home-how ol {
@@ -778,7 +813,7 @@
   }
 
   .home-art {
-    min-height: 360px;
+    min-height: 500px;
     margin-top: 8px;
   }
 
@@ -788,7 +823,7 @@
   }
 
   .home-plan-card {
-    width: min(83%, 325px);
+    width: min(90%, 350px);
     padding: 16px;
     border-radius: 20px;
   }
@@ -800,12 +835,16 @@
 
   .home-plan-grid span {
     min-height: 59px;
-    font-size: 9px;
+    font-size: 10px;
   }
 
   .home-plan-grid .home-plan-center {
     font-size: 10px;
   }
+
+  .home-plan-title { font-size: 18px; }
+  .home-plan-tasks { margin-top: 13px; padding-top: 11px; }
+  .home-plan-tasks li { font-size: 11px; }
 
   .home-plan-card > p {
     margin-top: 12px;

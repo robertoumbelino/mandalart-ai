@@ -2,13 +2,15 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { BrandLogo } from '@/app/components/Brand';
-import { ArrowRight, Sparkles, BrainCircuit, Loader2, History, X, Trash2, Calendar, LogOut, Check, Compass, ListChecks } from 'lucide-react';
+import { ArrowRight, Sparkles, BrainCircuit, Loader2, History, X, Trash2, Calendar, LogOut, Check, Compass, ListChecks, ShieldCheck } from 'lucide-react';
 import { discoverGoal } from '@/actions/ai';
 import { MandalartData, Question, AppStep, GoalProposal, GoalSafetyCategory, InterviewAnswer, HistoryItem, User } from '@/types';
 import { MandalartView } from '@/app/components/MandalartView';
 import { Auth } from '@/app/components/Auth';
 import { SafetyNotice } from '@/app/components/SafetyNotice';
-import { getCurrentUser, logout } from '@/actions/auth';
+import { getCurrentUserWithCreation, logout } from '@/actions/auth';
+import { trackMetaEvent } from '@/lib/meta-events';
+import { ANALYTICS_CONSENT_EVENT, captureProductEvent, identifyProductUser, resetProductUser } from '@/lib/posthog';
 import { authClient } from '@/lib/auth/client';
 import { getHistory, updateMandalart, deleteMandalart } from '@/actions/mandalarts';
 import Link from 'next/link';
@@ -16,6 +18,8 @@ import { useRouter } from 'next/navigation';
 import { generateDream, getDreamGeneration, getDreamWallet } from '@/actions/dreams';
 import { DRAFT_STORAGE_KEY, restoreDraft, answersSchema, getAnswerContext } from '@/lib/onboarding';
 import { getJourneyProgress } from '@/lib/journey';
+import { DREAM_PACKS } from '@/lib/dream-packs';
+import { CAREER_PLAN } from '@/lib/example-plan';
 import './home.css';
 
 const GENERATION_MESSAGES = [
@@ -52,6 +56,7 @@ export default function Home() {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [showAuth, setShowAuth] = useState(false);
+  const [authMode, setAuthMode] = useState<'login' | 'register'>('register');
   const [step, setStep] = useState<AppStep>('input');
   const [mainGoal, setMainGoal] = useState('');
   const [previewId, setPreviewId] = useState<string | undefined>(undefined);
@@ -101,7 +106,11 @@ export default function Home() {
         if (new URLSearchParams(window.location.search).has('neon_auth_session_verifier')) {
           await authClient.getSession();
         }
-        const currentUser = await getCurrentUser();
+        const account = await getCurrentUserWithCreation();
+        const currentUser = account?.user ?? null;
+        if (currentUser) identifyProductUser(currentUser.id);
+        if (account?.created) captureProductEvent('registration_completed', { method: 'google' });
+        if (account?.created) trackMetaEvent({ name: 'CompleteRegistration', onceKey: `registration.${account.user.id}`, eventId: `registration-${account.user.id}` });
         try {
           const guestGoal = sessionStorage.getItem(GUEST_GOAL_KEY);
           if (active && guestGoal) setMainGoal(guestGoal.slice(0, 300));
@@ -124,6 +133,14 @@ export default function Home() {
     void load();
     return () => { active = false; window.clearTimeout(accountTimeout); };
   }, []);
+
+  useEffect(() => {
+    if (loading) return;
+    const captureScreen = () => captureProductEvent('screen_view', { screen: showAuth ? 'auth' : `app_${step}` });
+    captureScreen();
+    window.addEventListener(ANALYTICS_CONSENT_EVENT, captureScreen);
+    return () => window.removeEventListener(ANALYTICS_CONSENT_EVENT, captureScreen);
+  }, [loading, showAuth, step]);
 
   useEffect(() => {
     if (!user) return;
@@ -307,6 +324,7 @@ export default function Home() {
   };
 
   const handleLogin = async (newUser: User) => {
+    identifyProductUser(newUser.id);
     activeUserIdRef.current = newUser.id;
     setInterviewRestored(false);
     setWallet(null);
@@ -318,6 +336,7 @@ export default function Home() {
   const handleLogout = async () => {
     setIsUserMenuOpen(false);
     await logout();
+    resetProductUser();
     activeUserIdRef.current = null;
     generationRecoveryRef.current = null;
     setWallet(null);
@@ -336,11 +355,12 @@ export default function Home() {
     try { sessionStorage.removeItem(GUEST_GOAL_KEY); } catch {}
   };
 
-  const openAuth = () => {
+  const openAuth = (mode: 'login' | 'register' = 'register') => {
     try {
       if (mainGoal.trim()) sessionStorage.setItem(GUEST_GOAL_KEY, mainGoal.trim());
       else sessionStorage.removeItem(GUEST_GOAL_KEY);
     } catch {}
+    setAuthMode(mode);
     setShowAuth(true);
   };
 
@@ -415,6 +435,7 @@ export default function Home() {
   const handleStart = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!mainGoal.trim() || processing || loading) return;
+    captureProductEvent('planner_started');
     if (!user) {
       openAuth();
       return;
@@ -516,6 +537,7 @@ export default function Home() {
     if (processing || !user || !proposal || step !== 'confirm') return;
     try { sessionStorage.setItem(`mandalart.interview.${user.id}`, JSON.stringify({ version: 2, goal: mainGoal, answers, questions, proposal, previewId })); } catch {}
     if (!wallet || wallet.balance < 1) { router.push('/sonhos'); return; }
+    captureProductEvent('planner_generation_requested');
     const id = crypto.randomUUID();
     const key = `mandalart.generation.${user.id}`;
     generationRecoveryRef.current = { id, goal: mainGoal, answers, proposal, previewId };
@@ -525,6 +547,7 @@ export default function Home() {
       const result = await generateDream(id, mainGoal, answers, previewId, previewId ? undefined : proposal);
       if (activeUserIdRef.current !== user.id) return;
       if (result.status === 'completed') {
+        captureProductEvent('planner_generation_completed');
         setMandalartData(result.item.data); setCurrentMandalartId(result.item.id); setStep('result');
         try { sessionStorage.removeItem(key); sessionStorage.removeItem(`mandalart.interview.${user.id}`); } catch {}
         void refreshHistory().catch(() => {});
@@ -564,7 +587,7 @@ export default function Home() {
   };
 
   if (!user && showAuth) {
-    return <Auth onLogin={handleLogin} onBack={() => setShowAuth(false)} goal={mainGoal.trim()} />;
+    return <Auth onLogin={handleLogin} onBack={() => setShowAuth(false)} goal={mainGoal.trim()} initialMode={authMode} />;
   }
 
   return (
@@ -639,7 +662,7 @@ export default function Home() {
             )}
           </div>
           </> : (
-            <button type="button" className="home-login-button" onClick={openAuth}>Entrar <ArrowRight size={16} aria-hidden="true" /></button>
+            <button type="button" className="home-login-button" onClick={() => openAuth('login')}>Entrar <ArrowRight size={16} aria-hidden="true" /></button>
           )}
           </nav>
         </div>
@@ -745,17 +768,23 @@ export default function Home() {
                     <button type="submit" disabled={loading || processing || !mainGoal.trim()} className="home-submit brand-button">
                       {loading ? 'Preparando sua conta...' : processing ? <Loader2 className="animate-spin" size={20} /> : <>{needsDreams ? 'Continuar meu sonho' : 'Criar meu plano'} <ArrowRight size={19} /></>}
                     </button>
+                    <p className="home-offer-price">
+                      {user && wallet && wallet.balance > 0
+                        ? <><strong>Você já tem um sonho disponível.</strong> Criar este plano não gera nova cobrança.</>
+                        : <><strong>Plano completo por {DREAM_PACKS[1].price}.</strong> Pagamento único, sem assinatura.</>}
+                    </p>
                   </form>
                   <p id="home-goal-hint" className="home-form-hint">
                     <Check size={15} aria-hidden="true" />
                     {user && needsDreams ? 'Seu objetivo fica salvo para continuar depois de escolher seus sonhos.' : 'Perguntas rápidas, só quando ajudam a entender seu objetivo.'}
                   </p>
+                  {(!user || needsDreams) && <Link href="/reembolso" className="home-guarantee"><ShieldCheck size={16} aria-hidden="true" /> Se não gostar do seu plano, peça seus {DREAM_PACKS[1].price} de volta em até 7 dias após a compra.</Link>}
                 </div>
                 {error && <p role="alert" className="home-error">{error}</p>}
                 <div className="home-examples">
                   <span>Precisa de inspiração?</span>
                   <div className="home-example-list">
-                    {['Correr uma maratona', 'Virar Tech Lead', 'Morar no exterior'].map(example => (
+                    {['Correr uma maratona', 'Mudar de carreira', 'Morar no exterior'].map(example => (
                       <button key={example} type="button" onClick={() => { setMainGoal(example); goalInputRef.current?.focus(); }}>
                         {example}<ArrowRight size={14} aria-hidden="true" />
                       </button>
@@ -764,16 +793,20 @@ export default function Home() {
                 </div>
               </div>
 
-              <div className="home-art" aria-hidden="true">
+              <div className="home-art" role="region" aria-label="Exemplo de plano para mudar de carreira">
                 <div className="home-art-note"><span className="home-art-note-icon"><Compass size={18} /></span> Um caminho de cada vez</div>
                 <div className="home-plan-card">
-                  <div className="home-plan-top"><span>SEU MANDALART</span><Sparkles size={18} /></div>
+                  <div className="home-plan-top"><span>EXEMPLO DE PLANO</span><Sparkles size={18} /></div>
+                  <h2 className="home-plan-title">{CAREER_PLAN.dream}</h2>
                   <div className="home-plan-grid">
-                    {['Aprender', 'Preparar', 'Explorar', 'Praticar', 'Seu sonho', 'Cuidar', 'Organizar', 'Conectar', 'Avançar'].map((item, index) => (
+                    {CAREER_PLAN.pillars.map((item, index) => (
                       <span key={item} className={index === 4 ? 'home-plan-center' : ''}>{item}</span>
                     ))}
                   </div>
-                  <p>Uma visão mais clara do que importa agora.</p>
+                  <div className="home-plan-tasks">
+                    <strong>Os primeiros passos</strong>
+                    <ol>{CAREER_PLAN.firstTasks.map(task => <li key={task}><Check size={14} aria-hidden="true" />{task}</li>)}</ol>
+                  </div>
                 </div>
                 <div className="home-art-progress"><span className="home-art-progress-icon"><Check size={18} /></span><span><strong>Pequenos passos</strong><br />Grandes possibilidades.</span></div>
               </div>
@@ -789,7 +822,7 @@ export default function Home() {
                 <li><span className="home-how-icon"><BrainCircuit size={21} /></span><div><span className="home-how-number">02</span><h3>Escolha o que faz sentido</h3><p>Responda só às perguntas que ajudam a definir seu caminho.</p></div></li>
                 <li><span className="home-how-icon"><ListChecks size={21} /></span><div><span className="home-how-number">03</span><h3>Avance no seu ritmo</h3><p>Veja seus próximos passos e acompanhe cada conquista.</p></div></li>
               </ol>
-              <p className="home-how-note">O planner completo usa 1 sonho. Você pode escolher um pacote antes de criá-lo, sem assinatura.</p>
+              <p className="home-how-note">Cada plano é criado para um sonho. Quer planejar mais de um? Você pode comprar pacotes depois. O pagamento é único, sem assinatura.</p>
             </section>
           </div>
         )}
