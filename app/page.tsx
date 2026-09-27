@@ -765,11 +765,9 @@ export default function Home() {
                     <button type="submit" disabled={loading || processing || !mainGoal.trim()} className="home-submit brand-button">
                       {loading ? 'Preparando sua conta...' : processing ? <Loader2 className="animate-spin" size={20} /> : <>{needsDreams ? 'Continuar meu sonho' : 'Criar meu plano'} <ArrowRight size={19} /></>}
                     </button>
-                    <p className="home-offer-price">
-                      {user && wallet && wallet.balance > 0
-                        ? <><strong>Você já tem um sonho disponível.</strong> Criar este plano não gera nova cobrança.</>
-                        : <><strong>Plano completo por {DREAM_PACKS[1].price}.</strong> Pagamento único, sem assinatura.</>}
-                    </p>
+                    {(!user || needsDreams) && <p className="home-offer-price">
+                      <strong>Plano completo por {DREAM_PACKS[1].price}.</strong> Pagamento único, sem assinatura.
+                    </p>}
                   </form>
                   <p id="home-goal-hint" className="home-form-hint">
                     <Check size={15} aria-hidden="true" />
