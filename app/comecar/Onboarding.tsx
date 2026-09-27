@@ -7,6 +7,7 @@ import { track } from '@vercel/analytics'
 import { sendGoogleAnalyticsEvent } from '@/app/components/GoogleAnalytics'
 import { captureProductEvent } from '@/lib/posthog'
 import { captureAttribution } from '@/lib/attribution'
+import { trackMetaEvent } from '@/lib/meta-events'
 import {
   ArrowLeft,
   ArrowRight,
@@ -208,6 +209,11 @@ export function Onboarding() {
       step: draft.screen === 'questions' ? draft.question + 1 : 0,
     })
   }, [draft.screen, draft.question, hydrated])
+
+  useEffect(() => {
+    if (!hydrated || draft.screen !== 'preview' || !draft.result) return
+    trackMetaEvent({ name: 'Lead', onceKey: `lead.${draft.result.id}` })
+  }, [draft.screen, draft.result, hydrated])
 
   useEffect(() => {
     if (!hydrated) return

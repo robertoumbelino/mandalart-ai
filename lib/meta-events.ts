@@ -2,7 +2,7 @@
 
 import { MARKETING_CONSENT_KEY } from '@/lib/marketing-consent'
 
-type EventName = 'CompleteRegistration' | 'InitiateCheckout' | 'Purchase'
+type EventName = 'Lead' | 'CompleteRegistration' | 'InitiateCheckout' | 'Purchase'
 type EventData = { value?: number; currency?: 'BRL' }
 type PendingEvent = { name: EventName; data?: EventData; onceKey?: string; eventId?: string }
 

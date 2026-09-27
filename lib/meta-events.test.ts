@@ -19,11 +19,11 @@ it('sends Purchase once for each confirmed order across repeated renders', () =>
     name: 'Purchase',
     data: { value: 37, currency: 'BRL' },
     onceKey: `purchase.${id}`,
-    eventId: `purchase-${id}`,
+    eventId: id,
   })
   purchase('order-one')
   purchase('order-one')
   purchase('order-two')
   expect(fbq).toHaveBeenCalledTimes(2)
-  expect(fbq).toHaveBeenCalledWith('track', 'Purchase', { value: 37, currency: 'BRL' }, { eventID: 'purchase-order-one' })
+  expect(fbq).toHaveBeenCalledWith('track', 'Purchase', { value: 37, currency: 'BRL' }, { eventID: 'order-one' })
 })

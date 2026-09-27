@@ -161,7 +161,7 @@ export function DreamShop() {
         name: 'Purchase',
         data: { value: paymentOrder.amount / 100, currency: 'BRL' },
         onceKey: `purchase.${paymentOrder.id}`,
-        eventId: `purchase-${paymentOrder.id}`,
+        eventId: paymentOrder.id,
       })
     }
   }, [paymentStatus, paymentOrder, source])

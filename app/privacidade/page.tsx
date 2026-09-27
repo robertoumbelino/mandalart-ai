@@ -46,7 +46,7 @@ export default function PrivacyPage() {
               Usamos Vercel Analytics e Google Analytics para entender visitas, páginas acessadas e etapas de uso do site. As URLs enviadas ao Google não incluem parâmetros de consulta, e os eventos de uso não incluem o texto dos seus sonhos ou respostas. O Google pode tratar identificadores do navegador e dados técnicos conforme sua própria política de privacidade. A medição do Google Analytics ocorre apenas em mandalart.com.br.
             </p>
             <p className="mt-2">
-              Se você aceitar os cookies opcionais, usamos o Pixel da Meta para medir visitas, criação de contas, início de pagamento e compras confirmadas, ajudando a avaliar nossos anúncios. Enviamos o tipo de evento e, em pagamentos, o valor e a moeda; não enviamos o texto do seu objetivo, suas respostas nem os detalhes do plano. O Pixel só é carregado depois da sua escolha. Você pode mudar essa escolha a qualquer momento.
+              Se você aceitar os cookies opcionais, usamos o Pixel da Meta para medir visitas, prévias gratuitas concluídas, criação de contas, início de pagamento e compras confirmadas, ajudando a avaliar nossos anúncios. Enviamos o tipo de evento e, em pagamentos, o valor e a moeda; não enviamos o texto do seu objetivo, suas respostas nem os detalhes do plano. O Pixel só é carregado depois da sua escolha. Você pode mudar essa escolha a qualquer momento.
             </p>
             <MarketingPreferenceButton />
             <p className="mt-2">
