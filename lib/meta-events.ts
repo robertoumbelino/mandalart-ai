@@ -1,6 +1,6 @@
 'use client'
 
-import { ANALYTICS_CONSENT_KEY } from '@/lib/posthog'
+import { MARKETING_CONSENT_KEY } from '@/lib/marketing-consent'
 
 type EventName = 'CompleteRegistration' | 'InitiateCheckout' | 'Purchase'
 type EventData = { value?: number; currency?: 'BRL' }
@@ -10,7 +10,7 @@ const pending: PendingEvent[] = []
 
 function consented() {
   try {
-    return localStorage.getItem(ANALYTICS_CONSENT_KEY) === 'accepted'
+    return localStorage.getItem(MARKETING_CONSENT_KEY) === 'accepted'
   } catch {
     return false
   }

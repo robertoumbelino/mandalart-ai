@@ -5,7 +5,7 @@ import { usePathname } from 'next/navigation'
 import Script from 'next/script'
 import { captureAttribution } from '@/lib/attribution'
 import { discardMetaEvents, flushMetaEvents } from '@/lib/meta-events'
-import { ANALYTICS_CONSENT_EVENT, ANALYTICS_CONSENT_KEY, startPostHog } from '@/lib/posthog'
+import { MARKETING_CONSENT_KEY } from '@/lib/marketing-consent'
 import './meta-pixel.css'
 
 const PRODUCTION_HOSTS = new Set(['mandalart.com.br', 'www.mandalart.com.br', 'mandalart-ai.vercel.app'])
@@ -31,7 +31,7 @@ export function MetaPixel() {
     const frame = requestAnimationFrame(() => {
       setProduction(PRODUCTION_HOSTS.has(window.location.hostname))
       try {
-        const saved = localStorage.getItem(ANALYTICS_CONSENT_KEY)
+        const saved = localStorage.getItem(MARKETING_CONSENT_KEY)
         if (saved === 'accepted' || saved === 'rejected') setConsent(saved)
       } catch {
         // The preference can still be selected when storage is unavailable.
@@ -49,15 +49,9 @@ export function MetaPixel() {
   }, [pathname, production, ready, consent])
 
   function choose(value: 'accepted' | 'rejected') {
-    try {
-      localStorage.setItem(ANALYTICS_CONSENT_KEY, value)
-    } catch {
-      // The choice still applies during this visit.
-    }
+    try { localStorage.setItem(MARKETING_CONSENT_KEY, value) } catch {}
     if (value === 'rejected') discardMetaEvents()
-    if (value === 'accepted') startPostHog()
     setConsent(value)
-    window.dispatchEvent(new Event(ANALYTICS_CONSENT_EVENT))
   }
 
   return (
@@ -73,10 +67,10 @@ s.parentNode.insertBefore(t,s)}(window,document,'script',
 'https://connect.facebook.net/en_US/fbevents.js');
 fbq('init','975897138891298');`}
     </Script>}
-    {(production || Boolean(process.env.NEXT_PUBLIC_POSTHOG_PROJECT_TOKEN)) && decided && consent === null && <aside className="marketing-consent" aria-label="Preferência de privacidade">
+    {production && decided && consent === null && <aside className="marketing-consent" aria-label="Preferências de cookies">
       <div>
-        <strong>Você escolhe sobre anúncios e gravações.</strong>
-        <p>Com sua permissão, a Meta mede anúncios e o PostHog analisa a jornada e gravações com textos e campos ocultos. Recusar não muda o uso do site. <a href="/privacidade">Saiba mais</a>.</p>
+        <strong>Podemos usar cookies opcionais?</strong>
+        <p>Eles ajudam a medir o desempenho dos nossos anúncios. Você pode aceitar ou recusar sem mudar o uso do site. <a href="/privacidade">Saiba mais</a>.</p>
       </div>
       <div className="marketing-consent-actions">
         <button type="button" onClick={() => choose('rejected')}>Recusar</button>

@@ -1,6 +1,6 @@
 import { afterEach, expect, it, vi } from 'vitest'
 import { discardMetaEvents, trackMetaEvent } from './meta-events'
-import { ANALYTICS_CONSENT_KEY } from './posthog'
+import { MARKETING_CONSENT_KEY } from './marketing-consent'
 
 afterEach(() => {
   discardMetaEvents()
@@ -8,7 +8,7 @@ afterEach(() => {
 })
 
 it('sends Purchase once for each confirmed order across repeated renders', () => {
-  const values = new Map<string, string>([[ANALYTICS_CONSENT_KEY, 'accepted']])
+  const values = new Map<string, string>([[MARKETING_CONSENT_KEY, 'accepted']])
   vi.stubGlobal('localStorage', {
     getItem: (key: string) => values.get(key) ?? null,
     setItem: (key: string, value: string) => { values.set(key, value) },

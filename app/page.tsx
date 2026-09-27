@@ -10,7 +10,7 @@ import { Auth } from '@/app/components/Auth';
 import { SafetyNotice } from '@/app/components/SafetyNotice';
 import { getCurrentUserWithCreation, logout } from '@/actions/auth';
 import { trackMetaEvent } from '@/lib/meta-events';
-import { ANALYTICS_CONSENT_EVENT, captureProductEvent, identifyProductUser, resetProductUser } from '@/lib/posthog';
+import { captureProductEvent, identifyProductUser, resetProductUser } from '@/lib/posthog';
 import { authClient } from '@/lib/auth/client';
 import { getHistory, updateMandalart, deleteMandalart } from '@/actions/mandalarts';
 import Link from 'next/link';
@@ -136,10 +136,7 @@ export default function Home() {
 
   useEffect(() => {
     if (loading) return;
-    const captureScreen = () => captureProductEvent('screen_view', { screen: showAuth ? 'auth' : `app_${step}` });
-    captureScreen();
-    window.addEventListener(ANALYTICS_CONSENT_EVENT, captureScreen);
-    return () => window.removeEventListener(ANALYTICS_CONSENT_EVENT, captureScreen);
+    captureProductEvent('screen_view', { screen: showAuth ? 'auth' : `app_${step}` });
   }, [loading, showAuth, step]);
 
   useEffect(() => {

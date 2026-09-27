@@ -5,7 +5,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import { track } from '@vercel/analytics'
 import { sendGoogleAnalyticsEvent } from '@/app/components/GoogleAnalytics'
-import { ANALYTICS_CONSENT_EVENT, captureProductEvent } from '@/lib/posthog'
+import { captureProductEvent } from '@/lib/posthog'
 import { captureAttribution } from '@/lib/attribution'
 import {
   ArrowLeft,
@@ -203,13 +203,10 @@ export function Onboarding() {
 
   useEffect(() => {
     if (!hydrated) return
-    const captureScreen = () => captureProductEvent('screen_view', {
+    captureProductEvent('screen_view', {
       screen: `onboarding_${draft.screen}`,
       step: draft.screen === 'questions' ? draft.question + 1 : 0,
     })
-    captureScreen()
-    window.addEventListener(ANALYTICS_CONSENT_EVENT, captureScreen)
-    return () => window.removeEventListener(ANALYTICS_CONSENT_EVENT, captureScreen)
   }, [draft.screen, draft.question, hydrated])
 
   useEffect(() => {

@@ -2,11 +2,11 @@
 
 import posthog from 'posthog-js'
 
-export const ANALYTICS_CONSENT_KEY = 'mandalart.analytics-consent.v2'
-export const ANALYTICS_CONSENT_EVENT = 'mandalart:analytics-consent'
+export const POSTHOG_OPTOUT_KEY = 'mandalart.posthog-opt-out.v1'
 
 let initialized = false
 let userId: string | null = null
+let optedOut = false
 
 function withoutQuery(value: unknown) {
   if (typeof value !== 'string') return value
@@ -21,6 +21,15 @@ function withoutQuery(value: unknown) {
 export function startPostHog() {
   const token = process.env.NEXT_PUBLIC_POSTHOG_PROJECT_TOKEN
   const host = process.env.NEXT_PUBLIC_POSTHOG_HOST
+  if (optedOut) return false
+  try {
+    if (localStorage.getItem(POSTHOG_OPTOUT_KEY) === 'true') {
+      optedOut = true
+      return false
+    }
+  } catch {
+    // Analytics remains available when storage is blocked.
+  }
   if (initialized || !token || !host) return initialized
 
   posthog.init(token, {
@@ -59,7 +68,7 @@ export function startPostHog() {
 }
 
 export function captureProductEvent(name: string, properties?: Record<string, string | number>) {
-  if (!initialized) return false
+  if (!startPostHog()) return false
   const siteEnvironment = /^(www\.)?mandalart\.com\.br$/.test(window.location.hostname)
     || window.location.hostname === 'mandalart-ai.vercel.app'
     ? 'production'
@@ -68,12 +77,34 @@ export function captureProductEvent(name: string, properties?: Record<string, st
   return true
 }
 
+export function stopPostHog() {
+  optedOut = true
+  try { localStorage.setItem(POSTHOG_OPTOUT_KEY, 'true') } catch {}
+  if (initialized) {
+    posthog.stopSessionRecording()
+    posthog.opt_out_capturing()
+  }
+}
+
+export function resumePostHog() {
+  optedOut = false
+  try { localStorage.removeItem(POSTHOG_OPTOUT_KEY) } catch {}
+  if (initialized) {
+    posthog.opt_in_capturing()
+    posthog.startSessionRecording()
+  }
+  else startPostHog()
+}
+
 export function identifyProductUser(id: string) {
   userId = id
-  if (initialized) posthog.identify(id)
+  if (initialized && !optedOut) posthog.identify(id)
 }
 
 export function resetProductUser() {
   userId = null
-  if (initialized) posthog.reset()
+  if (initialized) {
+    posthog.reset()
+    if (optedOut) posthog.opt_out_capturing()
+  }
 }

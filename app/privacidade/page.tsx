@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { MarketingPreferenceButton } from './MarketingPreferenceButton'
+import { AnalyticsPrivacyButton } from './AnalyticsPrivacyButton'
 
 export const metadata: Metadata = {
   title: 'Política de Privacidade | Mandalart.AI',
@@ -45,12 +46,13 @@ export default function PrivacyPage() {
               Usamos Vercel Analytics e Google Analytics para entender visitas, páginas acessadas e etapas de uso do site. As URLs enviadas ao Google não incluem parâmetros de consulta, e os eventos de uso não incluem o texto dos seus sonhos ou respostas. O Google pode tratar identificadores do navegador e dados técnicos conforme sua própria política de privacidade. A medição do Google Analytics ocorre apenas em mandalart.com.br.
             </p>
             <p className="mt-2">
-              Com sua escolha, usamos o Pixel da Meta para medir visitas, criação de contas, início de pagamento e compras confirmadas, ajudando a avaliar nossos anúncios. Enviamos o tipo de evento e, em pagamentos, o valor e a moeda; não enviamos o texto do seu objetivo, suas respostas nem os detalhes do plano. O Pixel da Meta só é carregado depois que você aceita essa medição. Você pode mudar sua escolha a qualquer momento.
-            </p>
-            <p className="mt-2">
-              Com a mesma escolha, usamos o PostHog para medir páginas e etapas da jornada, como início, prévia, cadastro e compra, e para assistir a gravações da navegação. Não enviamos o texto dos objetivos, respostas, e-mail ou dados do cartão nos eventos. Nas gravações, ocultamos todos os textos e campos de entrada e removemos parâmetros das URLs antes do envio. Associamos os eventos ao identificador interno da conta após o login para acompanhar a jornada entre visitas. Se você recusar, não carregamos o PostHog.
+              Se você aceitar os cookies opcionais, usamos o Pixel da Meta para medir visitas, criação de contas, início de pagamento e compras confirmadas, ajudando a avaliar nossos anúncios. Enviamos o tipo de evento e, em pagamentos, o valor e a moeda; não enviamos o texto do seu objetivo, suas respostas nem os detalhes do plano. O Pixel só é carregado depois da sua escolha. Você pode mudar essa escolha a qualquer momento.
             </p>
             <MarketingPreferenceButton />
+            <p className="mt-2">
+              Usamos o PostHog desde a visita para medir páginas e etapas da jornada, como início, prévia, cadastro e compra, e para assistir a gravações da navegação. Essa análise funciona independentemente da escolha sobre cookies opcionais para anúncios. O PostHog recebe identificadores do navegador e dados técnicos da visita; depois do login, associamos eventos ao identificador interno da conta para acompanhar a jornada entre visitas. Não incluímos o texto dos objetivos, respostas, e-mail ou dados do cartão nos eventos. Nas gravações, ocultamos os textos e campos de entrada, desativamos o envio de conteúdo de rede e retiramos parâmetros das URLs. Você pode desativar essa análise neste navegador a qualquer momento.
+            </p>
+            <AnalyticsPrivacyButton />
             <p className="mt-2">
               Se você chega por uma campanha, guardamos os parâmetros de origem presentes no link por até 30 dias neste navegador. Ao iniciar uma compra, associamos esses parâmetros ao pedido para saber qual anúncio gerou a venda, mesmo quando o pagamento acontece no site do provedor.
             </p>
@@ -59,7 +61,7 @@ export default function PrivacyPage() {
           <section>
             <h2 className="text-lg font-bold text-slate-900">4. Compartilhamento e armazenamento</h2>
             <p className="mt-2">
-              Não vendemos seus dados. Compartilhamos as informações necessárias com fornecedores de hospedagem, banco de dados, autenticação, processamento de IA e pagamentos para operar o serviço. Se você aceitar a medição, a Meta e o PostHog também receberão os dados descritos acima, de acordo com a preferência escolhida.
+              Não vendemos seus dados. Compartilhamos as informações necessárias com fornecedores de hospedagem, banco de dados, autenticação, processamento de IA e pagamentos para operar o serviço. O PostHog recebe os dados de análise descritos acima durante a visita. A Meta recebe eventos de anúncios apenas se você aceitar os cookies opcionais.
             </p>
             <p className="mt-2">
               O Neon gerencia o login por Google ou e-mail e senha, as sessões e a recuperação de senha. Seus planos e créditos continuam associados à mesma conta do Mandalart.AI.
