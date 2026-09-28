@@ -46,6 +46,32 @@ import { Preview } from './Preview'
 
 type Screen = OnboardingDraft['screen']
 type Choice = { id: string; title: string; hint?: string; icon?: string }
+const DREAM_ICONS = {
+  'Organizar minha vida financeira': 'wallet',
+  'Sair das dívidas': 'credit-card',
+  'Montar uma reserva': 'piggy-bank',
+  'Me preparar para comprar minha casa': 'house',
+  'Conseguir um novo emprego': 'briefcase',
+  'Mudar de profissão': 'compass',
+  'Crescer na carreira': 'trending-up',
+  'Voltar ao mercado de trabalho': 'refresh',
+  'Tirar uma ideia do papel': 'idea',
+  'Começar a trabalhar por conta própria': 'user',
+  'Conquistar os primeiros clientes': 'users',
+  'Organizar e fazer meu negócio crescer': 'chart',
+  'Criar uma rotina de movimento': 'activity',
+  'Melhorar minha rotina de sono': 'moon',
+  'Cuidar melhor da alimentação': 'apple',
+  'Ter mais espaço para cuidar de mim': 'heart',
+  'Aprender um idioma': 'languages',
+  'Me preparar para uma prova': 'notebook',
+  'Desenvolver uma habilidade': 'sparkles',
+  'Retomar os estudos': 'book',
+  'Fazer uma viagem especial': 'plane',
+  'Conhecer outro país': 'globe',
+  'Me preparar para morar fora': 'map-pin',
+  'Começar um projeto pessoal': 'rocket'
+} satisfies Record<(typeof CATEGORIES)[number]['dreams'][number], string>
 const EMPTY: OnboardingDraft = {
   version: 1,
   savedAt: 0,
@@ -459,7 +485,7 @@ export function Onboarding() {
   const choiceSets: Choice[][] = [
     [...CATEGORIES],
     [
-      ...(category?.dreams || []).map((title) => ({ id: title, title })),
+      ...(category?.dreams || []).map((title) => ({ id: title, title, icon: DREAM_ICONS[title] })),
       { id: 'other', title: 'Meu sonho é outro', icon: 'idea' }
     ],
     [...STAGES],
