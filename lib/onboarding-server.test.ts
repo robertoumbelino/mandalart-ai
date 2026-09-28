@@ -100,7 +100,7 @@ describe('anonymous preview generation', () => {
       preview
     })
     expect(generateText).not.toHaveBeenCalled()
-    expect(query).toHaveBeenCalledTimes(1)
+    expect(query).toHaveBeenCalledTimes(2)
   })
   it('stops before reservation and generation when the durable usage limit is reached', async () => {
     const query = vi

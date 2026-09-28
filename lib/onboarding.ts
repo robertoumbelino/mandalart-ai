@@ -275,9 +275,21 @@ export const previewSchema = z.object({
 })
 export type OnboardingPreview = z.infer<typeof previewSchema>
 
+export function previewHeading(title: string) {
+  const cleaned = title.trim().replace(/\.+$/, '').replace(/^(?:(?:um|o|seu)\s+caminho\s+para\s+)+/i, '').trim()
+  return `Um caminho para ${cleaned.charAt(0).toLowerCase()}${cleaned.slice(1)}`
+}
+
 export const ATTRIBUTION_KEYS = [
   'afid',
   'ref',
+  'ad',
+  'adset',
+  'ad_id',
+  'adset_id',
+  'campaign_id',
+  'fbclid',
+  'gclid',
   'utm_source',
   'utm_medium',
   'utm_campaign',
@@ -306,7 +318,7 @@ export const DRAFT_LIFETIME = 7 * 24 * 60 * 60 * 1000
 export const draftSchema = z.object({
   version: z.literal(1),
   savedAt: z.number(),
-  screen: z.enum(['welcome', 'questions', 'generating', 'preview', 'blocked']),
+  screen: z.enum(['welcome', 'questions', 'email', 'generating', 'preview', 'blocked']),
   question: z.number().int().min(0).max(5),
   answers: z.object(
     Object.fromEntries(
@@ -325,7 +337,8 @@ export const draftSchema = z.object({
     .nullable(),
   checked: z.array(z.boolean()).length(3),
   attribution: attributionSchema,
-  pack: z.union([z.literal(1), z.literal(3)])
+  pack: z.union([z.literal(1), z.literal(3)]),
+  leadId: z.uuid().nullable().default(null)
 })
 export type OnboardingDraft = z.infer<typeof draftSchema>
 

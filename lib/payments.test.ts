@@ -79,6 +79,23 @@ describe('trusted checkout fulfillment', () => {
     ] as Stripe.LineItem[]
     expect(() => verifyCheckout(previousSession, previousOrder, previousLines)).not.toThrow()
   })
+  it('accepts a guest purchase with only the main plan', () => {
+    const guest = { ...order, user_id: null, guest_email: 'buyer@example.com', credits: 1 as const, amount: 3700, price_id: 'price_one', bump_price_id: 'price_bump' }
+    const checkout = { ...session, client_reference_id: order.id, amount_total: 3700 } as Stripe.Checkout.Session
+    const items = [{ quantity: 1, price: { id: 'price_one' }, amount_total: 3700 }] as Stripe.LineItem[]
+    expect(verifyCheckout(checkout, guest, items)).toEqual({ amount: 3700, credits: 1, bump: false })
+  })
+  it('accepts only the exact R$62 guest add-on and credits three dreams', () => {
+    const guest = { ...order, user_id: null, guest_email: 'buyer@example.com', credits: 1 as const, amount: 3700, price_id: 'price_one', bump_price_id: 'price_bump' }
+    const checkout = { ...session, client_reference_id: order.id, amount_total: 9900 } as Stripe.Checkout.Session
+    const items = [
+      { quantity: 1, price: { id: 'price_one' }, amount_total: 3700 },
+      { quantity: 1, price: { id: 'price_bump' }, amount_total: 6200 },
+    ] as Stripe.LineItem[]
+    expect(verifyCheckout(checkout, guest, items)).toEqual({ amount: 9900, credits: 3, bump: true })
+    expect(() => verifyCheckout(checkout, guest, [{ ...items[0] }, { ...items[1], quantity: 2 }])).toThrow()
+    expect(() => verifyCheckout(checkout, guest, [{ ...items[0] }, { ...items[1], price: { id: 'another_price' } } as Stripe.LineItem])).toThrow()
+  })
   it.each([
     { livemode: true },
     { amount_total: 1 },

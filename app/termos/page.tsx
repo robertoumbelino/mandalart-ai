@@ -15,13 +15,13 @@ export default function TermsPage() {
         </Link>
 
         <h1 className="mt-8 text-3xl font-black tracking-tight text-slate-900">Termos de Uso</h1>
-        <p className="mt-2 text-sm text-slate-500">Última atualização: 27 de setembro de 2026</p>
+        <p className="mt-2 text-sm text-slate-500">Última atualização: 28 de setembro de 2026</p>
 
         <div className="mt-8 space-y-7 leading-relaxed">
           <section>
             <h2 className="text-lg font-bold text-slate-900">1. Aceitação</h2>
             <p className="mt-2">
-              Ao criar uma conta ou usar o Mandalart.AI, você concorda com estes Termos e com a nossa Política de Privacidade. Se não concordar, não utilize o serviço.
+              Ao usar o Mandalart.AI, inclusive ao comprar sem cadastrar uma senha, você concorda com estes Termos e com a nossa Política de Privacidade. Se não concordar, não utilize o serviço.
             </p>
           </section>
 
@@ -35,7 +35,7 @@ export default function TermsPage() {
           <section>
             <h2 className="text-lg font-bold text-slate-900">3. Sua conta</h2>
             <p className="mt-2">
-              Você é responsável por manter suas credenciais seguras e pelas atividades realizadas na conta. Não tente acessar contas de terceiros, contornar controles de segurança ou usar o serviço de forma ilegal ou abusiva.
+              Você é responsável por manter seu e-mail, links de acesso e credenciais seguros e pelas atividades realizadas na conta. Após uma compra sem senha, o acesso em outro aparelho depende do link enviado ao e-mail informado no pagamento. Não tente acessar contas de terceiros, contornar controles de segurança ou usar o serviço de forma ilegal ou abusiva.
             </p>
           </section>
 

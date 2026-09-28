@@ -135,6 +135,7 @@ export const Auth: React.FC<AuthProps> = ({ onLogin, onBack, goal, initialMode =
           </form>
 
           {mode === 'login' && <button type="button" onClick={() => selectMode('forgot')} className="auth-forgot">Esqueci minha senha</button>}
+          {mode === 'login' && <Link href="/acessar" className="auth-forgot auth-access-link">Comprei sem senha · receber link de acesso</Link>}
           <p className="auth-legal">Ao continuar, você concorda com os <Link href="/termos">Termos de Uso</Link> e a <Link href="/privacidade">Política de Privacidade</Link>.</p>
         </section>
       </div>

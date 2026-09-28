@@ -37,6 +37,7 @@ Antes da primeira execução, aplique, em ordem, as migrations de `migrations/` 
 
 As instruções de Neon acima se aplicam somente ao deploy. A jornada pública também requer [migrations/003_onboarding.sql](./migrations/003_onboarding.sql), a ser aplicada no ambiente de destino antes de publicar. Nenhuma migration de produção é executada automaticamente.
 Antes de publicar a medição do funil e a atribuição de campanhas, aplique também [migrations/006_order_attribution.sql](./migrations/006_order_attribution.sql) no banco do ambiente de destino. O checkout grava UTMs no pedido e depende dessa coluna.
+O checkout público sem senha, a retomada por e-mail e os eventos próprios da jornada exigem [migrations/007_conversion_journey.sql](./migrations/007_conversion_journey.sql), aplicada antes do deploy. Configure o Resend com domínio verificado e `STRIPE_PRICE_BUMP` no mesmo ambiente; veja [docs/onboarding.md](./docs/onboarding.md).
 
 ## Jornada pública
 

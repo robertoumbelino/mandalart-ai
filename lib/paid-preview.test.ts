@@ -41,20 +41,21 @@ beforeEach(() => {
   mocks.sql.mockResolvedValue([{ answers, preview }])
 })
 it('loads the authoritative preview scoped to the signed visitor session', async () => {
-  expect(await loadPaidPreview(id, answers.dream)).toEqual(preview)
+  expect(await loadPaidPreview(id, answers.dream, visitor)).toEqual(preview)
   const [sql, ...values] = mocks.sql.mock.calls[0]
   expect(sql.join('')).toContain('session_id=')
-  expect(sql.join('')).toContain("status='ready' AND expires_at>now()")
-  expect(values).toEqual([id, visitor])
+  expect(sql.join('')).toContain("p.status='ready'")
+  expect(sql.join('')).toContain('o.paid=true')
+  expect(values).toEqual([id, visitor, visitor])
 })
 it('rejects a missing, foreign or expired preview', async () => {
   mocks.sql.mockResolvedValue([])
-  await expect(loadPaidPreview(id, answers.dream)).rejects.toThrow(
+  await expect(loadPaidPreview(id, answers.dream, visitor)).rejects.toThrow(
     'Prévia indisponível',
   )
 })
 it('rejects a preview for another dream', async () => {
-  await expect(loadPaidPreview(id, 'Outro objetivo')).rejects.toThrow(
+  await expect(loadPaidPreview(id, 'Outro objetivo', visitor)).rejects.toThrow(
     'Prévia indisponível',
   )
 })

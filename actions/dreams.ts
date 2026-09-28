@@ -95,7 +95,7 @@ export async function generateDream(
   const startedAt = Date.now()
   try {
     const preview = previewId
-      ? await loadPaidPreview(previewId, goal)
+      ? await loadPaidPreview(previewId, goal, user.id)
       : undefined
     const data = mandalartDataSchema.parse(
       await buildMandalartData(goal, answers, preview, proposal),

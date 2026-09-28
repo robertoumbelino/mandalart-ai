@@ -49,6 +49,26 @@ for (const [credits, amount, key] of [
     `${credits} sonho(s): R$ ${(amount / 100).toFixed(2)} — ${price.id}`,
   )
 }
+let bumpProduct = products.data.find(
+  (p) => p.metadata.app === 'mandalart' && p.metadata.kind === 'dream_bump_2',
+)
+bumpProduct ||= await stripe.products.create({
+  name: 'Adicionar mais 2 Mandalarts',
+  description: 'Dois Mandalarts completos adicionais, para organizar outros sonhos depois.',
+  metadata: { app: 'mandalart', kind: 'dream_bump_2' },
+}, { idempotencyKey: 'mandalart-bump-product-v1' })
+const bumpKey = 'mandalart_bump_2_brl_6200'
+const bumpPrices = await stripe.prices.list({ lookup_keys: [bumpKey], active: true })
+const bumpPrice = bumpPrices.data[0] || await stripe.prices.create({
+  product: bumpProduct.id,
+  unit_amount: 6200,
+  currency: 'brl',
+  nickname: 'Mais 2 Mandalarts',
+  lookup_key: bumpKey,
+  metadata: { app: 'mandalart', credits: '2', kind: 'dream_bump_2' },
+}, { idempotencyKey: bumpKey })
+set('STRIPE_PRICE_BUMP', bumpPrice.id)
+console.log(`Adicional de 2 sonhos: R$ 62,00 — ${bumpPrice.id}`)
 const configurations = (
   await stripe.paymentMethodConfigurations.list({ limit: 100 })
 ).data

@@ -19,6 +19,7 @@ import { generateDream, getDreamGeneration, getDreamWallet } from '@/actions/dre
 import { DRAFT_STORAGE_KEY, restoreDraft, answersSchema, getAnswerContext } from '@/lib/onboarding';
 import { getJourneyProgress } from '@/lib/journey';
 import { DREAM_PACKS } from '@/lib/dream-packs';
+import { getPurchasedPreviewContext } from '@/actions/purchased-preview';
 import { CAREER_PLAN } from '@/lib/example-plan';
 import './home.css';
 
@@ -191,20 +192,46 @@ export default function Home() {
           const raw = localStorage.getItem(DRAFT_STORAGE_KEY);
           const draft = raw ? restoreDraft(JSON.parse(raw)) : null;
           const parsed = answersSchema.safeParse(draft?.answers);
-          if (parsed.success && draft?.result) {
-            const context = getAnswerContext(parsed.data);
+          const purchased = await getPurchasedPreviewContext();
+          const savedAnswers = purchased?.answers || (parsed.success ? parsed.data : null);
+          const savedPreview = purchased?.preview || draft?.result?.preview;
+          const savedPreviewId = purchased?.id || draft?.result?.id;
+          if (savedAnswers && savedPreview && savedPreviewId) {
+            const context = getAnswerContext(savedAnswers);
             const restoredAnswers = [
               { questionId: 'context', questionText: 'Onde você está hoje?', answer: `${context.category}. ${context.stage}` },
               { questionId: 'obstacle', questionText: 'O que mais precisa de atenção?', answer: context.obstacle },
               { questionId: 'rhythm', questionText: 'Qual ritmo faz sentido para você?', answer: `${context.time}. ${context.horizon}` }
             ];
-            setMainGoal(context.dream); setAnswers(restoredAnswers); setPreviewId(draft.result.id);
+            setMainGoal(context.dream); setAnswers(restoredAnswers); setPreviewId(savedPreviewId);
             setProposal({
               goal: context.dream,
               successSignal: 'Concluir o primeiro passo apresentado na prévia',
-              firstPhase: draft.result.preview.firstStep.title,
+              firstPhase: savedPreview.firstStep.title,
             });
-            setStep('confirm');
+            if (purchased?.orderId) {
+              const generationId = purchased.orderId;
+              const proposal = { goal: context.dream, successSignal: 'Concluir o primeiro passo apresentado na prévia', firstPhase: savedPreview.firstStep.title };
+              generationRecoveryRef.current = { id: generationId, goal: context.dream, answers: restoredAnswers, proposal, previewId: savedPreviewId };
+              try { sessionStorage.setItem(key, JSON.stringify(generationRecoveryRef.current)); } catch {}
+              setStep('generating'); setProcessing(true);
+              void generateDream(generationId, context.dream, restoredAnswers, savedPreviewId).then(result => {
+                if (!active) return;
+                if (result.status === 'completed') {
+                  setMandalartData(result.item.data); setCurrentMandalartId(result.item.id); setStep('result'); setProcessing(false);
+                  generationRecoveryRef.current = null;
+                  try { sessionStorage.removeItem(key); } catch {}
+                  void getHistory().then(setHistory).catch(() => {});
+                  void getDreamWallet().then(setWallet).catch(() => {});
+                } else if (result.status === 'generating') {
+                  void recover(generationId);
+                } else {
+                  setStep('confirm'); setProcessing(false); setError(result.message);
+                  generationRecoveryRef.current = null;
+                  try { sessionStorage.removeItem(key); } catch {}
+                }
+              }).catch(() => { if (active) void recover(generationId); });
+            } else setStep('confirm');
           } else if (parsed.success) {
             setMainGoal(getAnswerContext(parsed.data).dream);
           }
