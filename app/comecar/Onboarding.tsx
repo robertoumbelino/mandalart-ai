@@ -488,7 +488,7 @@ export function Onboarding() {
           <BrandLogo iconSize={29} />
         </button>
         {draft.screen === 'welcome' ? (
-          <Link href="/" className="begin-login">
+          <Link href="/?entrar=1" className="begin-login">
             Já tenho conta <ArrowRight size={14} />
           </Link>
         ) : (

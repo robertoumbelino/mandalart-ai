@@ -84,7 +84,7 @@ export const Auth: React.FC<AuthProps> = ({ onLogin, onBack, goal, initialMode =
         <section className="auth-story" aria-labelledby="auth-title">
           <span className="auth-eyebrow"><Sparkles size={17} /> UM PASSO DE CADA VEZ</span>
           <h1 id="auth-title">Seu sonho merece <span className="brand-text">um lugar para crescer.</span></h1>
-          <p>Crie sua conta para guardar seu objetivo, montar seu plano e acompanhar cada passo do caminho.</p>
+          <p>{mode === 'register' ? 'Crie sua conta para guardar seu objetivo, montar seu plano e acompanhar cada passo do caminho.' : 'Entre para continuar seus Mandalarts e acompanhar cada passo do caminho.'}</p>
           {goal && <div className="auth-goal"><span>O sonho que você trouxe</span><strong className="ph-mask">{goal}</strong><small><Check size={15} /> Vai continuar aqui depois de {mode === 'register' ? 'criar sua conta' : 'entrar'}.</small></div>}
           <div className="auth-illustration" aria-hidden="true">
             <div className="auth-orbit" />

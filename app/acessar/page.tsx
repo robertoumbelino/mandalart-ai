@@ -16,7 +16,7 @@ export default function AccessPage() {
         <h1 className="mt-4 text-3xl font-bold leading-tight">Entre sem senha.</h1>
         <p className="mt-3 leading-relaxed text-[#56617a]">Comprou um Mandalart? Informe o e-mail usado no pagamento. Enviaremos um link para você abrir seus planos neste aparelho.</p>
         <AccessRequest />
-        <p className="mt-6 text-xs leading-relaxed text-[#6b7280]">O link funciona por 48 horas e pode ser usado uma vez. Se você usa Google ou senha, também pode entrar pela página inicial.</p>
+        <p className="mt-6 text-xs leading-relaxed text-[#6b7280]">O link funciona por 48 horas e pode ser usado uma vez. Se você usa Google ou senha, <Link href="/?entrar=1" className="font-semibold text-[#6334ff] underline">entre por aqui</Link>.</p>
       </div>
     </div>
   </main>
