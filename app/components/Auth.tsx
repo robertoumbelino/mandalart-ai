@@ -85,7 +85,7 @@ export const Auth: React.FC<AuthProps> = ({ onLogin, onBack, goal, initialMode =
           <span className="auth-eyebrow"><Sparkles size={17} /> UM PASSO DE CADA VEZ</span>
           <h1 id="auth-title">Seu sonho merece <span className="brand-text">um lugar para crescer.</span></h1>
           <p>Crie sua conta para guardar seu objetivo, montar seu plano e acompanhar cada passo do caminho.</p>
-          {goal && <div className="auth-goal"><span>O sonho que você trouxe</span><strong className="ph-mask">{goal}</strong><small><Check size={15} /> Vai continuar aqui depois de {mode === 'register' ? 'criar sua conta' : 'entrar'}.</small></div>}
+          {goal && <div className="auth-goal"><span>O sonho que você trouxe</span><strong>{goal}</strong><small><Check size={15} /> Vai continuar aqui depois de {mode === 'register' ? 'criar sua conta' : 'entrar'}.</small></div>}
           <div className="auth-illustration" aria-hidden="true">
             <div className="auth-orbit" />
             <div className="auth-plan">
@@ -127,8 +127,8 @@ export const Auth: React.FC<AuthProps> = ({ onLogin, onBack, goal, initialMode =
               <label htmlFor="password">Senha</label>
               <div className="auth-field"><LockKeyhole size={18} aria-hidden="true" /><input id="password" type="password" required minLength={8} maxLength={72} autoComplete={mode === 'login' ? 'current-password' : 'new-password'} disabled={loading} value={password} onChange={event => setPassword(event.target.value)} placeholder={mode === 'register' ? 'Mínimo de 8 caracteres' : 'Sua senha'} /></div>
             </>}
-            {error && <p role="alert" className="ph-mask auth-feedback auth-error">{error}</p>}
-            {message && <p role="status" className="ph-mask auth-feedback auth-success">{message}</p>}
+            {error && <p role="alert" className="auth-feedback auth-error">{error}</p>}
+            {message && <p role="status" className="auth-feedback auth-success">{message}</p>}
             <button type="submit" disabled={loading} className="auth-submit brand-button">
               {loading ? <Loader2 className="animate-spin" size={20} /> : <>{mode === 'register' ? 'Criar minha conta' : mode === 'forgot' ? 'Enviar link' : 'Entrar e continuar'} <ArrowRight size={19} /></>}
             </button>

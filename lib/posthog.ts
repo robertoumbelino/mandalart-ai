@@ -40,7 +40,8 @@ export function startPostHog() {
     capture_pageleave: false,
     autocapture: false,
     session_recording: {
-      maskAllInputs: true,
+      maskAllInputs: false,
+      maskInputOptions: { email: true, password: true },
       maskTextSelector: '.ph-mask',
       recordHeaders: false,
       recordBody: false,

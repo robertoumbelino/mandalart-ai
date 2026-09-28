@@ -332,7 +332,7 @@ export const MandalartView: React.FC<MandalartViewProps> = ({
                   </span>
                 )}
               </div>
-              <h2 id="task-sheet-title" className="ph-mask text-xl font-bold text-gray-900 leading-tight">
+              <h2 id="task-sheet-title" className="text-xl font-bold text-gray-900 leading-tight">
                 {task.title}
               </h2>
             </div>
@@ -352,7 +352,7 @@ export const MandalartView: React.FC<MandalartViewProps> = ({
                 <Info size={18} className="text-indigo-500" />
                 <h3>Como fazer</h3>
               </div>
-              <p className="ph-mask text-gray-600 leading-relaxed text-sm bg-indigo-50/30 p-4 rounded-xl border border-indigo-50">
+              <p className="text-gray-600 leading-relaxed text-sm bg-indigo-50/30 p-4 rounded-xl border border-indigo-50">
                 {task.description}
               </p>
             </div>
@@ -391,7 +391,7 @@ export const MandalartView: React.FC<MandalartViewProps> = ({
                         {item.checked && <CheckCircle2 size={14} className="text-white" />}
                       </span>
                       <span
-                        className={`ph-mask text-sm ${
+                        className={`text-sm ${
                           item.checked
                             ? 'text-green-800 line-through opacity-70'
                             : 'text-gray-700'
@@ -427,7 +427,7 @@ export const MandalartView: React.FC<MandalartViewProps> = ({
                 <Lightbulb size={18} className="text-amber-500" />
                 <h3>Dica de Ouro</h3>
               </div>
-              <div className="ph-mask bg-amber-50 p-4 rounded-xl border border-amber-100 text-sm text-amber-900 leading-relaxed italic">
+              <div className="bg-amber-50 p-4 rounded-xl border border-amber-100 text-sm text-amber-900 leading-relaxed italic">
                 “{task.advice}”
               </div>
             </div>
@@ -460,7 +460,7 @@ export const MandalartView: React.FC<MandalartViewProps> = ({
       <div className="mb-7 flex w-full flex-col gap-4 px-1 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <p className="brand-text text-xs font-black uppercase tracking-[0.16em]">Seu plano está pronto</p>
-          <h2 className="ph-mask brand-text mt-1 text-2xl font-black tracking-tight sm:text-3xl">{data.mainGoal}</h2>
+          <h2 className="brand-text mt-1 text-2xl font-black tracking-tight sm:text-3xl">{data.mainGoal}</h2>
         </div>
         <div className="flex flex-wrap gap-2">
           <button
@@ -529,7 +529,7 @@ export const MandalartView: React.FC<MandalartViewProps> = ({
         className="p-4 sm:p-10 bg-white/50 backdrop-blur-sm shadow-xl border border-white/50 rounded-3xl flex flex-col items-center"
       >
         <div className="text-center mb-8">
-          <h2 className="ph-mask text-3xl font-extrabold tracking-tight text-gray-900">
+          <h2 className="text-3xl font-extrabold tracking-tight text-gray-900">
             {data.mainGoal}
           </h2>
           <p className="text-sm text-gray-500 mt-2 uppercase tracking-widest font-semibold">
@@ -592,7 +592,7 @@ export const MandalartView: React.FC<MandalartViewProps> = ({
                     <span className="w-7 h-7 shrink-0 rounded-lg bg-indigo-50 text-indigo-700 flex items-center justify-center text-xs font-bold">
                       {areaIndex + 1}
                     </span>
-                    <span className="ph-mask flex-1 text-left text-sm font-semibold text-gray-800">
+                    <span className="flex-1 text-left text-sm font-semibold text-gray-800">
                       {data.subGoals[areaIndex].title}
                     </span>
                     <ChevronDown className="w-5 h-5 shrink-0 text-gray-400 transition-transform group-open:rotate-180" />

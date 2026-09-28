@@ -38,7 +38,7 @@ export const GridCell: React.FC<GridCellProps> = ({ text, type, className = '', 
 
   const content = (
     <>
-      <span className="ph-mask line-clamp-4 relative z-10">{text}</span>
+      <span className="line-clamp-4 relative z-10">{text}</span>
 
       {isCompleted && type === 'task' && (
         <div className="absolute top-1 right-1 text-emerald-600 opacity-50">

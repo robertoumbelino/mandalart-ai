@@ -245,7 +245,7 @@ export function DreamShop() {
       </header>
       <div className="shop-content">
         {error && (
-          <p className="ph-mask shop-message shop-error" role="alert">
+          <p className="shop-message shop-error" role="alert">
             {error}
           </p>
         )}
@@ -335,7 +335,7 @@ export function DreamShop() {
               </span>
               <div>
                 <span>Na sua conta</span>
-                <strong className="ph-mask">
+                <strong>
                   {wallet
                     ? `${balance} ${balance === 1 ? 'sonho disponível' : 'sonhos disponíveis'}`
                     : 'Carregando saldo…'}
@@ -348,7 +348,7 @@ export function DreamShop() {
               )}
             </section>
             {wallet && wallet.balance < 0 && (
-              <p className="ph-mask shop-message">
+              <p className="shop-message">
                 Um pagamento de sonhos já utilizados foi estornado ou contestado. Os
                 próximos créditos primeiro compensam esse saldo ({wallet.balance}).
                 Seus planners salvos continuam acessíveis.
@@ -449,7 +449,7 @@ export function DreamShop() {
             {wallet && wallet.transactions.length > 0 && (
               <details className="shop-history">
                 <summary>Movimentações dos seus sonhos</summary>
-                <ul className="ph-mask">
+                <ul>
                   {wallet.transactions.map((entry, index) => (
                     <li key={`${entry.date}-${index}`}>
                       <span>

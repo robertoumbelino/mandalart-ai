@@ -38,7 +38,7 @@ export default function ResetPasswordPage() {
         <p className="mt-2 text-sm text-slate-500">Escolha uma senha para entrar no Mandalart.AI por e-mail.</p>
         <label htmlFor="new-password" className="mt-6 block text-sm font-semibold text-slate-700">Nova senha</label>
         <input id="new-password" type="password" required minLength={8} maxLength={72} autoComplete="new-password" value={password} onChange={event => setPassword(event.target.value)} className="mt-2 w-full rounded-xl border border-slate-200 p-3 text-slate-900 outline-none focus:ring-2 focus:ring-indigo-500/20" />
-        {error && <p role="alert" className="ph-mask mt-4 rounded-xl bg-red-50 p-3 text-sm text-red-700">{error}</p>}
+        {error && <p role="alert" className="mt-4 rounded-xl bg-red-50 p-3 text-sm text-red-700">{error}</p>}
         <button type="submit" disabled={loading} className="brand-button mt-6 w-full rounded-xl p-3 font-bold text-white disabled:opacity-60">{loading ? 'Salvando…' : 'Salvar senha'}</button>
         <Link href="/" className="mt-5 block text-center text-sm font-semibold text-indigo-600">Voltar ao Mandalart.AI</Link>
       </form>

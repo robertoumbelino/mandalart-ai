@@ -17,7 +17,7 @@ export default function PrivacyPage() {
         </Link>
 
         <h1 className="mt-8 text-3xl font-black tracking-tight text-slate-900">Política de Privacidade</h1>
-        <p className="mt-2 text-sm text-slate-500">Última atualização: 27 de setembro de 2026</p>
+        <p className="mt-2 text-sm text-slate-500">Última atualização: 28 de setembro de 2026</p>
 
         <div className="mt-8 space-y-7 leading-relaxed">
           <section>
@@ -50,7 +50,7 @@ export default function PrivacyPage() {
             </p>
             <MarketingPreferenceButton />
             <p className="mt-2">
-              Usamos o PostHog desde a visita para medir páginas e etapas da jornada, como início, prévia, cadastro e compra, e para assistir a gravações da navegação. Essa análise funciona independentemente da escolha sobre cookies opcionais para anúncios. O PostHog recebe identificadores do navegador e dados técnicos da visita; depois do login, associamos eventos ao identificador interno da conta para acompanhar a jornada entre visitas. Não incluímos o texto dos objetivos, respostas, e-mail ou dados do cartão nos eventos. Nas gravações, ocultamos campos de entrada e textos pessoais ou gerados para você, como objetivos, respostas e planos; títulos e instruções gerais do site permanecem visíveis. Também desativamos o envio de conteúdo de rede e retiramos parâmetros das URLs. Você pode desativar essa análise neste navegador a qualquer momento.
+              Usamos o PostHog desde a visita para medir páginas e etapas da jornada, como início, prévia, cadastro e compra, e para assistir a gravações da navegação. Essa análise funciona independentemente da escolha sobre cookies opcionais para anúncios. O PostHog recebe identificadores do navegador e dados técnicos da visita; depois do login, associamos eventos ao identificador interno da conta para acompanhar a jornada entre visitas. Não incluímos o texto dos objetivos, respostas, e-mail ou dados do cartão nos eventos de análise. Nas gravações, objetivos, respostas, planos, progresso e outros textos exibidos ou digitados ficam visíveis; ocultamos o nome e o e-mail exibidos na conta, além dos campos de e-mail e senha. Textos livres podem conter dados pessoais informados por você. Também desativamos o envio de conteúdo de rede e retiramos parâmetros das URLs. Você pode desativar essa análise neste navegador a qualquer momento.
             </p>
             <AnalyticsPrivacyButton />
             <p className="mt-2">

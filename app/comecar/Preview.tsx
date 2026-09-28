@@ -60,17 +60,17 @@ export function Preview({
           <h1 tabIndex={-1} data-step-heading>
             Um caminho para
             <br />
-            <em className="ph-mask">
+            <em>
               {preview.title.charAt(0).toLowerCase() + preview.title.slice(1)}.
             </em>
           </h1>
-          <p className="ph-mask">{preview.introduction}</p>
+          <p>{preview.introduction}</p>
           <div className="context-chips">
-            <span className="ph-mask">
+            <span>
               <Clock3 size={14} />
               {TIME_OPTIONS.find((item) => item.id === answers.time)?.title}
             </span>
-            <span className="ph-mask">
+            <span>
               <Sprout size={14} />
               {HORIZONS.find((item) => item.id === answers.horizon)?.title}
             </span>
@@ -92,8 +92,8 @@ export function Preview({
               <Clock3 size={13} /> Cerca de {preview.firstStep.minutes} min
             </span>
           </div>
-          <h2 id="first-step-title" className="ph-mask">{preview.firstStep.title}</h2>
-          <p className="ph-mask">{preview.firstStep.description}</p>
+          <h2 id="first-step-title">{preview.firstStep.title}</h2>
+          <p>{preview.firstStep.description}</p>
           <div className="preview-checklist">
             {preview.firstStep.checklist.map((item, index) => (
               <label className={checked[index] ? 'is-checked' : ''} key={item}>
@@ -105,7 +105,7 @@ export function Preview({
                 <span className="custom-check" aria-hidden="true">
                   {checked[index] && <Check size={15} strokeWidth={2.5} />}
                 </span>
-                <span className="ph-mask">{item}</span>
+                <span>{item}</span>
               </label>
             ))}
           </div>
@@ -152,10 +152,10 @@ export function Preview({
                   <span className="pillar-number">
                     {String(index + 1).padStart(2, '0')}
                   </span>
-                  <span className="ph-mask">{pillar.title}</span>
+                  <span>{pillar.title}</span>
                   <ChevronDown size={16} />
                 </summary>
-                <p className="ph-mask">{pillar.description}</p>
+                <p>{pillar.description}</p>
               </details>
             ))}
           </div>
