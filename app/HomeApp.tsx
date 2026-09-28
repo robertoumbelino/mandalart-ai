@@ -52,7 +52,7 @@ const GENERATION_MESSAGES = [
 
 const GUEST_GOAL_KEY = 'mandalart.guest.goal';
 
-export default function Home({ loginIntent = false }: { loginIntent?: boolean }) {
+export default function Home({ loginIntent = false, initialVisitor = false, onboardingHref = '/comecar' }: { loginIntent?: boolean; initialVisitor?: boolean; onboardingHref?: string }) {
   const router = useRouter();
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
@@ -611,11 +611,12 @@ export default function Home({ loginIntent = false }: { loginIntent?: boolean })
   };
 
   if (!user && showAuth) {
-    return <Auth onLogin={handleLogin} onBack={() => loginIntent ? router.push('/comecar') : setShowAuth(false)} goal={mainGoal.trim()} initialMode={authMode} />;
+    return <Auth onLogin={handleLogin} onBack={() => loginIntent ? router.push('/') : setShowAuth(false)} goal={mainGoal.trim()} initialMode={authMode} />;
   }
 
+  const visitorHome = !user && (initialVisitor || !loading);
   return (
-    <div className={`min-h-screen relative flex flex-col text-gray-900 overflow-x-hidden ${step === 'input' ? 'home-screen' : ''}`}>
+    <div className={`min-h-screen relative flex flex-col text-gray-900 overflow-x-hidden ${step === 'input' ? `home-screen ${visitorHome ? 'home-screen-visitor' : user ? 'home-screen-member' : ''}` : ''}`}>
       <header className="home-header">
         <div className="home-header-inner">
           {step === 'input' ? (
@@ -764,11 +765,16 @@ export default function Home({ loginIntent = false }: { loginIntent?: boolean })
           <div className="home-content">
             <section className="home-hero" aria-labelledby="home-title">
               <div className="home-hero-copy">
-                <span className="home-eyebrow"><Sparkles size={16} /> SEU ESPAÇO PARA COMEÇAR</span>
+                <span className="home-eyebrow"><Sparkles size={16} /> {visitorHome ? 'UM PRIMEIRO PASSO PARA O SEU SONHO' : 'SEU ESPAÇO PARA COMEÇAR'}</span>
                 <h1 id="home-title">Seu sonho pode virar <span className="brand-text">um plano possível.</span></h1>
-                <p className="home-lead">Dê nome ao que você quer viver. A gente ajuda a organizar o caminho em passos claros, no seu ritmo.</p>
+                <p className="home-lead">{visitorHome ? 'Responda algumas perguntas e veja, de graça, um primeiro caminho feito para o seu momento. Sem cadastro para começar.' : 'Dê nome ao que você quer viver. A gente ajuda a organizar o caminho em passos claros, no seu ritmo.'}</p>
 
-                <div className="home-form-card">
+                {visitorHome ? <div className="home-visitor-card">
+                  <Link href={onboardingHref} className="home-visitor-cta brand-button" onClick={() => captureProductEvent('home_start_clicked')}>
+                    Ver meu primeiro caminho grátis <ArrowRight size={20} aria-hidden="true" />
+                  </Link>
+                  <p><Check size={16} aria-hidden="true" /> Prévia personalizada, sem e-mail e sem cartão.</p>
+                </div> : <div className="home-form-card">
                   <form onSubmit={handleStart}>
                     <label htmlFor="main-goal">Qual sonho você quer tirar do papel?</label>
                     <input
@@ -801,9 +807,9 @@ export default function Home({ loginIntent = false }: { loginIntent?: boolean })
                     {user && needsDreams ? 'Seu objetivo fica salvo para continuar depois de escolher seus sonhos.' : 'Perguntas rápidas, só quando ajudam a entender seu objetivo.'}
                   </p>
                   {(!user || needsDreams) && <Link href="/reembolso" className="home-guarantee"><ShieldCheck size={16} aria-hidden="true" /> Se não gostar do seu plano, peça seus {DREAM_PACKS[1].price} de volta em até 7 dias após a compra.</Link>}
-                </div>
+                </div>}
                 {error && <p role="alert" className="home-error">{error}</p>}
-                <div className="home-examples">
+                {!visitorHome && <div className="home-examples">
                   <span>Precisa de inspiração?</span>
                   <div className="home-example-list">
                     {['Correr uma maratona', 'Mudar de carreira', 'Morar no exterior'].map(example => (
@@ -812,7 +818,7 @@ export default function Home({ loginIntent = false }: { loginIntent?: boolean })
                       </button>
                     ))}
                   </div>
-                </div>
+                </div>}
               </div>
 
               <div className="home-art" role="region" aria-label="Exemplo de plano para mudar de carreira">
@@ -840,11 +846,11 @@ export default function Home({ loginIntent = false }: { loginIntent?: boolean })
                 <h2 id="home-how-title">Um começo simples, feito com você.</h2>
               </div>
               <ol>
-                <li><span className="home-how-icon"><Compass size={21} /></span><div><span className="home-how-number">01</span><h3>Conte seu objetivo</h3><p>Escreva do seu jeito, mesmo que a ideia ainda esteja tomando forma.</p></div></li>
+                <li><span className="home-how-icon"><Compass size={21} /></span><div><span className="home-how-number">01</span><h3>{visitorHome ? 'Escolha um sonho' : 'Conte seu objetivo'}</h3><p>{visitorHome ? 'Comece pelo que você mais quer realizar agora.' : 'Escreva do seu jeito, mesmo que a ideia ainda esteja tomando forma.'}</p></div></li>
                 <li><span className="home-how-icon"><BrainCircuit size={21} /></span><div><span className="home-how-number">02</span><h3>Escolha o que faz sentido</h3><p>Responda só às perguntas que ajudam a definir seu caminho.</p></div></li>
-                <li><span className="home-how-icon"><ListChecks size={21} /></span><div><span className="home-how-number">03</span><h3>Avance no seu ritmo</h3><p>Veja seus próximos passos e acompanhe cada conquista.</p></div></li>
+                <li><span className="home-how-icon"><ListChecks size={21} /></span><div><span className="home-how-number">03</span><h3>{visitorHome ? 'Veja seu primeiro caminho' : 'Avance no seu ritmo'}</h3><p>{visitorHome ? 'Receba uma prévia pessoal antes de decidir se quer o plano completo.' : 'Veja seus próximos passos e acompanhe cada conquista.'}</p></div></li>
               </ol>
-              <p className="home-how-note">Cada plano é criado para um sonho. Quer planejar mais de um? Você pode comprar pacotes depois. O pagamento é único, sem assinatura.</p>
+              <p className="home-how-note">{visitorHome ? 'A prévia é gratuita. Se quiser continuar, o plano completo custa R$ 37, em pagamento único e sem assinatura.' : 'Cada plano é criado para um sonho. Quer planejar mais de um? Você pode comprar pacotes depois. O pagamento é único, sem assinatura.'}</p>
             </section>
           </div>
         )}

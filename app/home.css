@@ -189,6 +189,59 @@
   line-height: 1.75;
 }
 
+.home-visitor-card {
+  margin-top: 32px;
+}
+
+.home-visitor-cta {
+  min-height: 60px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  padding: 14px 25px;
+  border-radius: 15px;
+  color: #fff;
+  font-size: 16px;
+  font-weight: 700;
+  text-align: center;
+  text-decoration: none;
+  line-height: 1.35;
+}
+
+.home-visitor-card p {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 14px;
+  color: #64748b;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.home-visitor-card p svg { flex: none; color: #5d47e8; }
+
+.home-screen-member .home-hero {
+  min-height: 580px;
+  grid-template-columns: minmax(0, 1fr);
+  justify-items: center;
+  padding-block: 72px 76px;
+}
+
+.home-screen-member .home-hero-copy {
+  width: min(100%, 790px);
+  max-width: none;
+  text-align: center;
+}
+
+.home-screen-member .home-lead { margin-inline: auto; }
+.home-screen-member .home-art { display: none; }
+.home-screen-member .home-form-card { margin-top: 36px; padding: clamp(24px, 4vw, 36px); text-align: left; }
+.home-screen-member .home-form-card input { height: 66px; font-size: 18px; }
+.home-screen-member .home-submit { min-height: 66px; padding-inline: 28px; font-size: 15px; }
+.home-screen-member .home-form-hint { justify-content: center; }
+.home-screen-member .home-example-list { justify-content: center; }
+
 .home-form-card {
   margin-top: 32px;
   padding: 23px;
@@ -694,6 +747,8 @@
   .home-how li {
     min-height: 0;
   }
+
+  .home-screen-member .home-hero { min-height: 0; }
 }
 
 @media (max-width: 600px) {
@@ -767,6 +822,14 @@
   .home-hero {
     padding-block: 42px 50px;
   }
+
+  .home-screen-visitor .home-hero { gap: 0; }
+  .home-screen-visitor .home-art { display: none; }
+  .home-screen-visitor .home-visitor-cta { width: 100%; min-height: 56px; padding-inline: 14px; font-size: 14px; }
+  .home-screen-member .home-hero { padding-block: 56px 52px; }
+  .home-screen-member .home-form-card { padding: 21px; }
+  .home-screen-member .home-form-card input { height: 58px; font-size: 16px; }
+  .home-screen-member .home-submit { min-height: 56px; width: 100%; }
 
   .home-eyebrow {
     font-size: 10px;
