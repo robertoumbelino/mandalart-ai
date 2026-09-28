@@ -149,6 +149,11 @@ describe('recovering the journey', () => {
     expect(restored?.screen).toBe('questions')
     expect(restored?.question).toBe(5)
   })
+  it('removes the old required email step from saved journeys', () => {
+    const restored = restoreDraft({ ...draft, screen: 'email', result: null }, now)
+    expect(restored?.screen).toBe('questions')
+    expect(restored?.question).toBe(5)
+  })
   it('cannot jump beyond the first missing answer', () => {
     const restored = restoreDraft(
       { ...draft, screen: 'questions', answers: { category: 'learning' } },

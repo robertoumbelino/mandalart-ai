@@ -29,7 +29,7 @@ export function verifyCheckout(
   lines: Stripe.LineItem[],
 ) {
   const pack = DREAM_PACKS[order.credits]
-  const guest = Boolean(order.guest_email)
+  const guest = Boolean(order.preview_id)
   const baseLine = lines.find(line => line.price?.id === order.price_id)
   const bumpLine = lines.find(line => line.price?.id === order.bump_price_id)
   const bump = guest && Boolean(bumpLine)
@@ -73,7 +73,7 @@ export async function reconcileCheckout(
     limit: 3,
   })
   const checkout = verifyCheckout(session, order, lines.data)
-  if (order.guest_email) {
+  if (order.preview_id) {
     await sql`UPDATE dream_orders SET amount=${checkout.amount},credits=${checkout.credits} WHERE id=${order.id}::uuid AND paid=false`
     order.amount = checkout.amount
     order.credits = checkout.credits as DreamPack
@@ -117,7 +117,7 @@ export async function reconcileCheckout(
       }
     }
   }
-  if (paid && order.guest_email && !order.user_id) {
+  if (paid && order.preview_id && !order.user_id) {
     const paidEmail = (session.customer_details?.email || session.customer_email || '').trim().toLowerCase()
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(paidEmail) || paidEmail.length > 254) throw new Error('E-mail do checkout inválido.')
     const [matched] = await sql`SELECT id FROM users WHERE lower(email)=${paidEmail} LIMIT 1`
@@ -137,21 +137,22 @@ export async function reconcileCheckout(
   await sql`SELECT dream_reconcile_order(${order.id}::uuid,${paid},${refunded},${disputed},${revision}::bigint,${session.status === 'expired' ? 'expired' : failed ? 'failed' : 'pending'})`
   const [updated] =
     await sql`SELECT status,credited FROM dream_orders WHERE id=${order.id}::uuid`
-  if (paid && order.guest_email && order.user_id && updated.status === 'paid') {
-    const [lead] = await sql`UPDATE onboarding_leads SET purchased_at=COALESCE(purchased_at,now())
-      WHERE id=${order.lead_id}::uuid RETURNING session_id,attribution,marketing_consent`
+  if (paid && order.preview_id && order.guest_email && order.user_id && updated.status === 'paid') {
+    const [preview] = await sql`SELECT session_id,attribution FROM onboarding_previews WHERE id=${order.preview_id}::uuid`
+    const [lead] = order.lead_id ? await sql`UPDATE onboarding_leads SET purchased_at=COALESCE(purchased_at,now())
+      WHERE id=${order.lead_id}::uuid RETURNING session_id,attribution,marketing_consent` : [null]
     if (lead) {
       try { await cancelRecoveryEmails(String(order.lead_id)) }
       catch { console.error('recovery_cancel_failed', { orderId: order.id }) }
-      await sql`INSERT INTO onboarding_events(session_id,lead_id,order_id,name,properties,attribution)
-        VALUES(${lead.session_id}::uuid,${order.lead_id}::uuid,${order.id}::uuid,'purchase_completed',${JSON.stringify({ amount: order.amount, credits: order.credits })}::jsonb,${JSON.stringify(lead.attribution)}::jsonb)
-        ON CONFLICT DO NOTHING`
-      if (checkout.bump) await sql`INSERT INTO onboarding_events(session_id,lead_id,order_id,name,properties,attribution)
-        VALUES(${lead.session_id}::uuid,${order.lead_id}::uuid,${order.id}::uuid,'order_bump_accepted',${JSON.stringify({ amount: 6200 })}::jsonb,${JSON.stringify(lead.attribution)}::jsonb)
-        ON CONFLICT DO NOTHING`
       try { await sendMetaPurchase({ id: order.id, email: order.guest_email, amount: order.amount, consent: lead.marketing_consent === true }) }
       catch { console.error('meta_purchase_send_failed', { orderId: order.id }) }
     }
+    await sql`INSERT INTO onboarding_events(session_id,lead_id,order_id,name,properties,attribution)
+      VALUES(${preview?.session_id || null}::uuid,${order.lead_id || null}::uuid,${order.id}::uuid,'purchase_completed',${JSON.stringify({ amount: order.amount, credits: order.credits })}::jsonb,${JSON.stringify(preview?.attribution || order.attribution || {})}::jsonb)
+      ON CONFLICT DO NOTHING`
+    if (checkout.bump) await sql`INSERT INTO onboarding_events(session_id,lead_id,order_id,name,properties,attribution)
+      VALUES(${preview?.session_id || null}::uuid,${order.lead_id || null}::uuid,${order.id}::uuid,'order_bump_accepted',${JSON.stringify({ amount: 6200 })}::jsonb,${JSON.stringify(preview?.attribution || order.attribution || {})}::jsonb)
+      ON CONFLICT DO NOTHING`
     const [claim] = await sql`UPDATE dream_orders SET access_email_sending_at=now()
       WHERE id=${order.id}::uuid AND access_email_sent_at IS NULL
         AND (access_email_sending_at IS NULL OR access_email_sending_at<now()-interval '2 minutes') RETURNING id`

@@ -1,7 +1,8 @@
 'use client'
 
 import Link from 'next/link'
-import { ArrowRight, Check, Clock3, LockKeyhole, PencilLine, ShieldCheck, Sparkles, Sprout } from 'lucide-react'
+import { ArrowRight, Check, Clock3, LockKeyhole, Mail, PencilLine, ShieldCheck, Sparkles, Sprout } from 'lucide-react'
+import type { FormEvent } from 'react'
 import { getDream, previewHeading, type OnboardingAnswers, type OnboardingPreview } from '@/lib/onboarding'
 
 type Props = {
@@ -13,9 +14,15 @@ type Props = {
   onCheckout: () => void
   checkoutBusy: boolean
   checkoutError: string
+  email: string
+  onEmailChange: (email: string) => void
+  onEmailSubmit: (event: FormEvent) => void
+  emailBusy: boolean
+  emailSaved: boolean
+  emailError: string
 }
 
-export function Preview({ preview, answers, checked, onCheck, onEdit, onCheckout, checkoutBusy, checkoutError }: Props) {
+export function Preview({ preview, answers, checked, onCheck, onEdit, onCheckout, checkoutBusy, checkoutError, email, onEmailChange, onEmailSubmit, emailBusy, emailSaved, emailError }: Props) {
   const dream = getDream(answers)
   return <>
     <main id="begin-main" className="conversion-preview begin-enter">
@@ -66,7 +73,24 @@ export function Preview({ preview, answers, checked, onCheck, onEdit, onCheckout
         {checkoutError && <p role="alert" className="begin-error">{checkoutError}</p>}
         <button className="begin-primary" onClick={onCheckout} disabled={checkoutBusy}>{checkoutBusy ? 'Abrindo pagamento…' : 'Liberar meu Mandalart completo · R$37'} <ArrowRight size={18} /></button>
         <p className="conversion-guarantee"><ShieldCheck size={16} /> Pagamento único · Garantia de 7 dias</p>
-        <small>Compra segura pela Stripe.</small>
+        <small>Sem cadastro. O e-mail para receber seu acesso é solicitado no pagamento seguro da Stripe.</small>
+      </section>
+
+      <section className="conversion-save" aria-labelledby="conversion-save-title">
+        <div>
+          <span className="begin-eyebrow"><Mail size={15} /> PARA VOLTAR DEPOIS</span>
+          <h2 id="conversion-save-title">Guarde esta prévia no seu e-mail.</h2>
+          <p>Seu primeiro caminho fica disponível para você retomar quando quiser.</p>
+        </div>
+        {emailSaved ? <p className="conversion-save-success" role="status"><Check size={17} /> Prévia salva. Enviamos o link para seu e-mail.</p> : <form onSubmit={onEmailSubmit}>
+          <label htmlFor="lead-email">Seu e-mail</label>
+          <div className="conversion-save-row">
+            <input id="lead-email" type="email" autoComplete="email" inputMode="email" required maxLength={254} value={email} onChange={event => onEmailChange(event.target.value)} placeholder="voce@exemplo.com" />
+            <button type="submit" disabled={emailBusy || !email.trim()}>{emailBusy ? 'Enviando…' : 'Enviar prévia'}</button>
+          </div>
+          {emailError && <p role="alert" className="begin-error">{emailError}</p>}
+          <small>Opcional. Você receberá esta prévia e até dois lembretes. Pode cancelar pelos links nos e-mails.</small>
+        </form>}
       </section>
 
       <div className="conversion-faq">

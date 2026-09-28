@@ -14,8 +14,8 @@ export async function GET(request: Request) {
   const previewSession = await getPreviewSession()
   const sql = getDb()
   const [order] = await sql`SELECT o.id,o.user_id,o.status,o.amount,o.credits
-    FROM dream_orders o JOIN onboarding_leads l ON l.id=o.lead_id
-    WHERE o.session_id=${sessionId} AND o.mode=${billingMode()} AND l.session_id=${previewSession}::uuid`
+    FROM dream_orders o JOIN onboarding_previews p ON p.id=o.preview_id
+    WHERE o.session_id=${sessionId} AND o.mode=${billingMode()} AND p.session_id=${previewSession}::uuid`
   if (!order) return new Response(null, { status: 404 })
   await reconcileCheckout(sessionId)
   const [fresh] = await sql`SELECT user_id,status,amount,credits,access_email_sent_at,browser_access_granted FROM dream_orders WHERE id=${order.id}::uuid`

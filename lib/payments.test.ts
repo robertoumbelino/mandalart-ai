@@ -13,8 +13,11 @@ const mocks = vi.hoisted(() => ({
   lines: vi.fn(),
   intent: vi.fn(),
   disputes: vi.fn(),
+  accessEmail: vi.fn(),
 }))
 vi.mock('@/lib/db', () => ({ getDb: () => mocks.sql }))
+vi.mock('@/lib/transactional-email', () => ({ cancelRecoveryEmails: vi.fn(), sendAccessEmail: mocks.accessEmail }))
+vi.mock('@/lib/meta-capi', () => ({ sendMetaPurchase: vi.fn() }))
 vi.mock('@/lib/stripe', () => ({
   billingMode: () => 'test',
   getStripe: () => ({
@@ -80,13 +83,13 @@ describe('trusted checkout fulfillment', () => {
     expect(() => verifyCheckout(previousSession, previousOrder, previousLines)).not.toThrow()
   })
   it('accepts a guest purchase with only the main plan', () => {
-    const guest = { ...order, user_id: null, guest_email: 'buyer@example.com', credits: 1 as const, amount: 3700, price_id: 'price_one', bump_price_id: 'price_bump' }
+    const guest = { ...order, user_id: null, guest_email: null, preview_id: 'preview-id', credits: 1 as const, amount: 3700, price_id: 'price_one', bump_price_id: 'price_bump' }
     const checkout = { ...session, client_reference_id: order.id, amount_total: 3700 } as Stripe.Checkout.Session
     const items = [{ quantity: 1, price: { id: 'price_one' }, amount_total: 3700 }] as Stripe.LineItem[]
     expect(verifyCheckout(checkout, guest, items)).toEqual({ amount: 3700, credits: 1, bump: false })
   })
   it('accepts only the exact R$62 guest add-on and credits three dreams', () => {
-    const guest = { ...order, user_id: null, guest_email: 'buyer@example.com', credits: 1 as const, amount: 3700, price_id: 'price_one', bump_price_id: 'price_bump' }
+    const guest = { ...order, user_id: null, guest_email: null, preview_id: 'preview-id', credits: 1 as const, amount: 3700, price_id: 'price_one', bump_price_id: 'price_bump' }
     const checkout = { ...session, client_reference_id: order.id, amount_total: 9900 } as Stripe.Checkout.Session
     const items = [
       { quantity: 1, price: { id: 'price_one' }, amount_total: 3700 },
@@ -95,6 +98,29 @@ describe('trusted checkout fulfillment', () => {
     expect(verifyCheckout(checkout, guest, items)).toEqual({ amount: 9900, credits: 3, bump: true })
     expect(() => verifyCheckout(checkout, guest, [{ ...items[0] }, { ...items[1], quantity: 2 }])).toThrow()
     expect(() => verifyCheckout(checkout, guest, [{ ...items[0] }, { ...items[1], price: { id: 'another_price' } } as Stripe.LineItem])).toThrow()
+  })
+  it('binds a paid email-free preview order to the Stripe email and sends access', async () => {
+    const guest = { ...order, user_id: null, guest_email: null, lead_id: null, preview_id: 'a857878a-22e1-4190-a04f-611d6e03d2a0', credits: 1 as const, amount: 3700, price_id: 'price_one', bump_price_id: 'price_bump' }
+    const checkout = { ...session, client_reference_id: order.id, amount_total: 3700, customer_details: { email: 'buyer@example.com' } } as Stripe.Checkout.Session
+    mocks.retrieve.mockResolvedValue(checkout)
+    mocks.lines.mockResolvedValue({ data: [{ quantity: 1, price: { id: 'price_one' }, amount_total: 3700 }] })
+    mocks.intent.mockResolvedValue({ status: 'succeeded', amount_received: 3700, currency: 'brl', latest_charge: null })
+    mocks.sql.mockImplementation(async (strings: TemplateStringsArray) => {
+      const query = strings.join('')
+      if (query.startsWith('SELECT * FROM dream_orders')) return [guest]
+      if (query.startsWith('SELECT id FROM users WHERE')) return []
+      if (query.startsWith('INSERT INTO users')) return [{ id: 'new-user' }]
+      if (query.startsWith('SELECT user_id,guest_email')) return [{ user_id: 'new-user', guest_email: 'buyer@example.com' }]
+      if (query.startsWith('SELECT status,credited')) return [{ status: 'paid', credited: 1 }]
+      if (query.startsWith('SELECT session_id,attribution FROM onboarding_previews')) return [{ session_id: 'preview-session', attribution: {} }]
+      if (query.startsWith('UPDATE dream_orders SET access_email_sending_at')) return [{ id: guest.id }]
+      if (query.startsWith('SELECT access_email_sent_at')) return [{ access_email_sent_at: null }]
+      return []
+    })
+    const result = await reconcileCheckout(checkout.id)
+    expect(result).toMatchObject({ status: 'paid', credits: 1, amount: 3700 })
+    expect(mocks.accessEmail).toHaveBeenCalledWith(guest.id, 'new-user', 'buyer@example.com')
+    expect(mocks.sql.mock.calls.some(call => call[0].join('').includes("'purchase_completed'"))).toBe(true)
   })
   it.each([
     { livemode: true },

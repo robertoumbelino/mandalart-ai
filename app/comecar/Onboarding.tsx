@@ -18,7 +18,6 @@ import {
   LoaderCircle,
   RotateCcw,
   ShieldCheck,
-  Sparkles,
   Sprout,
   X
 } from 'lucide-react'
@@ -148,6 +147,7 @@ export function Onboarding() {
   const [error, setError] = useState('')
   const [email, setEmail] = useState('')
   const [emailBusy, setEmailBusy] = useState(false)
+  const [emailError, setEmailError] = useState('')
   const [checkoutBusy, setCheckoutBusy] = useState(false)
   const [blocked, setBlocked] = useState<'illegal' | 'self-harm'>('illegal')
   const [dialog, setDialog] = useState<'restart' | null>(null)
@@ -156,6 +156,7 @@ export function Onboarding() {
   const customRef = useRef<HTMLTextAreaElement>(null)
   const requestRef = useRef<AbortController | null>(null)
   const busyRef = useRef(false)
+  const viewedPreviewRef = useRef<string | null>(null)
   const advanceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   useEffect(() => {
@@ -176,7 +177,10 @@ export function Onboarding() {
       const state = window.history.state?.mandalartBegin
       if (state && ['welcome', 'questions', 'email', 'preview'].includes(state.screen)) {
         if (state.screen === 'welcome') initial.screen = 'welcome'
-        else if (state.screen === 'email') initial.screen = 'email'
+        else if (state.screen === 'email') {
+          initial.screen = initial.result ? 'preview' : 'questions'
+          initial.question = 5
+        }
         else if (state.screen === 'preview' && initial.result)
           initial.screen = 'preview'
         else if (state.screen === 'questions') {
@@ -224,7 +228,7 @@ export function Onboarding() {
           state?.screen === 'preview' && current.result
             ? 'preview'
             : state?.screen === 'email'
-              ? 'email'
+              ? current.result ? 'preview' : 'questions'
               : state?.screen === 'questions' || state?.screen === 'generating'
               ? 'questions'
               : 'welcome'
@@ -260,6 +264,8 @@ export function Onboarding() {
 
   useEffect(() => {
     if (!hydrated || draft.screen !== 'preview' || !draft.result) return
+    if (viewedPreviewRef.current === draft.result.id) return
+    viewedPreviewRef.current = draft.result.id
     trackMetaEvent({ name: 'ViewContent', onceKey: `preview.${draft.result.id}`, eventId: `preview-${draft.result.id}` })
     analytics('preview_viewed', { lead_id: draft.leadId || '' })
     void fetch('/api/onboarding/event', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: 'preview_viewed', leadId: draft.leadId || undefined, attribution: draft.attribution }) }).catch(() => {})
@@ -313,18 +319,23 @@ export function Onboarding() {
 
   function select(value: string) {
     const field = answerFields[draft.question]
+    const selectedAnswers: DraftAnswers = { ...draft.answers, [field]: value }
+    if (field === 'category') {
+      delete selectedAnswers.dream
+      delete selectedAnswers.customDream
+    }
+    if (field === 'dream' && value !== 'other') delete selectedAnswers.customDream
+    const keepsPreview = draft.result?.answersKey === answersKey(selectedAnswers)
+    if (!keepsPreview) {
+      try { sessionStorage.removeItem('mandalart.lead_id') } catch {}
+    }
     setDraft((current) => {
-      const answers: DraftAnswers = { ...current.answers, [field]: value }
-      if (field === 'category') {
-        delete answers.dream
-        delete answers.customDream
-      }
-      if (field === 'dream' && value !== 'other') delete answers.customDream
       return {
         ...current,
-        answers,
-        result: null,
-        checked: [false, false, false]
+        answers: selectedAnswers,
+        result: keepsPreview ? current.result : null,
+        checked: keepsPreview ? current.checked : [false, false, false],
+        leadId: keepsPreview ? current.leadId : null
       }
     })
     if (field === 'dream' && value === 'other')
@@ -338,20 +349,18 @@ export function Onboarding() {
         if (question === 5) {
           analytics('quiz_completed')
           void fetch('/api/onboarding/event', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: 'quiz_completed', attribution: draft.attribution }) }).catch(() => {})
-          navigate('email', 5)
+          void generate(selectedAnswers)
         } else navigate('questions', question + 1)
       }, 180)
     }
     setError('')
   }
 
-  async function generate() {
+  async function generate(rawAnswers: DraftAnswers = draft.answers) {
     if (busyRef.current) return
-    const parsed = answersSchema.safeParse(draft.answers)
+    const parsed = answersSchema.safeParse(rawAnswers)
     if (!parsed.success) {
-      const missing = answerFields.findIndex(
-        (_, index) => !isStepComplete(draft.answers, index)
-      )
+      const missing = answerFields.findIndex((_, index) => !isStepComplete(rawAnswers, index))
       navigate('questions', Math.max(0, missing))
       setError('Escolha uma resposta para continuar.')
       return
@@ -425,7 +434,11 @@ export function Onboarding() {
     if (!isStepComplete(draft.answers, draft.question)) return
     analytics('begin_question_completed', { step: draft.question + 1 })
     void fetch('/api/onboarding/event', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: 'quiz_question', properties: { question: draft.question + 1 }, attribution: draft.attribution }) }).catch(() => {})
-    if (draft.question === 5) navigate('email', 5)
+    if (draft.question === 5) {
+      analytics('quiz_completed')
+      void fetch('/api/onboarding/event', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: 'quiz_completed', attribution: draft.attribution }) }).catch(() => {})
+      void generate()
+    }
     else navigate('questions', draft.question + 1)
   }
 
@@ -443,24 +456,23 @@ export function Onboarding() {
 
   async function captureEmail(event: React.FormEvent) {
     event.preventDefault()
-    if (emailBusy || busyRef.current) return
+    if (emailBusy || !draft.result) return
     const parsed = answersSchema.safeParse(draft.answers)
     if (!parsed.success) { navigate('questions', 0); return }
     setEmailBusy(true)
-    setError('')
+    setEmailError('')
     try {
       let marketingConsent = false
       try { marketingConsent = localStorage.getItem(MARKETING_CONSENT_KEY) === 'accepted' } catch {}
-      const response = await fetch('/api/onboarding/lead', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email, answers: parsed.data, attribution: draft.attribution, marketingConsent }) })
+      const response = await fetch('/api/onboarding/lead', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email, previewId: draft.result.id, answers: parsed.data, attribution: draft.attribution, marketingConsent }) })
       const result = await response.json()
       if (!response.ok) throw new Error(result.error || 'Não foi possível guardar seu e-mail.')
       setDraft(current => ({ ...current, leadId: result.id }))
       try { sessionStorage.setItem('mandalart.lead_id', result.id) } catch {}
       analytics('email_captured', { lead_id: result.id })
       trackMetaEvent({ name: 'Lead', onceKey: `lead.${result.id}`, eventId: `lead-${result.id}` })
-      void generate()
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : 'Tente novamente.')
+      setEmailError(cause instanceof Error ? cause.message : 'Tente novamente.')
     } finally { setEmailBusy(false) }
   }
 
@@ -734,11 +746,13 @@ export function Onboarding() {
                     aria-describedby="custom-dream-count"
                     onChange={(event) => {
                       const value = event.target.value
+                      try { sessionStorage.removeItem('mandalart.lead_id') } catch {}
                       setDraft((current) => ({
                         ...current,
                         answers: { ...current.answers, customDream: value },
                         result: null,
-                        checked: [false, false, false]
+                        checked: [false, false, false],
+                        leadId: null
                       }))
                     }}
                   />
@@ -766,24 +780,6 @@ export function Onboarding() {
                 <p><Sprout size={13} /> Seu ritmo também faz parte do plano.</p>
               </div>}
             </form>
-          </div>
-        </main>
-      )}
-
-      {draft.screen === 'email' && (
-        <main id="begin-main" className="email-page begin-enter">
-          <div className="email-card">
-            <span className="begin-eyebrow"><Sparkles size={15} /> SEU PRIMEIRO CAMINHO</span>
-            <h1 tabIndex={-1} data-step-heading>Vamos criar seu primeiro caminho.</h1>
-            <p>Deixe seu e-mail para receber a prévia e continuar em qualquer aparelho.</p>
-            <form onSubmit={captureEmail}>
-              <label htmlFor="lead-email">Seu e-mail</label>
-              <input id="lead-email" type="email" autoComplete="email" inputMode="email" required maxLength={254} value={email} onChange={event => setEmail(event.target.value)} placeholder="voce@exemplo.com" />
-              {error && <p role="alert" className="begin-error">{error}</p>}
-              <button className="begin-primary" type="submit" disabled={emailBusy || !email.trim()}>{emailBusy ? 'Criando seu caminho…' : 'Criar e ver meu caminho'} <ArrowRight size={18} /></button>
-            </form>
-            <small>Sem senha e sem cartão. Enviaremos sua prévia, até dois lembretes deste caminho e, se você comprar, o acesso ao plano. Cancele os lembretes pelo link em qualquer e-mail.</small>
-            <button className="text-button" onClick={() => navigate('questions', 5)}><ArrowLeft size={14} /> Revisar respostas</button>
           </div>
         </main>
       )}
@@ -842,6 +838,12 @@ export function Onboarding() {
           onCheckout={checkout}
           checkoutBusy={checkoutBusy}
           checkoutError={error}
+          email={email}
+          onEmailChange={setEmail}
+          onEmailSubmit={captureEmail}
+          emailBusy={emailBusy}
+          emailSaved={Boolean(draft.leadId)}
+          emailError={emailError}
         />
       )}
 

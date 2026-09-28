@@ -376,6 +376,7 @@ export function restoreDraft(
     draft.checked = [false, false, false]
   }
   if (
+    draft.screen === 'email' ||
     draft.screen === 'generating' ||
     draft.screen === 'blocked' ||
     (draft.screen === 'preview' && !draft.result)
