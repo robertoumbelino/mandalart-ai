@@ -9,6 +9,16 @@ const securityHeaders = [
 
 const nextConfig: NextConfig = {
   poweredByHeader: false,
+  async redirects() {
+    return [
+      {
+        source: '/comecar',
+        has: [{ type: 'host', value: 'mandalart-ai.vercel.app' }],
+        destination: 'https://mandalart.com.br/comecar',
+        permanent: true
+      }
+    ]
+  },
   async headers() {
     return [{ source: '/(.*)', headers: securityHeaders }]
   }

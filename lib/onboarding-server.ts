@@ -46,6 +46,12 @@ export async function getPreviewSession() {
     }
   }
   const id = randomUUID()
+  await setPreviewSession(id)
+  return id
+}
+
+export async function setPreviewSession(id: string) {
+  const jar = await cookies()
   jar.set(
     SESSION_COOKIE,
     jwt.sign({}, secret(), {
@@ -62,7 +68,6 @@ export async function getPreviewSession() {
       maxAge: WEEK
     }
   )
-  return id
 }
 
 async function consumeLimit(key: string, limit: number, seconds: number) {
@@ -110,6 +115,8 @@ export async function generatePreview(
       'Apenas a primeira tarefa é desenvolvida: ela pertence ao primeiro pilar e deve gerar avanço real, com três passos curtos e executáveis.',
       'O tempo total dessa primeira tarefa deve ficar entre 5 e 30 minutos e respeitar a disponibilidade informada.',
       'A introdução tem duas frases curtas, no máximo 240 caracteres ao todo. Reflita o ponto de partida, a dificuldade e a disponibilidade de forma natural, sem recitar as respostas.',
+      'A descrição da primeira tarefa deve explicar explicitamente por que esse passo é adequado a ESTE sonho, a ESTE ponto de partida, ao obstáculo informado e ao tempo semanal disponível. Cite ao menos dois desses dados em linguagem natural.',
+      'Cada ação do checklist deve produzir um resultado concreto para o sonho informado, não uma reflexão genérica que serviria para qualquer pessoa. Use verbos observáveis e objetos específicos do objetivo.',
       'A primeira tarefa tem título curto, idealmente até 55 caracteres. Cada item do checklist tem no máximo 100 caracteres e apenas uma ação.',
       'Não transforme respostas já conhecidas em tarefas: se já informou disponibilidade ou horizonte, use esses dados em vez de pedir que responda novamente.',
       'Use o horizonte para os primeiros avanços, nunca como garantia de conclusão do sonho.',
@@ -122,7 +129,9 @@ export async function generatePreview(
     ].join(' '),
     prompt: JSON.stringify(context)
   })
-  return { status: 'ready', preview: previewSchema.parse(result.output) }
+  const parsed = previewSchema.parse(result.output)
+  parsed.title = parsed.title.replace(/^(?:(?:um|o|seu)\s+caminho\s+para\s+)+/i, '').trim() || context.dream
+  return { status: 'ready', preview: parsed }
 }
 
 export async function preparePreview(
@@ -140,8 +149,11 @@ export async function preparePreview(
   `
   if (cached[0]) {
     const parsed = previewSchema.safeParse(cached[0].preview)
-    if (parsed.success)
+    if (parsed.success) {
+      await sql`UPDATE onboarding_leads SET preview_id=${cached[0].id}::uuid, updated_at=now()
+        WHERE session_id=${sessionId}::uuid AND answers=${JSON.stringify(answers)}::jsonb AND preview_id IS NULL`
       return { status: 'ready', id: String(cached[0].id), preview: parsed.data }
+    }
   }
 
   const requestHeaders = await headers()
@@ -192,8 +204,11 @@ export async function preparePreview(
       return result
     }
     await sql`UPDATE onboarding_previews SET status = 'ready', preview = ${JSON.stringify(result.preview)}::jsonb, updated_at = NOW() WHERE id = ${id}`
+    await sql`UPDATE onboarding_leads SET preview_id=${id}::uuid, updated_at=now()
+      WHERE session_id=${sessionId}::uuid AND answers=${JSON.stringify(answers)}::jsonb AND preview_id IS NULL`
     // Expired anonymous previews have no purchase attached and are never reused.
-    await sql`DELETE FROM onboarding_previews WHERE expires_at <= NOW()`
+    await sql`DELETE FROM onboarding_previews p WHERE p.expires_at <= NOW()
+      AND NOT EXISTS (SELECT 1 FROM dream_orders o WHERE o.preview_id=p.id AND o.paid=true)`
     await sql`DELETE FROM onboarding_rate_limits WHERE resets_at <= NOW()`
     return { status: 'ready', id, preview: result.preview }
   } catch (error) {

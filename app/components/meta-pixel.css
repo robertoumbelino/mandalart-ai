@@ -1,22 +1,16 @@
-.marketing-consent {
-  position: fixed;
-  z-index: 100;
-  right: clamp(16px, 3vw, 32px);
-  bottom: clamp(16px, 3vw, 32px);
-  width: min(430px, calc(100vw - 32px));
-  display: grid;
-  gap: 18px;
-  padding: 22px;
-  border: 1px solid #ddd9f5;
-  border-radius: 20px;
-  background: #fff;
-  box-shadow: 0 20px 55px rgb(31 28 75 / .18);
-  color: #26334a;
-}
-.marketing-consent strong { font-size: 15px; line-height: 1.35; }
-.marketing-consent p { margin: 7px 0 0; color: #5c6b80; font-size: 12px; line-height: 1.6; }
-.marketing-consent a { color: #5239e9; font-weight: 700; }
-.marketing-consent-actions { display: flex; justify-content: flex-end; gap: 9px; }
-.marketing-consent button { min-height: 40px; padding: 8px 16px; border: 1px solid #dedaf3; border-radius: 10px; background: #fff; color: #4636aa; font: inherit; font-size: 12px; font-weight: 700; cursor: pointer; }
+.marketing-consent { position: fixed; z-index: 100; bottom: 8px; left: 50%; transform: translateX(-50%); width: min(850px,calc(100vw - 20px)); display: flex; align-items: center; justify-content: space-between; gap: 18px; padding: 10px 14px; border: 1px solid #e2deef; border-radius: 13px; background: #fff; box-shadow: 0 8px 28px #22204a26; color: #26334a; }
+.marketing-consent strong { font-size: 12px; line-height: 1.3; }
+.marketing-consent p { display: inline; margin: 0 0 0 7px; color: #637087; font-size: 11px; line-height: 1.4; }
+.marketing-consent a { color: #5239e9; text-decoration: underline; }
+.marketing-consent-actions { display: flex; flex-shrink: 0; gap: 6px; }
+.marketing-consent button { min-height: 35px; padding: 5px 11px; border: 1px solid #dedaf3; border-radius: 8px; background: #fff; color: #4636aa; font: inherit; font-size: 11px; font-weight: 700; cursor: pointer; }
 .marketing-consent button:last-child { border-color: #5a3df3; background: #5a3df3; color: #fff; }
 .marketing-consent button:focus-visible { outline: 3px solid #a5b4fc; outline-offset: 2px; }
+@media (max-width: 760px) {
+  .marketing-consent { bottom: 0; width: 100%; border-radius: 10px 10px 0 0; padding: 8px 12px max(8px,env(safe-area-inset-bottom)); gap: 10px; }
+  .marketing-consent strong { font-size: 10px; }
+  .marketing-consent p { display: none; }
+  .marketing-consent-actions button { font-size: 10px; min-height: 34px; padding: 4px 10px; }
+  body:has(.marketing-consent) .begin-shell { padding-bottom: 80px; }
+  body:has(.marketing-consent) .conversion-sticky { bottom: 55px; }
+}

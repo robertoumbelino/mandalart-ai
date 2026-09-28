@@ -5,6 +5,7 @@ import { auth } from '@/lib/auth/server'
 import { getDb } from '@/lib/db'
 import { credentialsSchema } from '@/lib/validation'
 import type { User } from '@/types'
+import { getEmailAccessUser, revokeEmailAccess } from '@/lib/email-access'
 
 type UserRow = { id: string; email: string; name: string; avatar: string | null }
 type AuthProfile = {
@@ -103,7 +104,10 @@ const resolveUser = async (profile: AuthProfile): Promise<{ user: User; created:
 
 export const getCurrentUserWithCreation = async (): Promise<{ user: User; created: boolean } | null> => {
   const { data: session, error } = await auth.getSession()
-  if (error || !session?.user?.email) return null
+  if (error || !session?.user?.email) {
+    const user = await getEmailAccessUser()
+    return user ? { user, created: false } : null
+  }
   return resolveUser({ ...session.user, email: session.user.email })
 }
 
@@ -148,6 +152,9 @@ export const register = async (rawEmail: string, rawPassword: string): Promise<v
 }
 
 export const logout = async (): Promise<void> => {
+  const { data: session } = await auth.getSession()
+  await revokeEmailAccess()
+  if (!session?.user) return
   const result = await auth.signOut()
   if (result.error) throw new Error('Não foi possível encerrar a sessão.')
 }

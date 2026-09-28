@@ -170,3 +170,4 @@ vite.config.ts.timestamp-*
 
 # Local video and other generated content
 /contents/
+.playwright-cli/

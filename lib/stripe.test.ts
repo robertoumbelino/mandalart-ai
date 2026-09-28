@@ -11,13 +11,13 @@ describe('Stripe environment isolation', () => {
     vi.stubEnv('VERCEL_ENV', 'production')
     vi.stubEnv('VERCEL_URL', 'preview.example.com')
     vi.stubEnv('STRIPE_SECRET_KEY', 'sk_live_fixture')
-    vi.stubEnv('APP_URL', 'https://mandalart-ai.vercel.app')
+    vi.stubEnv('APP_URL', 'https://mandalart.com.br')
   })
   afterEach(() => vi.unstubAllEnvs())
 
   it('uses real payments and the canonical return origin in production', () => {
     expect(billingMode()).toBe('live')
-    expect(billingOrigin()).toBe('https://mandalart-ai.vercel.app')
+    expect(billingOrigin()).toBe('https://mandalart.com.br')
   })
   it('rejects test payments on the production deployment', () => {
     vi.stubEnv('STRIPE_SECRET_KEY', 'sk_test_fixture')

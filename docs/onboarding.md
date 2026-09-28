@@ -2,44 +2,23 @@
 
 ## Experiência
 
-A página contém apresentação, seis perguntas com alternativas, entrada livre opcional, geração real de uma prévia com IA, primeira tarefa com três ações marcáveis, oito pilares expansíveis e oferta de 1 ou 3 sonhos. O CTA leva a `/sonhos`: visitantes entram na conta e passam pelo ponto de checkout exclusivo do `/comecar`; quem já estava logado segue pelo checkout Stripe da conta. Por enquanto ambos usam Stripe. Pacotes: 1 sonho por R$ 37,00 ou 3 por R$ 99,90. A prévia gratuita permanece no navegador. Veja [payments.md](./payments.md).
+A jornada tem seis perguntas curtas, com avanço automático nas escolhas únicas. Antes da prévia com IA, a pessoa informa o e-mail. A prévia mostra o objetivo, um primeiro passo pessoal, parte do mapa e uma oferta principal: um Mandalart completo por R$ 37, pagamento único. O CTA abre diretamente o Stripe Checkout, sem exigir cadastro ou senha. Dentro do Checkout, há um adicional opcional de dois Mandalarts por R$ 62; o total com adicional é R$ 99. A loja `/sonhos` mantém suas ofertas existentes para contas autenticadas.
 
-O roteiro cobre área, sonho, ponto de partida, dificuldade, disponibilidade e horizonte dos primeiros avanços. Selecionar outra área remove o sonho anterior. Editar respostas invalida a prévia e o checklist. Voltar sem mudar as respostas preserva ambos.
+Após a confirmação do Stripe, o servidor cria ou vincula a conta, credita um ou três sonhos e associa a prévia ao pedido. Uma compra feita com e-mail que já pertence a uma conta exige o link enviado ao titular antes de abrir essa conta. Para uma conta nova, a página de retorno libera acesso no mesmo navegador e envia um link de uso único para abrir em outro aparelho. O primeiro plano completo é gerado automaticamente, usando o ID do pedido para evitar cobrança de crédito duplicada. A geração consome um sonho; os outros dois, quando comprados, ficam disponíveis no saldo.
 
-A tipografia Poppins é compartilhada com o restante da aplicação e servida localmente, com licença OFL em `app/fonts`. A ilustração é vetorial, sem dependência de imagens remotas. Os estilos são limitados ao layout da rota. Há navegação por teclado, foco nos títulos, inputs nativos, modal nativo, estados selecionados que não dependem só de cor, layout de 320px em diante e respeito a movimento reduzido.
+## Retomada e e-mails
 
-## Estado e retomada
+O rascunho local dura sete dias e a prévia pode ser retomada pelo link enviado ao e-mail. A primeira visualização agenda até dois lembretes, para 1 e 24 horas depois; compra e descadastro cancelam os envios pendentes. O link de descadastro exige confirmação por POST, para que scanners de e-mail não cancelem o envio ao abrir a mensagem. O Resend usa `RESEND_API_KEY` e `TRANSACTIONAL_EMAIL_FROM` com domínio verificado. Falha do provedor não bloqueia a entrega de uma compra paga; a página de retorno informa que o link ainda não foi enviado, e uma nova conciliação tenta novamente.
 
-- Rascunho versionado em `localStorage`, validado por Zod, com validade de 7 dias desde o último uso. Armazenamento indisponível não bloqueia o fluxo: um aviso explica a limitação.
-- Etapas em `history.state`, mantendo o pathname `/comecar`; perguntas e prévia não aparecem na URL. Os botões voltar/avançar do navegador navegam entre etapas.
-- Interrupção da geração retorna às respostas, sem disparar outra chamada automaticamente.
-- A primeira tarefa e o pacote escolhido permanecem no navegador. Ainda não há sincronização de checklist entre aparelhos.
-- `afid`, `ref`, UTMs, `src` e `sck` são guardados no navegador por até 30 dias e associados ao pedido no checkout. A prévia também guarda a origem. Os parâmetros continuam disponíveis após cadastro e redirecionamento externo. Na Kiwify, o `afid` configurado no link de afiliado é preservado e `sck` identifica o pedido; parâmetros recebidos do visitante não substituem esses vínculos.
+O link de acesso à conta dura 48 horas e só pode ser usado uma vez. O GET mostra uma confirmação sem consumi-lo; o POST cria uma sessão HttpOnly de 30 dias. O link da prévia dura sete dias. A sessão anônima da prévia usa cookie assinado e a mesma origem no retorno do pagamento.
+Depois da expiração da sessão, `/acessar` permite solicitar outro link sem senha. A rota limita pedidos por hash de e-mail e rede e responde do mesmo modo para endereços com ou sem conta.
 
-## Geração e proteção de custo
+## Medição e segurança
 
-`POST /api/onboarding/preview` valida origem, tamanho e respostas antes de chamar IA. Escolhas do catálogo são curadas; texto livre usa a mesma classificação de segurança do aplicativo autenticado. A resposta da IA é validada: oito pilares, uma tarefa, três ações. Não existe plano completo escondido no navegador.
+`onboarding_events` registra etapas do funil no servidor, sem texto do sonho, respostas nem e-mail. Eventos de compra e adicional são gravados após a conciliação com o Stripe. O Pixel da Meta depende do consentimento para anúncios; o Purchase do navegador e o evento de servidor usam o mesmo `event_id` para deduplicação, se `META_CAPI_ACCESS_TOKEN` e `META_CAPI_API_VERSION` estiverem configurados. A origem de campanha é guardada no pedido.
 
-Uma sessão anônima em cookie HttpOnly assinado limita o acesso ao cache próprio. A combinação de sessão e respostas identifica a prévia no Postgres. A reserva atômica impede gerações concorrentes da mesma prévia; reservas interrompidas podem ser retomadas após dois minutos. Repetir uma prévia pronta retorna o resultado persistido.
+A rota de prévia valida origem, tamanho, respostas e limites de geração (8 por sessão/hora, 20 por rede/hora, 1.000/dia). O checkout vincula pedido, sessão anônima, lead e prévia. O retorno só abre o pedido da mesma sessão e consulta o Stripe; a URL de sucesso não concede créditos sozinha. Reembolsos e contestações continuam usando a conciliação existente da carteira.
 
-Limites persistentes: 8 solicitações novas por sessão/hora, 20 por origem de rede/hora e 1.000/dia no total. O IP é transformado por HMAC, sem armazenamento em texto puro. O limite global só é debitado depois dos limites individuais. Um proxy de produção precisa fornecer IPs confiáveis; proteger essa rota também no provedor ao abrir campanhas públicas.
+## Operação
 
-As prévias expiram para reutilização em 7 dias. A limpeza física de prévias e limites vencidos é oportunista após uma geração bem-sucedida; ao lançar, adicionar manutenção programada para também limpar em períodos sem tráfego. Prompts e respostas não são enviados aos eventos de analytics nem aos logs de erros.
-
-Eventos de funil: `begin_view`, `begin_started`, `begin_question_completed`, `begin_preview_requested`, `begin_preview_ready`, `begin_preview_error`, `begin_first_step_interaction`, `begin_pack_selected`, `begin_offer_interest`. Não registrar sonhos, respostas ou texto livre nesses eventos. Os eventos não são confirmação de compra e não implementam rastreamento de pagamentos.
-
-## Integrações futuras
-
-A integração Stripe já confirma pagamento no servidor, credita a conta e permite gerar o planner com as respostas da prévia. A jornada de perguntas e prévia continua em `/comecar`; compra e saldo ficam em `/sonhos`. O retorno do Stripe não libera créditos por query string: consulta o pedido autenticado e verifica a confirmação no provedor. O usuário escolhe quando gerar o planner, consumindo um sonho.
-
-O checkout do `/comecar` foi isolado em `actions/onboarding-checkout.ts`. A alternativa Kiwify está implementada, mas desligada por `KIWIFY_ONBOARDING_ENABLED=false` até validar o produto compartilhado, seus links de afiliado e um pagamento real. A confirmação assinada de pagamento e a conciliação de reembolso/contestação estão em `lib/kiwify.ts`; os créditos continuam dependentes do webhook. Veja [payments.md](./payments.md). Ao gerar a partir da prévia, o servidor valida sua sessão e recupera os oito pilares e o primeiro passo originais. Eles são preservados no planner completo. A marcação do checklist gratuito não é transferida; o acompanhamento do planner começa do zero.
-
-Jev foi avaliado como classificador opcional de sonhos livres. Não foi integrado: não há credencial TypeSafe configurada, e as alternativas atuais são tratadas por regras determinísticas. O gerador existente no AI Gateway produz a prévia. Não adicionar latência de uma chamada por pergunta; comparar Jev em português antes de ativar uma ramificação experimental.
-
-## Banco local
-
-O projeto reutiliza o Postgres do container `adstart-database`, acessível em `127.0.0.1:5432`. O banco `mandalart_local` e o usuário `mandalart` são próprios do Mandalart; as bases da Adstart permanecem separadas. Não há container ou volume de Postgres dedicado ao Mandalart. Aplicar as migrations pendentes localmente como descrito no README. `lib/db.ts` usa `pg` em loopback e mantém Neon para o deploy. O servidor de desenvolvimento recusa banco remoto. Não copiar dados de clientes de produção para os testes.
-
-## Validação
-
-`pnpm check` valida tipos, lint e testes de schema, retomada, origem, geração, segurança, cache e limites. `pnpm build` valida o build de produção. Testar no navegador apresentação, fluxo completo, erro recuperável, campo livre, alteração de categoria, voltar/avançar, reload, checklist, pilares, pacotes e modal. Antes de lançar com checkout, testar também o navegador interno do Instagram em aparelhos reais e a atribuição de uma compra de afiliado.
+A migration `007_conversion_journey.sql` adiciona leads, pedidos de visitante, tokens de acesso, eventos e a adaptação da conciliação. A produção usa preço live separado para o adicional em `STRIPE_PRICE_BUMP`; o preço local é test. Em desenvolvimento, use o Postgres `mandalart_local` e chaves Stripe test. Valide com `pnpm check`, `pnpm build` e uma compra de teste completa em 390 px. Não use dados de clientes de produção nos testes.
