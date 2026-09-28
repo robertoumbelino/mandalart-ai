@@ -21,8 +21,8 @@ export function Preview({ preview, answers, checked, onCheck, onEdit, onCheckout
     <main id="begin-main" className="conversion-preview begin-enter">
       <header className="conversion-hero">
         <span className="begin-eyebrow"><Sparkles size={15} /> SUA PRÉVIA PERSONALIZADA</span>
-        <h1 tabIndex={-1} data-step-heading className="ph-mask">{previewHeading(preview.title)}.</h1>
-        <p className="ph-mask">{preview.introduction}</p>
+        <h1 tabIndex={-1} data-step-heading>{previewHeading(preview.title)}.</h1>
+        <p>{preview.introduction}</p>
         <button className="text-button" onClick={onEdit}><PencilLine size={14} /> Ajustar respostas</button>
       </header>
 
@@ -34,10 +34,10 @@ export function Preview({ preview, answers, checked, onCheck, onEdit, onCheckout
         </div>
         <div className="mandala-grid" role="group" aria-label="Oito caminhos ao redor do seu sonho">
           {[0,1,2,7,-1,3,6,5,4].map(index => index === -1
-            ? <div className="mandala-center ph-mask" key="center"><span>SEU SONHO</span><strong>{dream}</strong></div>
+            ? <div className="mandala-center" key="center"><span>SEU SONHO</span><strong>{dream}</strong></div>
             : <div className={`mandala-cell ${index === 0 ? 'is-open' : 'is-locked'}`} key={index} aria-label={`Caminho ${index + 1}: ${preview.pillars[index].title}${index ? ', ações disponíveis no plano completo' : ', aberto'}`}>
                 <span>{index === 0 ? <Sprout size={14} /> : <LockKeyhole size={12} />} CAMINHO {index + 1}</span>
-                <strong className="ph-mask">{preview.pillars[index].title}</strong>
+                <strong>{preview.pillars[index].title}</strong>
               </div>)}
         </div>
         <p className="mandala-note"><Check size={17} /> Seu primeiro caminho já está definido.</p>
@@ -45,14 +45,14 @@ export function Preview({ preview, answers, checked, onCheck, onEdit, onCheckout
 
       <section className="conversion-first-step" aria-labelledby="conversion-step-title">
         <span className="begin-eyebrow"><Sprout size={15} /> COMECE POR AQUI</span>
-        <h2 id="conversion-step-title" className="ph-mask">{preview.firstStep.title}</h2>
-        <p className="ph-mask">{preview.firstStep.description}</p>
+        <h2 id="conversion-step-title">{preview.firstStep.title}</h2>
+        <p>{preview.firstStep.description}</p>
         <span className="conversion-duration"><Clock3 size={14} /> Cerca de {preview.firstStep.minutes} minutos</span>
         <div className="conversion-checklist">
           {preview.firstStep.checklist.map((item,index) => <label key={item} className={checked[index] ? 'checked' : ''}>
             <input type="checkbox" checked={checked[index]} onChange={() => onCheck(index)} />
             <span><Check size={14} /></span>
-            <span className="ph-mask">{item}</span>
+            <span>{item}</span>
           </label>)}
         </div>
         <small>{checked.filter(Boolean).length} de 3 pequenas ações concluídas</small>

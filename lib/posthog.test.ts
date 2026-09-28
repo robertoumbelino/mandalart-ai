@@ -33,7 +33,8 @@ it('captures without an advertising choice and respects the analytics opt-out', 
   expect(captureProductEvent('screen_view', { screen: 'onboarding_start' })).toBe(true)
   expect(posthog.init).toHaveBeenCalledWith('test-token', expect.objectContaining({
     session_recording: expect.objectContaining({
-      maskAllInputs: true,
+      maskAllInputs: false,
+      maskInputOptions: { email: true, password: true },
       maskTextSelector: '.ph-mask',
     }),
   }))

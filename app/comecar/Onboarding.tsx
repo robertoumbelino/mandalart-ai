@@ -602,7 +602,7 @@ export function Onboarding() {
             {getDream(draft.answers) && (
               <div className="aside-dream">
                 <DreamIcon name={category?.icon || 'sprout'} size={18} />
-                <span className="ph-mask">{getDream(draft.answers)}</span>
+                <span>{getDream(draft.answers)}</span>
               </div>
             )}
             <span className="aside-caption">
@@ -725,7 +725,7 @@ export function Onboarding() {
                 </div>
               )}
               {error && (
-                <div className="ph-mask begin-error" role="alert">
+                <div className="begin-error" role="alert">
                   {error}
                 </div>
               )}
@@ -780,7 +780,7 @@ export function Onboarding() {
           </p>
           <div className="generation-dream">
             <LoaderCircle className="begin-spinner" size={17} />
-            <span className="ph-mask">{getDream(draft.answers)}</span>
+            <span>{getDream(draft.answers)}</span>
           </div>
           <p className="generation-note">
             Um plano feito para a vida real. A sua.
