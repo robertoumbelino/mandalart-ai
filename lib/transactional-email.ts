@@ -3,6 +3,7 @@ import { randomBytes, createHash } from 'node:crypto'
 import { getDb } from '@/lib/db'
 import { billingOrigin } from '@/lib/stripe'
 import { createLeadLink, createUnsubscribeLink } from '@/lib/lead-link'
+import { allowedLocalEmailRecipient, localEmailTestMode } from '@/lib/email-testing'
 
 const digest = (token: string) => createHash('sha256').update(token).digest('hex')
 const escape = (value: string) => value.replace(/[&<>"']/g, character => ({
@@ -10,6 +11,8 @@ const escape = (value: string) => value.replace(/[&<>"']/g, character => ({
 })[character]!)
 
 async function sendEmail(to: string, subject: string, html: string, options?: { scheduledAt?: string; idempotencyKey?: string }) {
+  if (localEmailTestMode() && !allowedLocalEmailRecipient(to))
+    throw new Error('No ambiente local, use somente um endereço de teste do Resend.')
   const key = process.env.RESEND_API_KEY
   const from = process.env.TRANSACTIONAL_EMAIL_FROM
   if (!key || !from) throw new Error('Envio de e-mail não configurado.')
@@ -66,11 +69,11 @@ export async function sendPreviewAndScheduleRecovery(leadId: string) {
       await sendEmail(email, 'Seu primeiro caminho está pronto', previewHtml('Seu primeiro caminho está pronto', url, 'Sua prévia está salva. Abra quando quiser e continue seu primeiro passo.', unsubscribeUrl), { idempotencyKey: `preview-${leadId}` })
       await sql`UPDATE onboarding_leads SET preview_email_sent_at=now() WHERE id=${leadId}::uuid`
     }
-    if (!claim.recovery_one_email_id) {
+    if (!localEmailTestMode() && !claim.recovery_one_email_id) {
       const id = await sendEmail(email, 'Seu primeiro caminho está esperando', previewHtml('Seu primeiro caminho está esperando', url, 'Você começou a transformar seu sonho em um caminho possível. Seu primeiro passo continua esperando por você.', unsubscribeUrl), { scheduledAt: new Date(Date.now()+60*60*1000).toISOString(), idempotencyKey: `recovery-1-${leadId}` })
       await sql`UPDATE onboarding_leads SET recovery_one_email_id=${id} WHERE id=${leadId}::uuid`
     }
-    if (!claim.recovery_two_email_id) {
+    if (!localEmailTestMode() && !claim.recovery_two_email_id) {
       const id = await sendEmail(email, 'Volte ao seu Mandalart quando quiser', previewHtml('Volte ao seu Mandalart quando quiser', url, 'Sua prévia continua disponível. Um pequeno passo hoje pode ajudar a dar clareza ao seu sonho.', unsubscribeUrl), { scheduledAt: new Date(Date.now()+24*60*60*1000).toISOString(), idempotencyKey: `recovery-2-${leadId}` })
       await sql`UPDATE onboarding_leads SET recovery_two_email_id=${id} WHERE id=${leadId}::uuid`
     }

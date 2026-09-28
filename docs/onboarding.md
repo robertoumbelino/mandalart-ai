@@ -13,6 +13,8 @@ O rascunho local dura sete dias. Se a pessoa optar por salvar a prévia após v�
 O link de acesso à conta dura 48 horas e só pode ser usado uma vez. O GET mostra uma confirmação sem consumi-lo; o POST cria uma sessão HttpOnly de 30 dias. O link da prévia dura sete dias. A sessão anônima da prévia usa cookie assinado e a mesma origem no retorno do pagamento.
 Depois da expiração da sessão, `/acessar` permite solicitar outro link sem senha. A rota limita pedidos por hash de e-mail e rede e responde do mesmo modo para endereços com ou sem conta.
 
+No desenvolvimento local (`NODE_ENV` diferente de `production` ou `LOCAL_DATABASE_ONLY=true`), todos os envios pelo Resend aceitam apenas `delivered@resend.dev`, `bounced@resend.dev` e `complained@resend.dev`. A rota de captura recusa outros destinatários antes de salvar o lead. Lembretes agendados ficam desativados no local. Configure uma chave restrita a envio em `.env.local` para testar; o endereço de teste simula o resultado no painel do Resend e não entrega a uma caixa de entrada real.
+
 ## Medição e segurança
 
 `onboarding_events` registra etapas do funil no servidor, sem texto do sonho, respostas nem e-mail. Eventos de compra e adicional são gravados após a conciliação com o Stripe. O Pixel da Meta depende do consentimento para anúncios; o Purchase do navegador e o evento de servidor usam o mesmo `event_id` para deduplicação, se `META_CAPI_ACCESS_TOKEN` e `META_CAPI_API_VERSION` estiverem configurados. A origem de campanha é guardada no pedido.

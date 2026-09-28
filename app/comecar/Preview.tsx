@@ -24,6 +24,7 @@ type Props = {
 
 export function Preview({ preview, answers, checked, onCheck, onEdit, onCheckout, checkoutBusy, checkoutError, email, onEmailChange, onEmailSubmit, emailBusy, emailSaved, emailError }: Props) {
   const dream = getDream(answers)
+  const localTest = process.env.NODE_ENV === 'development'
   return <>
     <main id="begin-main" className="conversion-preview begin-enter">
       <header className="conversion-hero">
@@ -79,17 +80,17 @@ export function Preview({ preview, answers, checked, onCheck, onEdit, onCheckout
       <section className="conversion-save" aria-labelledby="conversion-save-title">
         <div>
           <span className="begin-eyebrow"><Mail size={15} /> PARA VOLTAR DEPOIS</span>
-          <h2 id="conversion-save-title">Guarde esta prévia no seu e-mail.</h2>
-          <p>Seu primeiro caminho fica disponível para você retomar quando quiser.</p>
+          <h2 id="conversion-save-title">{localTest ? 'Teste o envio da prévia.' : 'Guarde esta prévia no seu e-mail.'}</h2>
+          <p>{localTest ? 'Use um endereço de teste do Resend. Nenhuma pessoa receberá a mensagem.' : 'Seu primeiro caminho fica disponível para você retomar quando quiser.'}</p>
         </div>
-        {emailSaved ? <p className="conversion-save-success" role="status"><Check size={17} /> Prévia salva. Enviamos o link para seu e-mail.</p> : <form onSubmit={onEmailSubmit}>
+        {emailSaved ? <p className="conversion-save-success" role="status"><Check size={17} /> {localTest ? 'Envio de teste aceito pelo Resend.' : 'Prévia salva. Enviamos o link para seu e-mail.'}</p> : <form onSubmit={onEmailSubmit}>
           <label htmlFor="lead-email">Seu e-mail</label>
           <div className="conversion-save-row">
-            <input id="lead-email" type="email" autoComplete="email" inputMode="email" required maxLength={254} value={email} onChange={event => onEmailChange(event.target.value)} placeholder="voce@exemplo.com" />
+            <input id="lead-email" type="email" autoComplete="email" inputMode="email" required maxLength={254} value={email} onChange={event => onEmailChange(event.target.value)} placeholder={localTest ? 'delivered@resend.dev' : 'voce@exemplo.com'} />
             <button type="submit" disabled={emailBusy || !email.trim()}>{emailBusy ? 'Enviando…' : 'Enviar prévia'}</button>
           </div>
           {emailError && <p role="alert" className="begin-error">{emailError}</p>}
-          <small>Opcional. Você receberá esta prévia e até dois lembretes. Pode cancelar pelos links nos e-mails.</small>
+          <small>{localTest ? 'O resultado aparece no painel do Resend. No local, lembretes automáticos ficam desativados.' : 'Opcional. Você receberá esta prévia e até dois lembretes. Pode cancelar pelos links nos e-mails.'}</small>
         </form>}
       </section>
 

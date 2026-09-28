@@ -4,6 +4,7 @@ import { getPreviewSession } from '@/lib/onboarding-server'
 import { answersSchema } from '@/lib/onboarding'
 import { cleanAttribution } from '@/lib/attribution'
 import { sendPreviewAndScheduleRecovery } from '@/lib/transactional-email'
+import { allowedLocalEmailRecipient, localEmailTestMode } from '@/lib/email-testing'
 
 export const runtime = 'nodejs'
 
@@ -17,6 +18,8 @@ export async function POST(request: Request) {
     if (!parsed.success) return Response.json({ error: 'Confira o e-mail e suas respostas.' }, { status: 400 })
     const sessionId = await getPreviewSession()
     const email = parsed.data.email.trim().toLowerCase()
+    if (localEmailTestMode() && !allowedLocalEmailRecipient(email))
+      return Response.json({ error: 'No local, use delivered@resend.dev. O Resend simula a entrega sem enviar para uma pessoa.' }, { status: 400 })
     const sql = getDb()
     const [preview] = await sql`SELECT id FROM onboarding_previews
       WHERE id=${parsed.data.previewId}::uuid AND session_id=${sessionId}::uuid
