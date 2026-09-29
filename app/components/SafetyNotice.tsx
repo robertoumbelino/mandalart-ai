@@ -70,7 +70,7 @@ export const SafetyNotice: React.FC<SafetyNoticeProps> = ({ category, onBack }) 
             </>
           ) : (
             <p className="mt-6 max-w-lg text-base leading-relaxed text-slate-600 sm:text-lg">
-              O Mandalart.AI não cria planos para atividades ilegais, violência ou
+              O Mandalart não cria planos para atividades ilegais, violência ou
               ações que possam prejudicar outras pessoas. Tente novamente com um
               objetivo seguro e dentro da lei.
             </p>

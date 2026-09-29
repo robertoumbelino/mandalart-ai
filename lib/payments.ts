@@ -4,6 +4,7 @@ import { getDb } from '@/lib/db'
 import { getStripe, billingMode } from '@/lib/stripe'
 import { DREAM_PACKS, type DreamPack } from '@/lib/dream-packs'
 import { cancelRecoveryEmails, sendAccessEmail } from '@/lib/transactional-email'
+import { capturePaidOrder } from '@/lib/product-analytics-server'
 import { sendMetaPurchase } from '@/lib/meta-capi'
 
 export type DreamOrder = {
@@ -21,6 +22,11 @@ export type DreamOrder = {
   preview_id?: string | null
   bump_price_id?: string | null
   access_email_sent_at?: string | null
+  purchase_confirmed_at?: Date | string
+  product_event_sent_at?: Date | string | null
+  analytics_distinct_id?: string | null
+  marketing_consent?: boolean
+  journey_version?: string
   browser_access_granted?: boolean
 }
 export function verifyCheckout(
@@ -138,21 +144,28 @@ export async function reconcileCheckout(
   const [updated] =
     await sql`SELECT status,credited FROM dream_orders WHERE id=${order.id}::uuid`
   if (paid && order.preview_id && order.guest_email && order.user_id && updated.status === 'paid') {
+    const [confirmation] = await sql`UPDATE dream_orders SET purchase_confirmed_at=COALESCE(purchase_confirmed_at,now()) WHERE id=${order.id}::uuid RETURNING purchase_confirmed_at,product_event_sent_at`
+    order.purchase_confirmed_at = confirmation?.purchase_confirmed_at as Date | undefined
     const [preview] = await sql`SELECT session_id,attribution FROM onboarding_previews WHERE id=${order.preview_id}::uuid`
     const [lead] = order.lead_id ? await sql`UPDATE onboarding_leads SET purchased_at=COALESCE(purchased_at,now())
       WHERE id=${order.lead_id}::uuid RETURNING session_id,attribution,marketing_consent` : [null]
     if (lead) {
       try { await cancelRecoveryEmails(String(order.lead_id)) }
       catch { console.error('recovery_cancel_failed', { orderId: order.id }) }
-      try { await sendMetaPurchase({ id: order.id, email: order.guest_email, amount: order.amount, consent: lead.marketing_consent === true }) }
-      catch { console.error('meta_purchase_send_failed', { orderId: order.id }) }
     }
+    try { await sendMetaPurchase({ id: order.id, email: order.guest_email, amount: order.amount, consent: order.journey_version ? order.marketing_consent === true : lead?.marketing_consent === true }) }
+    catch { console.error('meta_purchase_send_failed', { orderId: order.id }) }
     await sql`INSERT INTO onboarding_events(session_id,lead_id,order_id,name,properties,attribution)
       VALUES(${preview?.session_id || null}::uuid,${order.lead_id || null}::uuid,${order.id}::uuid,'purchase_completed',${JSON.stringify({ amount: order.amount, credits: order.credits })}::jsonb,${JSON.stringify(preview?.attribution || order.attribution || {})}::jsonb)
       ON CONFLICT DO NOTHING`
     if (checkout.bump) await sql`INSERT INTO onboarding_events(session_id,lead_id,order_id,name,properties,attribution)
       VALUES(${preview?.session_id || null}::uuid,${order.lead_id || null}::uuid,${order.id}::uuid,'order_bump_accepted',${JSON.stringify({ amount: 6200 })}::jsonb,${JSON.stringify(preview?.attribution || order.attribution || {})}::jsonb)
       ON CONFLICT DO NOTHING`
+    try {
+      if (!confirmation?.product_event_sent_at && await capturePaidOrder(order))
+        await sql`UPDATE dream_orders SET product_event_sent_at=now() WHERE id=${order.id}::uuid`
+    }
+    catch { console.error('product_purchase_send_failed', { orderId: order.id }) }
     const [claim] = await sql`UPDATE dream_orders SET access_email_sending_at=now()
       WHERE id=${order.id}::uuid AND access_email_sent_at IS NULL
         AND (access_email_sending_at IS NULL OR access_email_sending_at<now()-interval '2 minutes') RETURNING id`

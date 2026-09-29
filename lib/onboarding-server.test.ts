@@ -5,6 +5,7 @@ import { classifyGoalSafety } from './goal-safety'
 import { getDb } from './db'
 
 vi.mock('server-only', () => ({}))
+vi.mock('next/server', () => ({ after: vi.fn() }))
 vi.mock('./db', () => ({ getDb: vi.fn() }))
 vi.mock('./goal-safety', () => ({ classifyGoalSafety: vi.fn() }))
 vi.mock('next/headers', () => ({
@@ -94,13 +95,28 @@ describe('anonymous preview generation', () => {
   it('returns an existing preview without spending on another generation', async () => {
     const query = vi.fn().mockResolvedValue([{ id: 'existing', preview }])
     vi.mocked(getDb).mockReturnValue(query as never)
-    expect(await preparePreview(answers, {})).toEqual({
+    expect(await preparePreview(answers, {})).toMatchObject({
       status: 'ready',
       id: 'existing',
       preview
     })
     expect(generateText).not.toHaveBeenCalled()
     expect(query).toHaveBeenCalledTimes(2)
+  })
+  it('isolates a restarted quiz from the previous preview while keeping retries cached', async () => {
+    const query = vi.fn().mockResolvedValue([{ id: 'existing', preview }])
+    vi.mocked(getDb).mockReturnValue(query as never)
+    const first = '00000000-0000-4000-8000-000000000001'
+    const restarted = '00000000-0000-4000-8000-000000000002'
+    await preparePreview(answers, {}, first)
+    await preparePreview(answers, {}, restarted)
+    await preparePreview(answers, {}, first)
+    await preparePreview(answers, {})
+    const hashes = query.mock.calls.filter(call => call[0].join('').includes('SELECT id, preview, checked')).map(call => call[2])
+    expect(hashes[0]).toBe(hashes[2])
+    expect(hashes[0]).not.toBe(hashes[1])
+    expect(hashes[0]).not.toBe(hashes[3])
+    expect(generateText).not.toHaveBeenCalled()
   })
   it('stops before reservation and generation when the durable usage limit is reached', async () => {
     const query = vi

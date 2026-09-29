@@ -2,13 +2,13 @@ import type { Metadata } from 'next'
 import { Onboarding } from './Onboarding'
 
 export const metadata: Metadata = {
-  title: 'Seu sonho merece um primeiro passo | Mandalart.AI',
+  title: 'Seu sonho merece um primeiro passo | Mandalart',
   description:
     'Responda 6 perguntas simples e descubra um primeiro passo para o seu sonho. Sem cartão para descobrir seu primeiro caminho.',
   openGraph: {
     title: 'Seu sonho merece um primeiro passo.',
     description:
-      'Descubra por onde começar com o Mandalart.AI. Sem cartão para descobrir seu primeiro caminho.',
+      'Descubra por onde começar com o Mandalart. Sem cartão para descobrir seu primeiro caminho.',
     locale: 'pt_BR',
     type: 'website'
   }

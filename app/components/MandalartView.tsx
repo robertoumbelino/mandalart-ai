@@ -23,17 +23,20 @@ import {
 import { MandalartData, Task } from '@/types'
 import { GridCell } from '@/app/components/GridCell'
 import { JourneyView } from '@/app/components/JourneyView'
+import { ChecklistItem } from '@/app/components/ChecklistItem'
 import { getJourneyProgress } from '@/lib/journey'
 import { captureProductEvent } from '@/lib/posthog'
 
 interface MandalartViewProps {
   data: MandalartData
+  planId?: string
   onReset: () => void
   onDataUpdate: (newData: MandalartData) => void
 }
 
 export const MandalartView: React.FC<MandalartViewProps> = ({
   data,
+  planId,
   onReset,
   onDataUpdate
 }) => {
@@ -46,7 +49,7 @@ export const MandalartView: React.FC<MandalartViewProps> = ({
     taskIndex: number
   } | null>(null)
   const [isExporting, setIsExporting] = useState(false)
-  const [viewMode, setViewMode] = useState<'matrix' | 'journey'>('matrix')
+  const [viewMode, setViewMode] = useState<'matrix' | 'journey'>('journey')
   const [openMobileAreaIndex, setOpenMobileAreaIndex] = useState<number | null>(
     null
   )
@@ -204,7 +207,10 @@ export const MandalartView: React.FC<MandalartViewProps> = ({
     }
 
     onDataUpdate(newData)
-    if (updatedTask.isCompleted && !task.isCompleted) captureProductEvent('task_completed')
+    if (updatedTask.isCompleted && !task.isCompleted) {
+      captureProductEvent('task_completed', { plan_id: planId || '', path: selectedTask.subGoalIndex + 1, task: selectedTask.taskIndex + 1 })
+      if (journeyProgress.completedTasks === 0) captureProductEvent('first_task_completed', { plan_id: planId || '' })
+    }
     setSelectedTask({ ...selectedTask, task: updatedTask })
   }
 
@@ -371,35 +377,7 @@ export const MandalartView: React.FC<MandalartViewProps> = ({
               <ul className="space-y-3">
                 {task.checklist.map(item => (
                   <li key={item.id}>
-                    <button
-                      type="button"
-                      aria-pressed={item.checked}
-                      onClick={() => handleToggleCheck(item.id)}
-                      className={`flex w-full items-start gap-3 p-3 text-left rounded-lg border transition-all cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 ${
-                        item.checked
-                          ? 'bg-green-50 border-green-200'
-                          : 'bg-white border-gray-100 hover:border-indigo-200'
-                      }`}
-                    >
-                      <span
-                        className={`mt-0.5 w-5 h-5 shrink-0 rounded border-2 flex items-center justify-center transition-colors ${
-                          item.checked
-                            ? 'bg-green-500 border-green-500'
-                            : 'border-gray-300'
-                        }`}
-                      >
-                        {item.checked && <CheckCircle2 size={14} className="text-white" />}
-                      </span>
-                      <span
-                        className={`text-sm ${
-                          item.checked
-                            ? 'text-green-800 line-through opacity-70'
-                            : 'text-gray-700'
-                        }`}
-                      >
-                        {item.text}
-                      </span>
-                    </button>
+                    <ChecklistItem checked={item.checked} text={item.text} onToggle={() => handleToggleCheck(item.id)} />
                   </li>
                 ))}
               </ul>
@@ -610,7 +588,6 @@ export const MandalartView: React.FC<MandalartViewProps> = ({
 
         <div className="w-full flex justify-between items-center mt-6 px-4">
           <div className="text-xs"><BrandLogo iconSize={20} /></div>
-          <div className="text-xs text-gray-400">Gerado com IA</div>
         </div>
       </div>
 

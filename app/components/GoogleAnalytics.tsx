@@ -1,11 +1,13 @@
 'use client'
 
 import { useEffect, useRef } from 'react'
+import { captureAttribution } from '@/lib/attribution'
 import { usePathname } from 'next/navigation'
 
 const MEASUREMENT_ID = 'G-P74HBXF5J7'
 const PRODUCTION_HOSTS = new Set(['mandalart.com.br', 'www.mandalart.com.br'])
-const pendingEvents: Array<[string, Record<string, string | number> | undefined]> = []
+type EventProperties = Record<string, string | number | Array<Record<string, string | number>>>
+const pendingEvents: Array<[string, EventProperties | undefined]> = []
 
 declare global {
   interface Window {
@@ -17,7 +19,7 @@ declare global {
 
 export function sendGoogleAnalyticsEvent(
   name: string,
-  properties?: Record<string, string | number>
+  properties?: EventProperties
 ) {
   if (!PRODUCTION_HOSTS.has(window.location.hostname)) return
   if (window.mandalartGaConfigured) {
@@ -53,7 +55,10 @@ export function GoogleAnalytics() {
 
     if (!window.mandalartGaConfigured) {
       window.gtag('js', new Date())
+      const attribution = captureAttribution()
       window.gtag('config', MEASUREMENT_ID, {
+        campaign_source: attribution.utm_source, campaign_medium: attribution.utm_medium,
+        campaign_name: attribution.utm_campaign, campaign_content: attribution.utm_content, campaign_term: attribution.utm_term,
         send_page_view: false,
         page_location: pageLocation,
         page_referrer: pageReferrer,

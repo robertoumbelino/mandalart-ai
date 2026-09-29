@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type Stripe from 'stripe'
+import { sendMetaPurchase } from './meta-capi'
 import {
   verifyCheckout,
   reconcileCheckout,
@@ -198,4 +199,20 @@ describe('trusted checkout fulfillment', () => {
     ).rejects.toThrow('Ambiente')
     expect(mocks.retrieve).not.toHaveBeenCalled()
   })
+})
+
+it.each([true, false])('sends a direct purchase to CAPI with the checkout consent %s, without requiring a lead', async consent => {
+  const guest = { ...order, user_id: 'existing-user', guest_email: 'delivered@resend.dev', preview_id: 'preview-id', lead_id: null, credits: 1 as const, amount: 3700, price_id: 'price_one', marketing_consent: consent, journey_version: 'conversion-v2' }
+  mocks.sql.mockImplementation(async (strings: TemplateStringsArray) => {
+    const query = strings.join('')
+    if (query.startsWith('SELECT *')) return [guest]
+    if (query.startsWith('SELECT status')) return [{ status: 'paid', credited: 1 }]
+    if (query.includes('SELECT session_id,attribution')) return [{ session_id: 'visitor' }]
+    return []
+  })
+  mocks.retrieve.mockResolvedValue({ ...session, client_reference_id: order.id, amount_total: 3700 })
+  mocks.lines.mockResolvedValue({ data: [{ quantity: 1, price: { id: 'price_one' }, amount_total: 3700 }] })
+  mocks.intent.mockResolvedValue({ status: 'succeeded', currency: 'brl', amount_received: 3700, latest_charge: null })
+  await reconcileCheckout(session.id)
+  expect(sendMetaPurchase).toHaveBeenCalledWith({ id: order.id, email: 'delivered@resend.dev', amount: 3700, consent })
 })

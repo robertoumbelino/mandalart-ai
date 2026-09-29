@@ -1,0 +1,630 @@
+{
+  "dream": "Mudar de carreira",
+  "context": "Já pesquisou opções, tem até uma hora por semana e quer avançar nos próximos três meses.",
+  "paths": [
+    {
+      "title": "Definir a profissão-alvo",
+      "description": "Transforma as possibilidades pesquisadas em uma direção inicial para orientar a mudança.",
+      "tasks": [
+        {
+          "title": "Escolher uma área para explorar",
+          "description": "Como você já pesquisou, organizar essas opções ajuda a sair da busca ampla e dar um passo concreto. A tarefa leva 20 minutos, adequada à sua rotina cheia e ao limite de até uma hora semanal.",
+          "checklist": [
+            "Reúna em uma nota até três profissões que você já pesquisou.",
+            "Escolha uma delas como foco inicial para explorar.",
+            "Anote uma pergunta específica sobre o trabalho nessa profissão."
+          ]
+        },
+        {
+          "title": "Definir critérios de escolha",
+          "description": "Estabeleça critérios pessoais para avaliar se essa profissão combina com o que você busca.",
+          "checklist": [
+            "Anote três aspectos importantes em um trabalho.",
+            "Inclua um critério sobre a rotina ou o formato de atuação.",
+            "Marque qual critério é indispensável para você."
+          ]
+        },
+        {
+          "title": "Buscar fontes confiáveis",
+          "description": "Localize fontes que expliquem a profissão e possam responder à sua pergunta inicial.",
+          "checklist": [
+            "Encontre uma fonte profissional ou institucional.",
+            "Encontre um relato de alguém que atue na área.",
+            "Registre os links e o que cada fonte pode esclarecer."
+          ]
+        },
+        {
+          "title": "Responder à pergunta inicial",
+          "description": "Consulte as fontes reunidas e registre o que descobriu sobre sua dúvida principal.",
+          "checklist": [
+            "Anote a resposta encontrada.",
+            "Registre o que ainda ficou sem resposta.",
+            "Indique a fonte usada para cada informação."
+          ]
+        },
+        {
+          "title": "Comparar com alternativas",
+          "description": "Compare a profissão em foco com até duas opções que já havia pesquisado.",
+          "checklist": [
+            "Liste as opções consideradas.",
+            "Avalie cada uma pelos critérios definidos.",
+            "Anote qual diferença mais pesa na comparação."
+          ]
+        },
+        {
+          "title": "Verificar pontos de atenção",
+          "description": "Identifique condições da profissão que podem influenciar sua decisão de explorá-la.",
+          "checklist": [
+            "Anote uma exigência ou barreira a investigar.",
+            "Registre uma possível vantagem relevante para você.",
+            "Formule uma pergunta sobre cada ponto ainda incerto."
+          ]
+        },
+        {
+          "title": "Escolher o foco seguinte",
+          "description": "Decida se mantém a profissão em foco ou se volta a comparar alternativas com base no que reuniu.",
+          "checklist": [
+            "Revise suas respostas e critérios.",
+            "Registre manter, comparar ou trocar o foco.",
+            "Anote o motivo da decisão."
+          ]
+        },
+        {
+          "title": "Definir o sinal de avanço",
+          "description": "Estabeleça uma evidência concreta que mostrará que a escolha está suficientemente fundamentada para seguir ao mapeamento do trabalho.",
+          "checklist": [
+            "Defina qual dúvida precisa estar respondida.",
+            "Registre quais fontes ou evidências serão suficientes.",
+            "Anote a próxima ação quando o sinal for alcançado."
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Mapear as atividades do trabalho",
+      "description": "Ajuda a entender o que se faz no dia a dia da profissão escolhida.",
+      "tasks": [
+        {
+          "title": "Listar tarefas da profissão",
+          "description": "Comece a mapear o cotidiano da profissão escolhida, reunindo atividades mencionadas em fontes confiáveis.",
+          "checklist": [
+            "Escolha uma fonte profissional sobre a área.",
+            "Anote três atividades descritas nessa fonte.",
+            "Registre o link junto à lista."
+          ]
+        },
+        {
+          "title": "Agrupar atividades semelhantes",
+          "description": "Organize as atividades encontradas em grupos para perceber as principais frentes do trabalho.",
+          "checklist": [
+            "Releia a lista inicial de atividades.",
+            "Crie até três grupos com nomes simples.",
+            "Associe cada atividade a um grupo."
+          ]
+        },
+        {
+          "title": "Separar rotina de exceções",
+          "description": "Investigue quais atividades parecem frequentes e quais dependem de situações específicas.",
+          "checklist": [
+            "Busque uma segunda fonte sobre a rotina.",
+            "Marque atividades recorrentes e ocasionais, se houver evidência.",
+            "Anote o que ainda não está claro sobre a frequência."
+          ]
+        },
+        {
+          "title": "Identificar entregas do trabalho",
+          "description": "Descubra quais resultados, produtos ou serviços costumam decorrer das atividades mapeadas.",
+          "checklist": [
+            "Localize uma descrição de resultados esperados na área.",
+            "Associe uma atividade a cada resultado identificado.",
+            "Registre entregas que apareceram em mais de uma fonte."
+          ]
+        },
+        {
+          "title": "Mapear interações profissionais",
+          "description": "Verifique com quem a pessoa costuma colaborar ou se comunicar durante essas atividades.",
+          "checklist": [
+            "Procure referências a colegas, clientes ou outras áreas.",
+            "Anote os interlocutores mencionados.",
+            "Associe cada interação à atividade correspondente."
+          ]
+        },
+        {
+          "title": "Entender ferramentas usadas",
+          "description": "Identifique ferramentas, sistemas ou recursos citados como parte da execução do trabalho.",
+          "checklist": [
+            "Consulte uma descrição de vaga ou perfil profissional.",
+            "Anote as ferramentas explicitamente mencionadas.",
+            "Marque as que aparecem em mais de uma fonte."
+          ]
+        },
+        {
+          "title": "Esboçar um dia de trabalho",
+          "description": "Monte um retrato provisório de como as atividades podem se distribuir em uma jornada típica.",
+          "checklist": [
+            "Selecione atividades recorrentes com evidência.",
+            "Ordene-as em uma sequência plausível, sem presumir horários.",
+            "Anote quais partes do retrato precisam de confirmação."
+          ]
+        },
+        {
+          "title": "Validar o mapa da rotina",
+          "description": "Compare seu esboço com uma fonte adicional ou com o relato de alguém da profissão e ajuste o que for necessário.",
+          "checklist": [
+            "Escolha uma forma viável de obter outra perspectiva.",
+            "Compare o relato com seu esboço de rotina.",
+            "Atualize o mapa e registre dúvidas que permanecem."
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Levantar competências necessárias",
+      "description": "Mostra quais conhecimentos e habilidades são importantes para atuar nessa área.",
+      "tasks": [
+        {
+          "title": "Listar competências exigidas",
+          "description": "Consulte uma fonte confiável sobre a profissão escolhida e registre as competências mencionadas.",
+          "checklist": [
+            "Abra a nota com a profissão escolhida e sua pergunta.",
+            "Consulte uma descrição de vaga ou perfil profissional.",
+            "Registre até cinco competências citadas."
+          ]
+        },
+        {
+          "title": "Separar tipos de competência",
+          "description": "Organize os requisitos encontrados em conhecimentos, habilidades práticas e atitudes profissionais.",
+          "checklist": [
+            "Copie os requisitos registrados.",
+            "Marque cada um como conhecimento, habilidade ou atitude.",
+            "Anote os itens que parecem caber em mais de uma categoria."
+          ]
+        },
+        {
+          "title": "Comparar fontes de informação",
+          "description": "Verifique se os requisitos aparecem em mais de uma fonte para distinguir padrões de exigências específicas.",
+          "checklist": [
+            "Consulte outra descrição de vaga ou perfil da área.",
+            "Marque os requisitos que se repetem.",
+            "Separe os requisitos que aparecem somente em uma fonte."
+          ]
+        },
+        {
+          "title": "Distinguir essencial e desejável",
+          "description": "Identifique quais competências parecem fundamentais para iniciar e quais são diferenciais.",
+          "checklist": [
+            "Procure termos como obrigatório, necessário ou diferencial.",
+            "Agrupe os requisitos conforme essa indicação.",
+            "Marque como incertos os itens sem indicação clara."
+          ]
+        },
+        {
+          "title": "Registrar evidências de exigência",
+          "description": "Associe cada competência relevante à fonte em que foi encontrada.",
+          "checklist": [
+            "Anote o nome ou endereço de cada fonte consultada.",
+            "Vincule cada requisito à fonte correspondente.",
+            "Destaque competências confirmadas em mais de uma fonte."
+          ]
+        },
+        {
+          "title": "Identificar lacunas de informação",
+          "description": "Registre o que ainda não está claro sobre os requisitos da profissão.",
+          "checklist": [
+            "Revise os requisitos marcados como incertos.",
+            "Escreva uma pergunta para cada dúvida importante.",
+            "Escolha a dúvida mais relevante para investigar depois."
+          ]
+        },
+        {
+          "title": "Priorizar competências para avaliar",
+          "description": "Ordene os requisitos conforme relevância para começar a atuar na profissão escolhida.",
+          "checklist": [
+            "Reúna os requisitos confirmados nas fontes.",
+            "Coloque primeiro os indicados como essenciais e recorrentes.",
+            "Separe os diferenciais para uma lista secundária."
+          ]
+        },
+        {
+          "title": "Fechar o mapa de competências",
+          "description": "Consolide os requisitos, suas fontes e as dúvidas restantes em um resumo consultável.",
+          "checklist": [
+            "Reúna competências essenciais e desejáveis.",
+            "Inclua as fontes associadas a cada grupo.",
+            "Registre as dúvidas que ainda precisam de resposta."
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Reconhecer habilidades transferíveis",
+      "description": "Identifica experiências e capacidades que podem ser úteis na nova profissão.",
+      "tasks": [
+        {
+          "title": "Reunir experiências anteriores",
+          "description": "Faça um inventário breve de trabalhos, estudos, projetos e responsabilidades que já teve.",
+          "checklist": [
+            "Liste funções ou responsabilidades que já exerceu.",
+            "Acrescente estudos, projetos ou atividades relevantes.",
+            "Anote uma ação concreta realizada em cada experiência."
+          ]
+        },
+        {
+          "title": "Registrar ações e resultados",
+          "description": "Descreva o que fez e o que aconteceu em experiências selecionadas.",
+          "checklist": [
+            "Escolha até três experiências do inventário.",
+            "Anote uma ação específica realizada em cada uma.",
+            "Registre o resultado ou contribuição, quando conhecido."
+          ]
+        },
+        {
+          "title": "Identificar capacidades usadas",
+          "description": "Extraia as capacidades demonstradas pelas ações registradas.",
+          "checklist": [
+            "Revise as ações anotadas.",
+            "Associe uma capacidade a cada ação.",
+            "Marque capacidades que aparecem em experiências diferentes."
+          ]
+        },
+        {
+          "title": "Relacionar capacidades aos requisitos",
+          "description": "Compare suas capacidades demonstradas com o mapa de competências da profissão.",
+          "checklist": [
+            "Abra o mapa de competências da profissão.",
+            "Associe capacidades próprias a requisitos relacionados.",
+            "Marque requisitos sem evidência correspondente."
+          ]
+        },
+        {
+          "title": "Guardar exemplos concretos",
+          "description": "Prepare exemplos curtos que mostrem como usou capacidades transferíveis.",
+          "checklist": [
+            "Escolha duas capacidades com correspondência relevante.",
+            "Descreva a situação em que cada uma foi usada.",
+            "Anote sua ação e o resultado conhecido."
+          ]
+        },
+        {
+          "title": "Distinguir evidência de hipótese",
+          "description": "Separe capacidades comprovadas por experiências de outras que ainda precisam ser testadas.",
+          "checklist": [
+            "Revise as capacidades associadas aos requisitos.",
+            "Marque as apoiadas por um exemplo concreto.",
+            "Identifique as que são apenas hipóteses por enquanto."
+          ]
+        },
+        {
+          "title": "Selecionar pontos fortes transferíveis",
+          "description": "Escolha capacidades relevantes que tenham evidências claras em sua trajetória.",
+          "checklist": [
+            "Revise os exemplos concretos registrados.",
+            "Selecione capacidades ligadas a requisitos importantes.",
+            "Anote a evidência que sustenta cada escolha."
+          ]
+        },
+        {
+          "title": "Consolidar o inventário transferível",
+          "description": "Organize capacidades, evidências e lacunas em um resumo para apoiar os próximos passos da mudança.",
+          "checklist": [
+            "Liste as capacidades transferíveis com evidência.",
+            "Inclua um exemplo concreto para cada uma.",
+            "Separe capacidades relevantes ainda sem evidência suficiente."
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Planejar o aprendizado",
+      "description": "Organiza formas viáveis de desenvolver o que ainda falta, respeitando sua disponibilidade.",
+      "tasks": [
+        {
+          "title": "Escolher uma lacuna prioritária",
+          "description": "Com a profissão-alvo e as competências necessárias identificadas, selecione uma lacuna para trabalhar primeiro.",
+          "checklist": [
+            "Revise a lista de competências necessárias.",
+            "Marque uma competência ainda não desenvolvida.",
+            "Anote por que ela é prioritária para começar."
+          ]
+        },
+        {
+          "title": "Definir um resultado de aprendizado",
+          "description": "Transforme a competência prioritária em algo observável que você consiga demonstrar.",
+          "checklist": [
+            "Escreva o que quer ser capaz de fazer.",
+            "Defina uma evidência concreta desse aprendizado.",
+            "Confira se o resultado cabe no seu limite semanal."
+          ]
+        },
+        {
+          "title": "Selecionar um recurso acessível",
+          "description": "Escolha um recurso que ensine diretamente o conteúdo ou a prática definidos.",
+          "checklist": [
+            "Busque um curso, guia ou material introdutório.",
+            "Verifique se aborda a competência escolhida.",
+            "Salve o recurso e anote o trecho inicial relevante."
+          ]
+        },
+        {
+          "title": "Reservar um bloco semanal",
+          "description": "Encaixe uma sessão curta de estudo ou prática na rotina existente.",
+          "checklist": [
+            "Identifique um espaço disponível na semana.",
+            "Reserve até 30 minutos para a sessão.",
+            "Anote um plano alternativo caso esse horário não funcione."
+          ]
+        },
+        {
+          "title": "Iniciar o estudo direcionado",
+          "description": "Estude apenas o conteúdo necessário para o resultado de aprendizado escolhido.",
+          "checklist": [
+            "Abra o recurso selecionado no ponto definido.",
+            "Estude ou pratique durante o bloco reservado.",
+            "Registre uma ideia ou procedimento aprendido."
+          ]
+        },
+        {
+          "title": "Aplicar em um exercício pequeno",
+          "description": "Use o que estudou em uma atividade simples relacionada à profissão-alvo.",
+          "checklist": [
+            "Defina uma tarefa prática curta.",
+            "Execute-a usando o conteúdo estudado.",
+            "Guarde o resultado ou anote o que conseguiu fazer."
+          ]
+        },
+        {
+          "title": "Revisar e identificar dúvidas",
+          "description": "Avalie o exercício para distinguir o que já avançou do que ainda precisa esclarecer.",
+          "checklist": [
+            "Compare o resultado com o objetivo definido.",
+            "Anote até três dúvidas concretas.",
+            "Escolha uma dúvida para investigar na próxima sessão."
+          ]
+        },
+        {
+          "title": "Atualizar o plano de aprendizado",
+          "description": "Use o que descobriu para decidir se continua, ajusta ou conclui este ciclo de aprendizado.",
+          "checklist": [
+            "Marque o que foi aprendido e aplicado.",
+            "Decida se a competência ainda é prioritária.",
+            "Defina o próximo resultado pequeno ou encerre o ciclo."
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Conhecer a realidade da área",
+      "description": "Permite reunir informações sobre caminhos de entrada e rotinas profissionais.",
+      "tasks": [
+        {
+          "title": "Consultar vagas da área",
+          "description": "Veja anúncios recentes para reconhecer funções e requisitos usados na prática.",
+          "checklist": [
+            "Busque vagas ligadas à profissão-alvo.",
+            "Salve até três anúncios relevantes.",
+            "Anote os cargos e requisitos que se repetem."
+          ]
+        },
+        {
+          "title": "Identificar caminhos de entrada",
+          "description": "Investigue como as pessoas costumam chegar às funções encontradas nos anúncios.",
+          "checklist": [
+            "Procure trajetórias profissionais em fontes confiáveis.",
+            "Anote experiências ou qualificações de entrada mencionadas.",
+            "Compare essas informações com os anúncios salvos."
+          ]
+        },
+        {
+          "title": "Observar a rotina profissional",
+          "description": "Reúna exemplos concretos das tarefas e responsabilidades do trabalho cotidiano.",
+          "checklist": [
+            "Busque entrevistas, relatos ou descrições do trabalho.",
+            "Registre três atividades recorrentes.",
+            "Anote uma atividade que ainda precise entender melhor."
+          ]
+        },
+        {
+          "title": "Investigar formatos de trabalho",
+          "description": "Verifique em que tipos de organização ou contexto a profissão é exercida.",
+          "checklist": [
+            "Procure exemplos de locais ou setores de atuação.",
+            "Registre modalidades de trabalho mencionadas.",
+            "Identifique quais parecem compatíveis com suas preferências, se já as conhece."
+          ]
+        },
+        {
+          "title": "Conversar com alguém da área",
+          "description": "Se for viável, peça uma conversa breve para esclarecer aspectos reais da profissão.",
+          "checklist": [
+            "Identifique uma pessoa ou grupo profissional acessível.",
+            "Envie uma mensagem curta explicando sua curiosidade.",
+            "Prepare duas perguntas sobre rotina e entrada na área."
+          ]
+        },
+        {
+          "title": "Conferir barreiras de entrada",
+          "description": "Investigue exigências formais ou práticas que possam condicionar o ingresso na profissão.",
+          "checklist": [
+            "Verifique se há registro, licença ou formação exigida.",
+            "Anote custos ou etapas mencionados, sem presumir que se aplicam a você.",
+            "Marque o que precisa ser confirmado com fonte confiável."
+          ]
+        },
+        {
+          "title": "Comparar relatos e fontes",
+          "description": "Cruze anúncios, descrições e relatos para distinguir padrões de informações pontuais.",
+          "checklist": [
+            "Liste os aspectos confirmados por mais de uma fonte.",
+            "Separe dados consistentes de relatos isolados.",
+            "Anote uma contradição que mereça investigação."
+          ]
+        },
+        {
+          "title": "Registrar a realidade da área",
+          "description": "Consolide o que descobriu para apoiar decisões futuras sobre aprendizado e transição.",
+          "checklist": [
+            "Resuma atividades e caminhos de entrada encontrados.",
+            "Registre exigências e pontos ainda incertos.",
+            "Anote como essas informações afetam seu interesse na profissão."
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Preparar a transição",
+      "description": "Estrutura etapas para avançar da situação atual em direção à nova profissão.",
+      "tasks": [
+        {
+          "title": "Registrar a situação atual",
+          "description": "Anote os compromissos profissionais que precisam ser considerados na transição.",
+          "checklist": [
+            "Anote sua situação de trabalho atual.",
+            "Liste compromissos que limitam mudanças de rotina.",
+            "Marque informações que ainda precisa confirmar."
+          ]
+        },
+        {
+          "title": "Definir um sinal de avanço",
+          "description": "Escolha uma evidência observável de que está avançando em direção à profissão-alvo.",
+          "checklist": [
+            "Escreva o que contará como avanço nos próximos três meses.",
+            "Escolha uma evidência que possa registrar.",
+            "Confira se ela depende de uma ação sua."
+          ]
+        },
+        {
+          "title": "Identificar limites da transição",
+          "description": "Separe condições que a mudança precisa respeitar de pontos que ainda estão em aberto.",
+          "checklist": [
+            "Registre condições pessoais já conhecidas.",
+            "Liste questões ainda sem resposta.",
+            "Diferencie limites confirmados de hipóteses."
+          ]
+        },
+        {
+          "title": "Escolher uma etapa seguinte",
+          "description": "Defina uma ação de transição baseada no que já aprendeu sobre a profissão-alvo.",
+          "checklist": [
+            "Consulte suas anotações sobre a profissão.",
+            "Escolha uma ação que aproxime você da mudança.",
+            "Anote o resultado esperado dessa ação."
+          ]
+        },
+        {
+          "title": "Reservar espaço na rotina",
+          "description": "Encontre um momento semanal possível para avançar sem ultrapassar o limite informado.",
+          "checklist": [
+            "Revise sua agenda da próxima semana.",
+            "Escolha um bloco de até uma hora.",
+            "Anote qual ação fará nesse bloco."
+          ]
+        },
+        {
+          "title": "Organizar pendências da transição",
+          "description": "Agrupe as informações e decisões ainda necessárias para preparar os próximos passos.",
+          "checklist": [
+            "Reúna dúvidas sobre a mudança.",
+            "Marque quais dúvidas precisam ser respondidas primeiro.",
+            "Escolha uma fonte apropriada para cada dúvida prioritária."
+          ]
+        },
+        {
+          "title": "Definir um marco de revisão",
+          "description": "Escolha quando revisar o plano durante o período de três meses.",
+          "checklist": [
+            "Anote uma data ou ocasião de revisão.",
+            "Separe o sinal de avanço definido para conferir.",
+            "Registre quais decisões poderão ser ajustadas."
+          ]
+        },
+        {
+          "title": "Montar o roteiro de transição",
+          "description": "Ordene as próximas ações considerando o que precisa ser conhecido ou decidido antes.",
+          "checklist": [
+            "Liste as ações escolhidas para a transição.",
+            "Ordene-as pelas dependências entre elas.",
+            "Indique a próxima ação que cabe na rotina."
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Consolidar a mudança",
+      "description": "Ajuda a acompanhar os avanços e ajustar o plano conforme surgirem informações e oportunidades.",
+      "tasks": [
+        {
+          "title": "Criar um registro de avanços",
+          "description": "Abra um registro único para guardar ações feitas e evidências relacionadas ao objetivo.",
+          "checklist": [
+            "Escolha onde manter o registro.",
+            "Anote o sinal de avanço definido.",
+            "Registre a primeira ação já realizada."
+          ]
+        },
+        {
+          "title": "Anotar aprendizados úteis",
+          "description": "Registre o que as ações revelaram sobre a profissão e sobre a viabilidade da mudança.",
+          "checklist": [
+            "Anote um fato novo sobre a profissão.",
+            "Registre uma impressão ou dúvida que surgiu.",
+            "Marque o que precisa de confirmação."
+          ]
+        },
+        {
+          "title": "Comparar avanço com o sinal",
+          "description": "Verifique se as evidências reunidas correspondem ao sinal de avanço escolhido.",
+          "checklist": [
+            "Releia o sinal de avanço.",
+            "Localize evidências correspondentes no registro.",
+            "Anote o que ainda falta observar."
+          ]
+        },
+        {
+          "title": "Atualizar decisões do plano",
+          "description": "Revise decisões sobre a transição à luz dos aprendizados já registrados.",
+          "checklist": [
+            "Identifique uma decisão anterior do plano.",
+            "Confira se os aprendizados continuam sustentando-a.",
+            "Registre manter, ajustar ou investigar melhor."
+          ]
+        },
+        {
+          "title": "Ajustar o próximo passo",
+          "description": "Escolha a próxima ação de acordo com o estágio atual e o tempo disponível.",
+          "checklist": [
+            "Consulte o roteiro de transição.",
+            "Escolha uma ação ainda pertinente.",
+            "Confirme que ela cabe em até uma hora semanal."
+          ]
+        },
+        {
+          "title": "Registrar obstáculos recorrentes",
+          "description": "Observe o que tem dificultado a continuidade e identifique um ajuste possível.",
+          "checklist": [
+            "Anote uma dificuldade observada.",
+            "Registre quando ou em que situação ocorreu.",
+            "Escolha um ajuste simples para testar."
+          ]
+        },
+        {
+          "title": "Revisar o período de três meses",
+          "description": "Ao final do período, reúna avanços, dúvidas e decisões para avaliar a direção escolhida.",
+          "checklist": [
+            "Releia o registro de avanços e aprendizados.",
+            "Compare as evidências com o sinal de avanço.",
+            "Anote o que apoiar, revisar ou investigar na sequência."
+          ]
+        },
+        {
+          "title": "Definir a continuidade",
+          "description": "Escolha o próximo foco da mudança profissional a partir da revisão realizada.",
+          "checklist": [
+            "Registre a principal conclusão da revisão.",
+            "Escolha um próximo foco coerente com essa conclusão.",
+            "Anote a primeira ação e o momento de retomá-la."
+          ]
+        }
+      ]
+    }
+  ]
+}

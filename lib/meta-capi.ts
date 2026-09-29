@@ -11,7 +11,7 @@ export async function sendMetaPurchase(order: { id: string; email: string; amoun
   const pixelId = process.env.META_PIXEL_ID || '975897138891298'
   const emailHash = createHash('sha256').update(order.email.trim().toLowerCase()).digest('hex')
   const response = await fetch(`https://graph.facebook.com/${version}/${pixelId}/events`, {
-    method: 'POST',
+    method: 'POST', signal: AbortSignal.timeout(5000),
     headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
     body: JSON.stringify({ data: [{
       event_name: 'Purchase', event_time: Math.floor(Date.now() / 1000),

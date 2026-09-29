@@ -125,9 +125,9 @@ describe('goal safety screening', () => {
   })
 })
 
-it('preserves the purchased preview pillars and first action when expanding it', async () => {
+it.each([[false, false, false], [true, false, true], [true, true, true]])('preserves purchased preview content and progress %j', async (...checked) => {
   const preview = {
-    title: 'Começar um novo idioma', introduction: 'Um caminho possível para estudar no seu ritmo.',
+    checked, title: 'Começar um novo idioma', introduction: 'Um caminho possível para estudar no seu ritmo.',
     pillars: Array.from({ length: 8 }, (_, i) => ({ title: `Pilar da prévia ${i + 1}`, description: 'Descrição original do pilar.' })),
     firstStep: { title: 'Meu primeiro passo original', description: 'A descrição do primeiro passo que foi apresentada na prévia.', minutes: 15, checklist: ['A'.repeat(150), 'Ação original dois', 'Ação original três'] }
   }
@@ -146,6 +146,9 @@ it('preserves the purchased preview pillars and first action when expanding it',
   expect(result.subGoals.map(p => p.title)).toEqual(preview.pillars.map(p => p.title))
   expect(result.subGoals[0].tasks[0].title).toBe(preview.firstStep.title)
   expect(result.subGoals[0].tasks[0].checklist.map(c => c.text)).toEqual(preview.firstStep.checklist)
+  expect(result.subGoals[0].tasks[0].checklist.map(c => c.checked)).toEqual(checked)
+  expect(result.subGoals[0].tasks[0].isCompleted).toBe(checked.every(Boolean))
+  expect(result.subGoals[0].tasks[1].checklist.every(c => !c.checked)).toBe(true)
   expect(result.subGoals.flatMap(p => p.tasks)).toHaveLength(64)
   expect(() => mandalartDataSchema.parse(result)).not.toThrow()
 })

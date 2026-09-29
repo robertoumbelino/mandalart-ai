@@ -112,7 +112,7 @@ export async function startDreamCheckout(
       client_reference_id: user.id,
       customer_email: user.email,
       branding_settings: {
-        display_name: 'Mandalart.AI',
+        display_name: 'Mandalart',
         background_color: '#f8fafc',
         button_color: '#6334ff',
         border_style: 'rounded',

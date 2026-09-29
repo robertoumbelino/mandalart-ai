@@ -6,7 +6,7 @@ import { getRefundableOrders } from '@/actions/refunds'
 import { RefundOptions } from './RefundOptions'
 
 export const metadata: Metadata = {
-  title: 'Garantia e reembolso | Mandalart.AI',
+  title: 'Garantia e reembolso | Mandalart',
   robots: { index: false, follow: false },
 }
 

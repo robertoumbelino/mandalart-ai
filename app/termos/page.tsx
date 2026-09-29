@@ -2,8 +2,8 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 
 export const metadata: Metadata = {
-  title: 'Termos de Uso | Mandalart.AI',
-  description: 'Termos aplicáveis ao uso do Mandalart.AI.'
+  title: 'Termos de Uso | Mandalart',
+  description: 'Termos aplicáveis ao uso do Mandalart.'
 }
 
 export default function TermsPage() {
@@ -11,7 +11,7 @@ export default function TermsPage() {
     <main className="min-h-screen bg-slate-50 px-6 py-12 text-slate-700">
       <article className="mx-auto max-w-3xl rounded-3xl border border-slate-100 bg-white p-8 shadow-sm sm:p-12">
         <Link href="/" className="text-sm font-bold text-indigo-600 hover:text-indigo-700">
-          ← Voltar ao Mandalart.AI
+          ← Voltar ao Mandalart
         </Link>
 
         <h1 className="mt-8 text-3xl font-black tracking-tight text-slate-900">Termos de Uso</h1>
@@ -21,14 +21,14 @@ export default function TermsPage() {
           <section>
             <h2 className="text-lg font-bold text-slate-900">1. Aceitação</h2>
             <p className="mt-2">
-              Ao usar o Mandalart.AI, inclusive ao comprar sem cadastrar uma senha, você concorda com estes Termos e com a nossa Política de Privacidade. Se não concordar, não utilize o serviço.
+              Ao usar o Mandalart, inclusive ao comprar sem cadastrar uma senha, você concorda com estes Termos e com a nossa Política de Privacidade. Se não concordar, não utilize o serviço.
             </p>
           </section>
 
           <section>
             <h2 className="text-lg font-bold text-slate-900">2. Finalidade do serviço</h2>
             <p className="mt-2">
-              O Mandalart.AI auxilia na organização de objetivos e planos de ação. As sugestões geradas por inteligência artificial podem conter imprecisões e devem ser avaliadas por você antes de qualquer decisão ou execução.
+              O Mandalart auxilia na organização de objetivos e planos de ação. As sugestões geradas por inteligência artificial podem conter imprecisões e devem ser avaliadas por você antes de qualquer decisão ou execução.
             </p>
           </section>
 
@@ -42,7 +42,7 @@ export default function TermsPage() {
           <section>
             <h2 className="text-lg font-bold text-slate-900">4. Seu conteúdo</h2>
             <p className="mt-2">
-              Você mantém os direitos sobre os objetivos e informações que inserir. Concede ao Mandalart.AI somente a autorização necessária para armazenar e processar esse conteúdo a fim de fornecer as funcionalidades solicitadas.
+              Você mantém os direitos sobre os objetivos e informações que inserir. Concede ao Mandalart somente a autorização necessária para armazenar e processar esse conteúdo a fim de fornecer as funcionalidades solicitadas.
             </p>
           </section>
 

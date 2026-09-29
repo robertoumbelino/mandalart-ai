@@ -26,13 +26,14 @@ export async function revokeEmailAccess() {
 
 export async function createEmailAccessSession(token: string, sessionToken: string) {
   const sql = getDb()
-  const [claimed] = await sql`UPDATE email_access_tokens SET consumed_at=now()
+  const [created] = await sql`WITH claimed AS (
+    UPDATE email_access_tokens SET consumed_at=now()
     WHERE token_hash=${tokenHash(token)} AND consumed_at IS NULL AND expires_at>now()
-    RETURNING user_id`
-  if (!claimed) return false
-  await sql`INSERT INTO email_access_sessions(user_id,token_hash,expires_at)
-    VALUES(${claimed.user_id}::uuid,${tokenHash(sessionToken)},now()+interval '30 days')`
-  return true
+    RETURNING user_id
+  ) INSERT INTO email_access_sessions(user_id,token_hash,expires_at)
+    SELECT user_id,${tokenHash(sessionToken)},now()+interval '30 days' FROM claimed
+    RETURNING id`
+  return Boolean(created)
 }
 
 export async function createPaidBrowserSession(userId: string, sessionToken: string) {

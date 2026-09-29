@@ -9,7 +9,7 @@ html {
   font-family: var(--font-poppins), ui-sans-serif, system-ui, sans-serif;
 }
 
-/* The original .AI wordmark is the source of the product's brand gradient. */
+/* Shared brand gradient, used on the "art" ending of the wordmark. */
 :root {
   --brand-start: var(--color-indigo-600);
   --brand-end: var(--color-purple-600);

@@ -2,6 +2,7 @@
 
 import bcrypt from 'bcryptjs'
 import { auth } from '@/lib/auth/server'
+import { readAuthAccounts, readAuthSession } from '@/lib/auth/reader'
 import { getDb } from '@/lib/db'
 import { credentialsSchema } from '@/lib/validation'
 import type { User } from '@/types'
@@ -54,7 +55,7 @@ const resolveUser = async (profile: AuthProfile): Promise<{ user: User; created:
   if (existingLink) return { user: toUser(existingLink), created: false }
 
   const sql = getDb()
-  const { data: accounts, error: accountsError } = await auth.listAccounts()
+  const { data: accounts, error: accountsError } = await readAuthAccounts()
   if (accountsError) throw new Error('Não foi possível verificar as identidades da conta.')
   const subject = accounts?.find(account => account.providerId === 'google')?.accountId
 
@@ -103,7 +104,7 @@ const resolveUser = async (profile: AuthProfile): Promise<{ user: User; created:
 }
 
 export const getCurrentUserWithCreation = async (): Promise<{ user: User; created: boolean } | null> => {
-  const { data: session, error } = await auth.getSession()
+  const { data: session, error } = await readAuthSession()
   if (error || !session?.user?.email) {
     const user = await getEmailAccessUser()
     return user ? { user, created: false } : null

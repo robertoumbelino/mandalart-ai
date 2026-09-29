@@ -1,7 +1,11 @@
 import { createHmac } from 'node:crypto'
 import { z } from 'zod'
 import { getDb } from '@/lib/db'
-import { sendSignInEmail } from '@/lib/transactional-email'
+import { sendRegistrationEmail } from '@/lib/transactional-email'
+import { registrationPending } from '@/lib/account-registration'
+import { auth } from '@/lib/auth/server'
+import { billingOrigin } from '@/lib/stripe'
+import { isSameOrigin } from '@/lib/request-origin'
 
 export const runtime = 'nodejs'
 
@@ -24,7 +28,7 @@ async function consumeLimit(key: string, max: number) {
 }
 
 export async function POST(request: Request) {
-  if (request.headers.get('origin') !== new URL(request.url).origin) return new Response(null, { status: 403 })
+  if (!isSameOrigin(request)) return new Response(null, { status: 403 })
   if (Number(request.headers.get('content-length') || 0) > 2000) return new Response(null, { status: 413 })
   const parsed = schema.safeParse(await request.json().catch(() => null))
   if (!parsed.success) return Response.json({ error: 'Informe um e-mail válido.' }, { status: 400 })
@@ -37,9 +41,15 @@ export async function POST(request: Request) {
   if (emailAllowed && ipAllowed) {
     const [user] = await getDb()`SELECT id FROM users WHERE lower(email)=${email} LIMIT 1`
     if (user) {
-      try { await sendSignInEmail(String(user.id), email) }
+      try {
+        if (await registrationPending(String(user.id))) await sendRegistrationEmail(String(user.id), email)
+        else {
+          const result = await auth.requestPasswordReset({ email, redirectTo: `${billingOrigin()}/redefinir-senha` })
+          if (result.error) throw new Error('Password recovery failed')
+        }
+      }
       catch { console.error('signin_email_failed', { userId: String(user.id) }) }
     }
   }
-  return Response.json({ ok: true, message: 'Se houver uma conta com esse e-mail, enviaremos um link de acesso.' }, { headers: { 'Cache-Control': 'private, no-store' } })
+  return Response.json({ ok: true, message: 'Se houver uma conta com esse e-mail, enviaremos as instruções para concluir o cadastro ou redefinir a senha.' }, { headers: { 'Cache-Control': 'private, no-store' } })
 }

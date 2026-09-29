@@ -7,13 +7,16 @@ import { DREAM_PACKS } from '@/lib/dream-packs'
 import { kiwifyCheckoutLink } from '@/lib/kiwify-checkout'
 import { kiwifyOnboardingEnabled } from '@/lib/kiwify'
 import { billingMode } from '@/lib/stripe'
+import { z } from 'zod'
+import { previewProgressSchema } from '@/lib/preview-progress'
 import { idSchema } from '@/lib/validation'
 import { cleanAttribution, type Attribution } from '@/lib/attribution'
 import { getPreviewSession } from '@/lib/onboarding-server'
 import { billingOrigin, getStripe } from '@/lib/stripe'
 
 // The preview itself is the product being purchased. No auth account exists yet.
-export async function startGuestCheckout(rawPreviewId: string, rawOrderId: string) {
+export async function startGuestCheckout(rawPreviewId: string, rawOrderId: string, rawContext: unknown = {}) {
+  const context = z.object({ checked: previewProgressSchema.optional(), marketingConsent: z.boolean().default(false), analyticsDistinctId: z.string().min(1).max(200).optional() }).parse(rawContext)
   const previewId = idSchema.parse(rawPreviewId)
   const orderId = idSchema.parse(rawOrderId)
   const sessionId = await getPreviewSession()
@@ -33,11 +36,12 @@ export async function startGuestCheckout(rawPreviewId: string, rawOrderId: strin
   if (!price) throw new Error('Checkout indisponível no momento.')
   const [count] = await sql`SELECT count(*)::int AS n FROM dream_orders WHERE preview_id=${previewId}::uuid AND created_at>now()-interval '1 hour'`
   if (Number(count.n) >= 10) throw new Error('Muitas tentativas. Aguarde um pouco antes de tentar de novo.')
-  await sql`INSERT INTO dream_orders(id,user_id,mode,credits,amount,price_id,lead_id,preview_id,guest_email,bump_price_id,attribution)
-    VALUES(${orderId}::uuid,NULL,${mode},1,3700,${price},${preview.lead_id || null}::uuid,${previewId}::uuid,${preview.email || null},${process.env.STRIPE_PRICE_BUMP || null},${JSON.stringify(cleanAttribution(preview.attribution))}::jsonb)
+  await sql`INSERT INTO dream_orders(id,user_id,mode,credits,amount,price_id,lead_id,preview_id,guest_email,bump_price_id,attribution,marketing_consent,journey_version,analytics_distinct_id)
+    VALUES(${orderId}::uuid,NULL,${mode},1,3700,${price},${preview.lead_id || null}::uuid,${previewId}::uuid,${preview.email || null},${process.env.STRIPE_PRICE_BUMP || null},${JSON.stringify(cleanAttribution(preview.attribution))}::jsonb,${context.marketingConsent},'conversion-v2',${context.analyticsDistinctId || null})
     ON CONFLICT DO NOTHING`
   const [order] = await sql`SELECT * FROM dream_orders WHERE id=${orderId}::uuid`
   if (!order || order.lead_id !== (preview.lead_id || null) || order.preview_id !== previewId || order.mode !== mode || order.price_id !== price || order.guest_email !== (preview.email || null)) throw new Error('Pedido inválido.')
+  if (context.checked) await sql`UPDATE onboarding_previews SET checked=${JSON.stringify(context.checked)}::jsonb WHERE id=${previewId}::uuid AND session_id=${sessionId}::uuid`
   const stripe = getStripe()
   if (order.session_id) {
     const previous = await stripe.checkout.sessions.retrieve(String(order.session_id))
@@ -64,8 +68,8 @@ export async function startGuestCheckout(rawPreviewId: string, rawOrderId: strin
     ...(bumpPrice ? { optional_items: [{ price: bumpPrice, quantity: 1 }] } : {}),
     payment_method_configuration: configuration,
     wallet_options: { link: { display: 'never' } },
-    branding_settings: { display_name: 'Mandalart.AI', background_color: '#f8fafc', button_color: '#6334ff', border_style: 'rounded', font_family: 'inter' },
-    custom_text: { submit: { message: 'Seu Mandalart completo para este sonho. Pagamento único, sem assinatura.' } },
+    branding_settings: { ...(process.env.STRIPE_BRAND_ICON ? { icon: { type: 'file' as const, file: process.env.STRIPE_BRAND_ICON } } : {}), display_name: 'Mandalart', background_color: '#f8fafc', button_color: '#6334ff', border_style: 'rounded', font_family: 'inter' },
+    custom_text: { submit: { message: '8 caminhos com ações, checklists e progresso salvo. Pagamento único · Garantia de 7 dias' } },
     metadata: { app: 'mandalart', order_id: orderId, source: 'comecar', ...cleanAttribution(preview.attribution) },
     payment_intent_data: { metadata: { app: 'mandalart', order_id: orderId } },
     success_url: `${origin}/compra?session_id={CHECKOUT_SESSION_ID}`,
@@ -73,8 +77,8 @@ export async function startGuestCheckout(rawPreviewId: string, rawOrderId: strin
   }, { idempotencyKey: `mandalart-guest-${orderId}` })
   if (!session.url) throw new Error('Não foi possível abrir o checkout.')
   await sql`UPDATE dream_orders SET session_id=${session.id} WHERE id=${orderId}::uuid`
-  await sql`INSERT INTO onboarding_events(session_id,lead_id,order_id,name,attribution)
-    VALUES(${sessionId}::uuid,${preview.lead_id || null}::uuid,${orderId}::uuid,'checkout_started',${JSON.stringify(cleanAttribution(preview.attribution))}::jsonb)`
+  await sql`INSERT INTO onboarding_events(session_id,lead_id,order_id,name,attribution,preview_id,properties)
+    VALUES(${sessionId}::uuid,${preview.lead_id || null}::uuid,${orderId}::uuid,'checkout_started',${JSON.stringify(cleanAttribution(preview.attribution))}::jsonb,${previewId}::uuid,'{"journey_version":"conversion-v2"}'::jsonb)`
   return { url: session.url }
 }
 

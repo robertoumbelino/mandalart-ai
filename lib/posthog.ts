@@ -1,12 +1,17 @@
 'use client'
 
 import posthog from 'posthog-js'
+import { isProductionAnalyticsOrigin } from './analytics-environment'
 
 export const POSTHOG_OPTOUT_KEY = 'mandalart.posthog-opt-out.v1'
 
 let initialized = false
 let userId: string | null = null
 let optedOut = false
+
+function isProductionBrowser() {
+  return typeof window !== 'undefined' && isProductionAnalyticsOrigin(window.location.origin)
+}
 
 function withoutQuery(value: unknown) {
   if (typeof value !== 'string') return value
@@ -19,6 +24,7 @@ function withoutQuery(value: unknown) {
 }
 
 export function startPostHog() {
+  if (!isProductionBrowser()) return false
   const token = process.env.NEXT_PUBLIC_POSTHOG_PROJECT_TOKEN
   const host = process.env.NEXT_PUBLIC_POSTHOG_HOST
   if (optedOut) return false
@@ -70,11 +76,7 @@ export function startPostHog() {
 
 export function captureProductEvent(name: string, properties?: Record<string, string | number>) {
   if (!startPostHog()) return false
-  const siteEnvironment = /^(www\.)?mandalart\.com\.br$/.test(window.location.hostname)
-    || window.location.hostname === 'mandalart-ai.vercel.app'
-    ? 'production'
-    : 'development'
-  posthog.capture(name, { ...properties, site_environment: siteEnvironment })
+  posthog.capture(name, { ...properties, site_environment: 'production', journey_version: 'conversion-v2' })
   return true
 }
 
@@ -90,6 +92,7 @@ export function stopPostHog() {
 export function resumePostHog() {
   optedOut = false
   try { localStorage.removeItem(POSTHOG_OPTOUT_KEY) } catch {}
+  if (!isProductionBrowser()) return
   if (initialized) {
     posthog.opt_in_capturing()
     posthog.startSessionRecording()
@@ -99,13 +102,18 @@ export function resumePostHog() {
 
 export function identifyProductUser(id: string) {
   userId = id
-  if (initialized && !optedOut) posthog.identify(id)
+  if (isProductionBrowser() && initialized && !optedOut) posthog.identify(id)
 }
 
 export function resetProductUser() {
   userId = null
-  if (initialized) {
+  if (isProductionBrowser() && initialized) {
     posthog.reset()
     if (optedOut) posthog.opt_out_capturing()
   }
+}
+
+export function getProductDistinctId(): string | undefined {
+  if (!startPostHog()) return undefined
+  return posthog.get_distinct_id()
 }

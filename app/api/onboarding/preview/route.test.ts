@@ -43,8 +43,15 @@ describe('public preview route', () => {
     expect(response.headers.get('cache-control')).toContain('no-store')
     expect(preparePreview).toHaveBeenCalledWith(
       { ...answers, customDream: '' },
-      { ref: 'affiliate' }
+      { ref: 'affiliate' },
+      undefined
     )
+  })
+  it('passes the quiz attempt to generation so restarts do not restore old progress', async () => {
+    const attemptId = '00000000-0000-4000-8000-000000000001'
+    vi.mocked(preparePreview).mockResolvedValue({ status: 'blocked', category: 'illegal' })
+    expect((await POST(request(JSON.stringify({ answers, attemptId })))).status).toBe(200)
+    expect(preparePreview).toHaveBeenCalledWith({ ...answers, customDream: '' }, {}, attemptId)
   })
   it('rejects cross-origin requests before invoking any generation', async () => {
     expect(

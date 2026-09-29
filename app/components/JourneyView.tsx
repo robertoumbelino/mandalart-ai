@@ -112,7 +112,7 @@ export const JourneyView: React.FC<JourneyViewProps> = ({
           className="inline-flex min-h-11 items-center gap-2 rounded-full border border-slate-200 bg-white/90 px-4 text-sm font-bold text-slate-600 shadow-sm backdrop-blur transition hover:border-indigo-200 hover:text-indigo-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
         >
           <ArrowLeft size={17} />
-          Voltar para a matriz
+          Ver Mandala completa
         </button>
 
         <div className="mt-9 grid gap-8 lg:grid-cols-[1fr_auto] lg:items-end">

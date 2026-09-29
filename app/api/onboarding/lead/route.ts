@@ -1,25 +1,23 @@
+import { isSameOrigin } from '@/lib/request-origin'
 import { z } from 'zod'
 import { getDb } from '@/lib/db'
 import { getPreviewSession } from '@/lib/onboarding-server'
 import { answersSchema } from '@/lib/onboarding'
 import { cleanAttribution } from '@/lib/attribution'
 import { sendPreviewAndScheduleRecovery } from '@/lib/transactional-email'
-import { allowedLocalEmailRecipient, localEmailTestMode } from '@/lib/email-testing'
 
 export const runtime = 'nodejs'
 
 const schema = z.object({ email: z.email().max(254), previewId: z.uuid(), answers: answersSchema, attribution: z.record(z.string(), z.unknown()).optional(), marketingConsent: z.boolean().optional() })
 
 export async function POST(request: Request) {
-  if (request.headers.get('origin') !== new URL(request.url).origin) return Response.json({ error: 'Origem inválida.' }, { status: 403 })
+  if (!isSameOrigin(request)) return Response.json({ error: 'Origem inválida.' }, { status: 403 })
   if (Number(request.headers.get('content-length') || 0) > 10_000) return new Response(null, { status: 413 })
   try {
     const parsed = schema.safeParse(await request.json())
     if (!parsed.success) return Response.json({ error: 'Confira o e-mail e suas respostas.' }, { status: 400 })
     const sessionId = await getPreviewSession()
     const email = parsed.data.email.trim().toLowerCase()
-    if (localEmailTestMode() && !allowedLocalEmailRecipient(email))
-      return Response.json({ error: 'No local, use delivered@resend.dev. O Resend simula a entrega sem enviar para uma pessoa.' }, { status: 400 })
     const sql = getDb()
     const [preview] = await sql`SELECT id FROM onboarding_previews
       WHERE id=${parsed.data.previewId}::uuid AND session_id=${sessionId}::uuid
@@ -36,8 +34,8 @@ export async function POST(request: Request) {
         VALUES(${sessionId}::uuid,${email},${JSON.stringify(parsed.data.answers)}::jsonb,${JSON.stringify(attribution)}::jsonb,${parsed.data.marketingConsent === true},${parsed.data.previewId}::uuid,now())
         RETURNING id`
       lead = created
-      await sql`INSERT INTO onboarding_events(session_id,lead_id,name,attribution)
-        VALUES(${sessionId}::uuid,${lead.id}::uuid,'email_captured',${JSON.stringify(attribution)}::jsonb)`
+      await sql`INSERT INTO onboarding_events(session_id,lead_id,name,attribution,preview_id,properties)
+        VALUES(${sessionId}::uuid,${lead.id}::uuid,'email_captured',${JSON.stringify(attribution)}::jsonb,${parsed.data.previewId}::uuid,'{"journey_version":"conversion-v2"}'::jsonb)`
     }
     try { await sendPreviewAndScheduleRecovery(String(lead.id)) }
     catch { console.error('preview_email_schedule_failed', { leadId: String(lead.id) }) }

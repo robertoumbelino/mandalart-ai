@@ -305,11 +305,12 @@ export const attributionSchema = z.object(
 )
 export const previewRequestSchema = z.object({
   answers: answersSchema,
+  attemptId: z.uuid().optional(),
   attribution: attributionSchema.default({})
 })
 
 export type PreviewResponse =
-  | { status: 'ready'; id: string; preview: OnboardingPreview }
+  | { status: 'ready'; id: string; preview: OnboardingPreview; checked?: boolean[]; timings?: { totalMs: number; aiMs: number; backendMs: number; cached: boolean } }
   | { status: 'blocked'; category: 'illegal' | 'self-harm' }
   | { status: 'error'; message: string; retryAfter?: number }
 
@@ -317,6 +318,7 @@ export const DRAFT_STORAGE_KEY = 'mandalart.begin.v1'
 export const DRAFT_LIFETIME = 7 * 24 * 60 * 60 * 1000
 export const draftSchema = z.object({
   version: z.literal(1),
+  attemptId: z.uuid().optional(),
   savedAt: z.number(),
   screen: z.enum(['welcome', 'questions', 'email', 'generating', 'preview', 'blocked']),
   question: z.number().int().min(0).max(5),

@@ -5,7 +5,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import { track } from '@vercel/analytics'
 import { sendGoogleAnalyticsEvent } from '@/app/components/GoogleAnalytics'
-import { captureProductEvent } from '@/lib/posthog'
+import { captureProductEvent, getProductDistinctId } from '@/lib/posthog'
 import { captureAttribution } from '@/lib/attribution'
 import { trackMetaEvent } from '@/lib/meta-events'
 import { MARKETING_CONSENT_KEY } from '@/lib/marketing-consent'
@@ -39,7 +39,10 @@ import {
   type OnboardingDraft,
   type PreviewResponse
 } from '@/lib/onboarding'
-import { DreamIcon, HeroArtwork, MandalaBloom } from './Visuals'
+import { ProductDemo, ProductMethod } from '@/app/components/ProductDemo'
+import { previewProgress } from '@/lib/preview-progress'
+import { clearOnboardingDraft, purchasedPreview, PURCHASED_PREVIEWS_KEY } from '@/lib/onboarding-storage'
+import { DreamIcon, MandalaBloom } from './Visuals'
 import { BrandLogo } from '@/app/components/Brand'
 import { Preview } from './Preview'
 
@@ -88,45 +91,45 @@ const QUESTION_COPY = [
     eyebrow: 'UM ESPAÇO PARA O QUE IMPORTA',
     title: 'Onde você quer ver a vida florescer?',
     description: 'Escolha a área que mais importa para você agora.',
-    reassurance: 'Não precisa mudar tudo. Um sonho de cada vez.'
+    reassurance: 'A área orienta quais caminhos fazem sentido para o seu objetivo.'
   },
   {
     eyebrow: 'VAMOS DAR UM NOME A ESSE SONHO',
     title: 'O que você gostaria de realizar?',
     description: 'Escolha o sonho que mais combina com o seu momento.',
-    reassurance: 'Pode ser grande, pequeno ou só seu. O sonho é seu.'
+    reassurance: 'Seu objetivo conecta os oito caminhos e cada ação do plano.'
   },
   {
     eyebrow: 'TODO COMEÇO TEM SEU VALOR',
     title: 'Como está esse sonho hoje?',
     description: 'Não existe resposta certa. Vamos partir de onde você está.',
-    reassurance: 'Você não precisa estar pronto. Só precisa de um começo.'
+    reassurance: 'Seu momento define por onde começar, sem ignorar o que você já fez.'
   },
   {
     eyebrow: 'UM POUCO MAIS DE CLAREZA',
     title: 'O que torna o próximo passo mais difícil?',
     description: 'Escolha o que mais pesa hoje. Vamos levar isso em conta.',
-    reassurance: 'Um bom plano também respeita o que é difícil.'
+    reassurance: 'O primeiro passo leva em conta o que está dificultando seu avanço.'
   },
   {
     eyebrow: 'UM PLANO QUE CABE NA VIDA',
     title: 'Quanto tempo cabe na sua semana?',
     description: 'Pense na sua rotina de verdade, não na semana perfeita.',
-    reassurance: 'Pequenos passos, repetidos com carinho, também levam longe.'
+    reassurance: 'Sua disponibilidade orienta o tamanho das ações para começar.'
   },
   {
     eyebrow: 'O SEU TEMPO, O SEU CAMINHO',
     title: 'Quando você quer ver os primeiros avanços?',
     description:
       'Esse período orienta o começo. Não é uma cobrança para realizar tudo.',
-    reassurance: 'Seu sonho não precisa de pressa. Precisa de espaço.'
+    reassurance: 'Esse horizonte orienta os primeiros avanços; não é uma promessa de resultado.'
   }
 ]
 
 function analytics(name: string, properties?: Record<string, string | number>) {
   let leadId = ''
   try { leadId = sessionStorage.getItem('mandalart.lead_id') || '' } catch {}
-  const enriched = { ...captureAttribution(), ...(leadId ? { lead_id: leadId } : {}), ...properties }
+  const enriched = { journey_version: 'conversion-v2', ...captureAttribution(), ...(leadId ? { lead_id: leadId } : {}), ...properties }
   captureProductEvent(name, enriched)
   try {
     track(name, enriched)
@@ -152,6 +155,8 @@ export function Onboarding() {
   const [blocked, setBlocked] = useState<'illegal' | 'self-harm'>('illegal')
   const [dialog, setDialog] = useState<'restart' | null>(null)
   const [slow, setSlow] = useState(false)
+  const [generationMessage, setGenerationMessage] = useState(0)
+  const progressQueue = useRef<Promise<unknown>>(Promise.resolve())
   const dialogRef = useRef<HTMLDialogElement>(null)
   const customRef = useRef<HTMLTextAreaElement>(null)
   const requestRef = useRef<AbortController | null>(null)
@@ -165,17 +170,22 @@ export function Onboarding() {
       try {
         const raw = localStorage.getItem(DRAFT_STORAGE_KEY)
         if (raw) restored = restoreDraft(JSON.parse(raw))
+        if (purchasedPreview(restored?.result?.id)) {
+          clearOnboardingDraft()
+          restored = null
+        }
       } catch {
         setStorageAvailable(false)
       }
       const initial = restored || {
         ...EMPTY,
+        attemptId: crypto.randomUUID(),
         attribution: {},
         savedAt: Date.now()
       }
       initial.attribution = { ...initial.attribution, ...captureAttribution() }
       const state = window.history.state?.mandalartBegin
-      if (state && ['welcome', 'questions', 'email', 'preview'].includes(state.screen)) {
+      if (restored && state && ['welcome', 'questions', 'email', 'preview'].includes(state.screen)) {
         if (state.screen === 'welcome') initial.screen = 'welcome'
         else if (state.screen === 'email') {
           initial.screen = initial.result ? 'preview' : 'questions'
@@ -194,6 +204,12 @@ export function Onboarding() {
           )
         }
       }
+      const directStart = new URLSearchParams(window.location.search).get('iniciar') === '1' && initial.screen === 'welcome'
+      if (directStart) {
+        initial.screen = initial.result ? 'preview' : 'questions'
+        const missing = answerFields.findIndex((_, index) => !isStepComplete(initial.answers, index))
+        initial.question = missing < 0 ? 5 : missing
+      }
       setDraft(initial)
       window.history.replaceState(
         {
@@ -204,13 +220,18 @@ export function Onboarding() {
       )
       setHydrated(true)
       analytics('landing_view')
-      void fetch('/api/onboarding/event', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: 'landing_view', attribution: initial.attribution }) }).catch(() => {})
+      if (directStart && !initial.result) {
+        analytics('quiz_started')
+      }
+      void fetch('/api/onboarding/event', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: 'landing_view', attribution: initial.attribution }) }).then(() => {
+        if (directStart && !initial.result) return fetch('/api/onboarding/event', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: 'quiz_started', attribution: initial.attribution }) })
+      }).catch(() => {})
       if (new URLSearchParams(window.location.search).has('retomar')) {
         void fetch('/api/onboarding/restore').then(response => response.json()).then(result => {
           if (result.status !== 'ready') return
           const answers = answersSchema.parse(result.answers)
           const preview = previewSchema.parse(result.preview)
-          setDraft(current => ({ ...current, answers, attribution: result.attribution || {}, leadId: result.leadId, result: { id: result.id, preview, answersKey: answersKey(answers) }, screen: 'preview', question: 5 }))
+          setDraft(current => ({ ...current, answers, attribution: result.attribution || {}, leadId: result.leadId, result: { id: result.id, preview, answersKey: answersKey(answers) }, checked: previewProgress(result.checked), screen: 'preview', question: 5 }))
           try { sessionStorage.setItem('mandalart.lead_id', result.leadId) } catch {}
           window.history.replaceState({ ...window.history.state, mandalartBegin: { screen: 'preview', question: 5 } }, '', '/comecar')
         }).catch(() => {})
@@ -255,6 +276,36 @@ export function Onboarding() {
   }, [])
 
   useEffect(() => {
+    function resetPurchased() {
+      if (!purchasedPreview(draft.result?.id)) return
+      requestRef.current?.abort()
+      if (advanceRef.current) clearTimeout(advanceRef.current)
+      busyRef.current = false
+      viewedPreviewRef.current = null
+      setEmail('')
+      setEmailError('')
+      setError('')
+      setDialog(null)
+      const attemptId = crypto.randomUUID()
+      setDraft(current => {
+        if (!purchasedPreview(current.result?.id)) return current
+        return { ...EMPTY, attemptId, screen: 'questions', question: 0, attribution: current.attribution, savedAt: Date.now() }
+      })
+    }
+    function onStorage(event: StorageEvent) {
+      if (event.key === PURCHASED_PREVIEWS_KEY) resetPurchased()
+    }
+    window.addEventListener('storage', onStorage)
+    window.addEventListener('pageshow', resetPurchased)
+    window.addEventListener('focus', resetPurchased)
+    return () => {
+      window.removeEventListener('storage', onStorage)
+      window.removeEventListener('pageshow', resetPurchased)
+      window.removeEventListener('focus', resetPurchased)
+    }
+  }, [draft.result?.id])
+
+  useEffect(() => {
     if (!hydrated) return
     captureProductEvent('screen_view', {
       screen: `onboarding_${draft.screen}`,
@@ -267,12 +318,12 @@ export function Onboarding() {
     if (viewedPreviewRef.current === draft.result.id) return
     viewedPreviewRef.current = draft.result.id
     trackMetaEvent({ name: 'ViewContent', onceKey: `preview.${draft.result.id}`, eventId: `preview-${draft.result.id}` })
-    analytics('preview_viewed', { lead_id: draft.leadId || '' })
-    void fetch('/api/onboarding/event', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: 'preview_viewed', leadId: draft.leadId || undefined, attribution: draft.attribution }) }).catch(() => {})
+    analytics('preview_viewed', { preview_id: draft.result.id, lead_id: draft.leadId || '' })
+    void fetch('/api/onboarding/event', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: 'preview_viewed', previewId: draft.result.id, leadId: draft.leadId || undefined, attribution: draft.attribution }) }).catch(() => {})
   }, [draft.screen, draft.result, draft.leadId, draft.attribution, hydrated])
 
   useEffect(() => {
-    if (!hydrated) return
+    if (!hydrated || purchasedPreview(draft.result?.id)) return
     try {
       localStorage.setItem(
         DRAFT_STORAGE_KEY,
@@ -282,6 +333,21 @@ export function Onboarding() {
       queueMicrotask(() => setStorageAvailable(false))
     }
   }, [draft, hydrated])
+
+  function restartFromBeginning() {
+    requestRef.current?.abort()
+    if (advanceRef.current) clearTimeout(advanceRef.current)
+    busyRef.current = false
+    viewedPreviewRef.current = null
+    clearOnboardingDraft()
+    setEmail('')
+    setEmailError('')
+    setError('')
+    setDialog(null)
+    setDraft({ ...EMPTY, attemptId: crypto.randomUUID(), screen: 'questions', question: 0, attribution: draft.attribution, savedAt: Date.now() })
+    window.history.replaceState({ ...window.history.state, mandalartBegin: { screen: 'questions', question: 0 } }, '', '/comecar?iniciar=1')
+    window.scrollTo({ top: 0, behavior: 'instant' })
+  }
 
   useEffect(() => {
     if (!hydrated) return
@@ -301,8 +367,10 @@ export function Onboarding() {
 
   useEffect(() => {
     if (draft.screen !== 'generating') return
-    const timer = setTimeout(() => setSlow(true), 15_000)
-    return () => clearTimeout(timer)
+    const second = setTimeout(() => setGenerationMessage(1), 3000)
+    const third = setTimeout(() => setGenerationMessage(2), 7000)
+    const timer = setTimeout(() => setSlow(true), 20_000)
+    return () => { clearTimeout(second); clearTimeout(third); clearTimeout(timer) }
   }, [draft.screen])
 
   const navigate = useCallback(
@@ -374,6 +442,10 @@ export function Onboarding() {
     requestRef.current = controller
     const timeout = setTimeout(() => controller.abort('timeout'), 85_000)
     setSlow(false)
+    setGenerationMessage(0)
+    // Event handler: this clock measures the request, never a render.
+    // eslint-disable-next-line react-hooks/purity
+    const requestedAt = performance.now()
     navigate('generating', 5)
     analytics('begin_preview_requested')
     try {
@@ -382,6 +454,7 @@ export function Onboarding() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           answers: parsed.data,
+          attemptId: draft.attemptId,
           attribution: draft.attribution
         }),
         signal: controller.signal
@@ -397,10 +470,11 @@ export function Onboarding() {
             preview,
             answersKey: answersKey(parsed.data)
           },
-          checked: [false, false, false]
+          checked: previewProgress(result.checked)
         }))
         navigate('preview', 5, true)
-        analytics('begin_preview_ready')
+        // eslint-disable-next-line react-hooks/purity -- request completion inside an event handler
+        analytics('begin_preview_ready', { preview_id: result.id, request_ms: Math.round(performance.now() - requestedAt), ai_ms: result.timings?.aiMs || 0, backend_ms: result.timings?.backendMs || 0, cached: result.timings?.cached ? 1 : 0 })
       } else if (result.status === 'blocked') {
         setBlocked(result.category)
         navigate('blocked', 1, true)
@@ -432,7 +506,7 @@ export function Onboarding() {
   function next(event: React.FormEvent) {
     event.preventDefault()
     if (!isStepComplete(draft.answers, draft.question)) return
-    analytics('begin_question_completed', { step: draft.question + 1 })
+    analytics('quiz_question', { question: draft.question + 1 })
     void fetch('/api/onboarding/event', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: 'quiz_question', properties: { question: draft.question + 1 }, attribution: draft.attribution }) }).catch(() => {})
     if (draft.question === 5) {
       analytics('quiz_completed')
@@ -450,8 +524,9 @@ export function Onboarding() {
       )
       navigate('questions', missing < 0 ? 5 : missing)
     }
-    analytics('quiz_started')
-    void fetch('/api/onboarding/event', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: 'quiz_started', attribution: draft.attribution }) }).catch(() => {})
+    const name = draft.result ? 'preview_resumed' : 'quiz_started'
+    analytics(name)
+    void fetch('/api/onboarding/event', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name, attribution: draft.attribution }) }).catch(() => {})
   }
 
   async function captureEmail(event: React.FormEvent) {
@@ -469,7 +544,7 @@ export function Onboarding() {
       if (!response.ok) throw new Error(result.error || 'Não foi possível guardar seu e-mail.')
       setDraft(current => ({ ...current, leadId: result.id }))
       try { sessionStorage.setItem('mandalart.lead_id', result.id) } catch {}
-      analytics('email_captured', { lead_id: result.id })
+      analytics('email_captured', { lead_id: result.id, preview_id: draft.result.id })
       trackMetaEvent({ name: 'Lead', onceKey: `lead.${result.id}`, eventId: `lead-${result.id}` })
     } catch (cause) {
       setEmailError(cause instanceof Error ? cause.message : 'Tente novamente.')
@@ -483,11 +558,15 @@ export function Onboarding() {
       const orderId = crypto.randomUUID()
       analytics('unlock_clicked', { lead_id: draft.leadId || '' })
       void fetch('/api/onboarding/event', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: 'unlock_clicked', leadId: draft.leadId || undefined, attribution: draft.attribution }) }).catch(() => {})
-      const result = await startGuestCheckout(draft.result.id, orderId)
-      analytics('checkout_started', { lead_id: draft.leadId || '' })
+      await progressQueue.current
+      let marketingConsent = false
+      try { marketingConsent = localStorage.getItem(MARKETING_CONSENT_KEY) === 'accepted' } catch {}
+      const result = await startGuestCheckout(draft.result.id, orderId, { checked: draft.checked, marketingConsent, analyticsDistinctId: getProductDistinctId() })
+      analytics('checkout_started', { order_id: orderId, preview_id: draft.result.id, lead_id: draft.leadId || '' })
       trackMetaEvent({ name: 'InitiateCheckout', data: { value: 37, currency: 'BRL' }, onceKey: `checkout.${orderId}`, eventId: `checkout-${orderId}` })
       window.location.assign(result.url)
     } catch (cause) {
+      analytics('checkout_error', { preview_id: draft.result.id })
       setError(cause instanceof Error ? cause.message : 'Não foi possível abrir o checkout.')
       setCheckoutBusy(false)
     }
@@ -509,14 +588,14 @@ export function Onboarding() {
   const isPreview = draft.screen === 'preview' && !!draft.result
 
   return (
-    <div className={`begin-shell ${isPreview ? 'has-preview' : ''}`}>
+    <div className={`begin-shell ${isPreview ? 'has-preview' : ''} ${draft.screen === 'questions' ? 'has-questions' : ''} ${draft.screen === 'generating' ? 'has-generation' : ''}`}>
       <a href="#begin-main" className="begin-skip">
         Pular para o conteúdo
       </a>
       <header className="begin-header">
         <button
           className="begin-brand"
-          aria-label="Mandalart.AI — ir ao início"
+          aria-label="Mandalart — ir ao início"
           onClick={() => {
             requestRef.current?.abort()
             busyRef.current = false
@@ -550,16 +629,15 @@ export function Onboarding() {
                 <span className="eyebrow-star">✦</span> O SEU PRÓXIMO CAPÍTULO
               </span>
               <h1 tabIndex={-1} data-step-heading>
-                Seu sonho merece
+                Saiba por onde começar.
                 <br />
-                <em>um primeiro passo.</em>
+                <em>E como continuar.</em>
               </h1>
               <p className="hero-description">
-                Aquela ideia que não sai da cabeça. Aquela vontade guardada.
-                Vamos encontrar um jeito de começar?
+                Você entra com um sonho. Sai com um caminho estruturado para executar.
               </p>
               <p className="hero-invitation">
-                6 perguntas simples. Um começo com a sua cara.
+                Responda 6 perguntas e experimente seu primeiro passo, de graça.
               </p>
               <button
                 className="begin-primary hero-cta"
@@ -568,7 +646,7 @@ export function Onboarding() {
               >
                 {started
                   ? 'Continuar meu caminho'
-                  : 'Descobrir meu primeiro passo'}
+                  : 'Ver meu primeiro passo grátis'}
                 <ArrowRight size={19} />
               </button>
               <div className="hero-trust">
@@ -580,7 +658,7 @@ export function Onboarding() {
                 </span>
               </div>
               <p className="hero-fineprint">
-                O planner completo é pago. Sem assinatura.
+                Plano completo por R$37 · pagamento único · garantia de 7 dias.
               </p>
               {started && (
                 <button
@@ -591,7 +669,7 @@ export function Onboarding() {
                 </button>
               )}
             </div>
-            <HeroArtwork />
+            <ProductDemo compact />
           </section>
           <section className="welcome-how" aria-label="Como funciona">
             <div className="how-heading">
@@ -624,6 +702,8 @@ export function Onboarding() {
               </li>
             </ol>
           </section>
+          <ProductMethod />
+          <button className="begin-primary" style={{ margin: '24px auto', display: 'flex' }} disabled={!hydrated} onClick={resume}>{started ? 'Continuar meu caminho' : 'Ver meu primeiro passo grátis'} <ArrowRight size={19} /></button>
           <p className="welcome-note">
             <Heart size={15} strokeWidth={1.5} /> Um espaço para sonhar com os
             pés no chão.
@@ -690,6 +770,7 @@ export function Onboarding() {
                   {copy.title}
                 </h1>
                 <p id="question-description">{copy.description}</p>
+                <p className="question-purpose">{copy.reassurance}</p>
               </div>
               <fieldset
                 className={`question-options ${draft.question === 0 ? 'category-options' : ''}`}
@@ -798,7 +879,7 @@ export function Onboarding() {
           <p role="status" aria-live="polite">
             {slow
               ? 'Estamos levando um pouco mais de tempo para preparar sua prévia. Suas respostas estão aqui.'
-              : 'Estamos preparando uma prévia com o seu objetivo, o seu momento e o tempo que você tem.'}
+              : ['Analisando seu momento', 'Organizando suas respostas na estrutura do seu Mandalart', 'Montando seu primeiro caminho'][generationMessage]}
           </p>
           <div className="generation-dream">
             <LoaderCircle className="begin-spinner" size={17} />
@@ -825,16 +906,22 @@ export function Onboarding() {
           preview={draft.result!.preview}
           answers={answersSchema.parse(draft.answers)}
           checked={draft.checked}
-          onCheck={(index) => {
-            setDraft((current) => ({
-              ...current,
-              checked: current.checked.map((value, i) =>
-                i === index ? !value : value
-              )
-            }))
-            analytics('begin_first_step_interaction')
+          previewId={draft.result!.id}
+          onViewed={(name) => {
+            analytics(name, { preview_id: draft.result!.id, lead_id: draft.leadId || '' })
+            void fetch('/api/onboarding/event', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name, previewId: draft.result!.id, leadId: draft.leadId || undefined, attribution: draft.attribution }) }).catch(() => {})
           }}
-          onEdit={() => navigate('questions', 0)}
+          onCheck={(index) => {
+            const checked = draft.checked.map((value, i) => i === index ? !value : value)
+            setDraft(current => ({ ...current, checked }))
+            // Serialize writes so rapid toggles cannot arrive out of order.
+            progressQueue.current = progressQueue.current.catch(() => {}).then(() => fetch('/api/onboarding/progress', {
+              method: 'POST', headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ previewId: draft.result!.id, checked }), keepalive: true,
+            })).catch(() => {})
+            analytics(checked.every(Boolean) ? 'preview_first_step_completed' : 'begin_first_step_interaction', { preview_id: draft.result!.id })
+          }}
+          onRestart={restartFromBeginning}
           onCheckout={checkout}
           checkoutBusy={checkoutBusy}
           checkoutError={error}
@@ -932,12 +1019,7 @@ export function Onboarding() {
             className="begin-primary"
             onClick={() => {
               if (dialog === 'restart') {
-                setDraft({
-                  ...EMPTY,
-                  attribution: draft.attribution,
-                  savedAt: Date.now()
-                })
-                navigate('questions', 0, true)
+                restartFromBeginning()
               }
               setDialog(null)
             }}

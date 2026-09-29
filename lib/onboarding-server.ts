@@ -1,4 +1,6 @@
 import 'server-only'
+import { after } from 'next/server'
+import { previewProgress } from '@/lib/preview-progress'
 import { createHmac, randomUUID } from 'node:crypto'
 import jwt from 'jsonwebtoken'
 import { cookies, headers } from 'next/headers'
@@ -136,15 +138,17 @@ export async function generatePreview(
 
 export async function preparePreview(
   answers: OnboardingAnswers,
-  attribution: Record<string, unknown>
+  attribution: Record<string, unknown>,
+  attemptId?: string
 ): Promise<PreviewResponse> {
+  const startedAt = performance.now()
   const sql = getDb()
   const sessionId = await getPreviewSession()
   const inputHash = createHmac('sha256', secret())
-    .update(answersKey(answers))
+    .update(attemptId ? `${answersKey(answers)}:${attemptId}` : answersKey(answers))
     .digest('hex')
   const cached = await sql`
-    SELECT id, preview FROM onboarding_previews
+    SELECT id, preview, checked FROM onboarding_previews
     WHERE session_id = ${sessionId} AND input_hash = ${inputHash} AND status = 'ready' AND expires_at > NOW()
   `
   if (cached[0]) {
@@ -152,7 +156,7 @@ export async function preparePreview(
     if (parsed.success) {
       await sql`UPDATE onboarding_leads SET preview_id=${cached[0].id}::uuid, updated_at=now()
         WHERE session_id=${sessionId}::uuid AND answers=${JSON.stringify(answers)}::jsonb AND preview_id IS NULL`
-      return { status: 'ready', id: String(cached[0].id), preview: parsed.data }
+      return { status: 'ready', id: String(cached[0].id), preview: parsed.data, checked: previewProgress(cached[0].checked), timings: { totalMs: Math.round(performance.now() - startedAt), aiMs: 0, backendMs: Math.round(performance.now() - startedAt), cached: true } }
     }
   }
 
@@ -183,7 +187,7 @@ export async function preparePreview(
   const reserved = await sql`
     INSERT INTO onboarding_previews (session_id, input_hash, answers, attribution)
     VALUES (${sessionId}, ${inputHash}, ${JSON.stringify(answers)}::jsonb, ${JSON.stringify(attribution)}::jsonb)
-    ON CONFLICT (session_id, input_hash) DO UPDATE SET status = 'generating', updated_at = NOW(), expires_at = NOW() + INTERVAL '7 days'
+    ON CONFLICT (session_id, input_hash) DO UPDATE SET status = 'generating', checked = '[false,false,false]'::jsonb, updated_at = NOW(), expires_at = NOW() + INTERVAL '7 days'
     WHERE onboarding_previews.status = 'failed'
       OR onboarding_previews.expires_at <= NOW()
       OR (onboarding_previews.status = 'generating' AND onboarding_previews.updated_at < NOW() - INTERVAL '2 minutes')
@@ -198,7 +202,9 @@ export async function preparePreview(
     }
   const id = String(reserved[0].id)
   try {
+    const aiStartedAt = performance.now()
     const result = await generatePreview(answers)
+    const aiMs = Math.round(performance.now() - aiStartedAt)
     if (result.status === 'blocked') {
       await sql`DELETE FROM onboarding_previews WHERE id = ${id}`
       return result
@@ -206,11 +212,18 @@ export async function preparePreview(
     await sql`UPDATE onboarding_previews SET status = 'ready', preview = ${JSON.stringify(result.preview)}::jsonb, updated_at = NOW() WHERE id = ${id}`
     await sql`UPDATE onboarding_leads SET preview_id=${id}::uuid, updated_at=now()
       WHERE session_id=${sessionId}::uuid AND answers=${JSON.stringify(answers)}::jsonb AND preview_id IS NULL`
-    // Expired anonymous previews have no purchase attached and are never reused.
-    await sql`DELETE FROM onboarding_previews p WHERE p.expires_at <= NOW()
-      AND NOT EXISTS (SELECT 1 FROM dream_orders o WHERE o.preview_id=p.id AND o.paid=true)`
-    await sql`DELETE FROM onboarding_rate_limits WHERE resets_at <= NOW()`
-    return { status: 'ready', id, preview: result.preview }
+    // Maintenance must neither delay a ready preview nor turn success into failure.
+    after(async () => {
+      try {
+        await sql`DELETE FROM onboarding_previews p WHERE p.expires_at <= NOW()
+          AND NOT EXISTS (SELECT 1 FROM dream_orders o WHERE o.preview_id=p.id AND o.paid=true)`
+        await sql`DELETE FROM onboarding_rate_limits WHERE resets_at <= NOW()`
+      } catch { console.error('onboarding_cleanup_failed') }
+    })
+    const totalMs = Math.round(performance.now() - startedAt)
+    const timings = { totalMs, aiMs, backendMs: Math.max(0, totalMs - aiMs), cached: false }
+    console.info('onboarding_preview_timing', { previewId: id, ...timings })
+    return { status: 'ready', id, preview: result.preview, checked: [false, false, false], timings }
   } catch (error) {
     await sql`UPDATE onboarding_previews SET status = 'failed', updated_at = NOW() WHERE id = ${id}`
     // Never log the prompt, customer answers, provider payload, or credentials.

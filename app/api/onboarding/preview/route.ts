@@ -45,7 +45,8 @@ export async function POST(request: Request) {
       )
     const result = await preparePreview(
       parsed.data.answers,
-      parsed.data.attribution
+      parsed.data.attribution,
+      parsed.data.attemptId
     )
     return NextResponse.json(result, {
       headers: { 'Cache-Control': 'private, no-store' }

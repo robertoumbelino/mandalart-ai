@@ -1,9 +1,9 @@
 import 'server-only'
-import { randomBytes, createHash } from 'node:crypto'
+import { randomBytes, createHash, createHmac } from 'node:crypto'
 import { getDb } from '@/lib/db'
 import { billingOrigin } from '@/lib/stripe'
 import { createLeadLink, createUnsubscribeLink } from '@/lib/lead-link'
-import { allowedLocalEmailRecipient, localEmailTestMode } from '@/lib/email-testing'
+import { emailDeliveryRecipient, localEmailTestMode } from '@/lib/email-testing'
 
 const digest = (token: string) => createHash('sha256').update(token).digest('hex')
 const escape = (value: string) => value.replace(/[&<>"']/g, character => ({
@@ -11,15 +11,15 @@ const escape = (value: string) => value.replace(/[&<>"']/g, character => ({
 })[character]!)
 
 async function sendEmail(to: string, subject: string, html: string, options?: { scheduledAt?: string; idempotencyKey?: string }) {
-  if (localEmailTestMode() && !allowedLocalEmailRecipient(to))
-    throw new Error('No ambiente local, use somente um endereço de teste do Resend.')
+  const recipient = emailDeliveryRecipient(to)
+  const deliverySubject = localEmailTestMode() ? `[TESTE LOCAL: ${to}] ${subject}` : subject
   const key = process.env.RESEND_API_KEY
   const from = process.env.TRANSACTIONAL_EMAIL_FROM
   if (!key || !from) throw new Error('Envio de e-mail não configurado.')
   const response = await fetch('https://api.resend.com/emails', {
     method: 'POST',
     headers: { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json', ...(options?.idempotencyKey ? { 'Idempotency-Key': options.idempotencyKey } : {}) },
-    body: JSON.stringify({ from, to: [to], subject, html, ...(options?.scheduledAt ? { scheduled_at: options.scheduledAt } : {}) }),
+    body: JSON.stringify({ from, to: [recipient], subject: deliverySubject, html, ...(options?.scheduledAt ? { scheduled_at: options.scheduledAt } : {}) }),
   })
   if (!response.ok) throw new Error(`Falha ao enviar e-mail: HTTP ${response.status}`)
   const result = await response.json() as { id?: string }
@@ -30,24 +30,30 @@ async function sendEmail(to: string, subject: string, html: string, options?: { 
 export async function sendAccessEmail(orderId: string, userId: string, email: string) {
   if (!process.env.RESEND_API_KEY || !process.env.TRANSACTIONAL_EMAIL_FROM)
     throw new Error('Envio de e-mail não configurado.')
-  const token = randomBytes(32).toString('base64url')
+  const secret = process.env.JWT_SECRET
+  if (!secret || secret.length < 32) throw new Error('JWT_SECRET não configurado.')
+  // The provider idempotency key and its payload must stay identical on retry.
+  const token = createHmac('sha256', secret).update(`purchase-access:${orderId}:${userId}`).digest('base64url')
   const hash = digest(token)
   await getDb()`INSERT INTO email_access_tokens(user_id,token_hash,expires_at)
-    VALUES(${userId}::uuid,${hash},now()+interval '48 hours')`
-  const url = `${billingOrigin()}/api/access/redeem?token=${encodeURIComponent(token)}`
-  await sendEmail(email, 'Seu Mandalart está liberado', `<div style="font-family:Arial,sans-serif;max-width:520px;margin:auto;color:#25304b"><h1>Seu Mandalart está liberado</h1><p>Seu pagamento foi confirmado. Use o botão abaixo para abrir sua conta e continuar seu sonho, sem senha.</p><p><a href="${escape(url)}" style="display:inline-block;padding:14px 22px;border-radius:10px;background:#6334ff;color:white;text-decoration:none">Abrir meu Mandalart</a></p><p>Este link funciona por 48 horas e pode ser usado uma vez. Se você não solicitou esta compra, ignore a mensagem.</p></div>`, { idempotencyKey: `access-${orderId}` })
+    VALUES(${userId}::uuid,${hash},now()+interval '48 hours') ON CONFLICT(token_hash) DO NOTHING`
+  const [order] = await getDb()`SELECT amount,credits FROM dream_orders WHERE id=${orderId}::uuid AND user_id=${userId}::uuid`
+  if (!order) throw new Error('Compra não encontrada.')
+  const price = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(Number(order.amount) / 100)
+  const url = `${billingOrigin()}/finalizar-cadastro?token=${encodeURIComponent(token)}`
+  await sendEmail(email, 'Compra confirmada — conclua seu cadastro no Mandalart', `<div style="font-family:Arial,sans-serif;max-width:520px;margin:auto;color:#25304b"><h1>Compra confirmada!</h1><p>Recebemos seu pagamento de <strong>${escape(price)}</strong> por ${Number(order.credits)} Mandalart${Number(order.credits) === 1 ? '' : 's'}. Pagamento único, sem assinatura.</p><p>Seu objetivo está salvo. Confirme seu e-mail e crie sua senha para abrir seu plano e continuar sempre que quiser.</p><p><a href="${escape(url)}" style="display:inline-block;padding:14px 22px;border-radius:10px;background:linear-gradient(90deg,#5335ff,#9815ff);color:white;text-decoration:none">Concluir meu cadastro</a></p><p>Já tem uma conta? <a href="${escape(`${billingOrigin()}/?entrar=1&continuar=sonho`)}">Entre com seu acesso habitual</a>. Sua compra fica vinculada ao e-mail usado no pagamento.</p><p>O link de cadastro funciona por 48 horas e pode ser usado uma vez. Se expirar, solicite outro em <a href="${escape(`${billingOrigin()}/acessar`)}">Concluir cadastro</a>.</p></div>`, { idempotencyKey: `purchase-registration-${orderId}` })
   await getDb()`UPDATE dream_orders SET access_email_sent_at=now(),access_email_sending_at=NULL WHERE id=${orderId}::uuid AND user_id=${userId}::uuid`
 }
 
-export async function sendSignInEmail(userId: string, email: string) {
+export async function sendRegistrationEmail(userId: string, email: string) {
   if (!process.env.RESEND_API_KEY || !process.env.TRANSACTIONAL_EMAIL_FROM)
     throw new Error('Envio de e-mail não configurado.')
   const token = randomBytes(32).toString('base64url')
   const hash = digest(token)
   await getDb()`INSERT INTO email_access_tokens(user_id,token_hash,expires_at)
     VALUES(${userId}::uuid,${hash},now()+interval '48 hours')`
-  const url = `${billingOrigin()}/api/access/redeem?token=${encodeURIComponent(token)}`
-  await sendEmail(email, 'Seu link de acesso ao Mandalart', `<div style="font-family:Arial,sans-serif;max-width:520px;margin:auto;color:#25304b"><h1>Volte ao seu Mandalart</h1><p>Use este link para entrar sem senha e continuar seus planos.</p><p><a href="${escape(url)}" style="display:inline-block;padding:14px 22px;border-radius:10px;background:#6334ff;color:white;text-decoration:none">Acessar meu Mandalart</a></p><p>O link funciona por 48 horas e pode ser usado uma vez. Se você não pediu este acesso, ignore a mensagem.</p></div>`, { idempotencyKey: `signin-${hash}` })
+  const url = `${billingOrigin()}/finalizar-cadastro?token=${encodeURIComponent(token)}`
+  await sendEmail(email, 'Conclua seu cadastro no Mandalart', `<div style="font-family:Arial,sans-serif;max-width:520px;margin:auto;color:#25304b"><h1>Seu plano está esperando por você</h1><p>Confirme seu e-mail e crie uma senha para concluir seu cadastro. Sua compra e seu objetivo continuam salvos.</p><p><a href="${escape(url)}" style="display:inline-block;padding:14px 22px;border-radius:10px;background:linear-gradient(90deg,#5335ff,#9815ff);color:white;text-decoration:none">Concluir meu cadastro</a></p><p>O link funciona por 48 horas e pode ser usado uma vez. Se você não pediu este e-mail, ignore a mensagem.</p></div>`, { idempotencyKey: `registration-${hash}` })
 }
 
 function previewHtml(subject: string, url: string, extra: string, unsubscribeUrl: string) {

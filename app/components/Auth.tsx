@@ -54,9 +54,9 @@ export const Auth: React.FC<AuthProps> = ({ onLogin, onBack, goal, initialMode =
     setMessage(null)
     try {
       if (mode === 'forgot') {
-        const { error: authError } = await authClient.requestPasswordReset({ email, redirectTo: `${window.location.origin}/redefinir-senha` })
-        if (authError) throw new Error(authError.message)
-        setMessage('Se houver uma conta com esse e-mail, enviaremos um link para definir sua senha.')
+        const response = await fetch('/api/access/request', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email }) })
+        if (!response.ok) throw new Error('Não foi possível solicitar o e-mail. Tente novamente.')
+        setMessage('Se houver uma conta com esse e-mail, enviaremos as instruções para definir sua senha ou concluir seu cadastro.')
         return
       }
       await (mode === 'login' ? login : register)(email, password)
@@ -76,7 +76,7 @@ export const Auth: React.FC<AuthProps> = ({ onLogin, onBack, goal, initialMode =
   return (
     <main className="auth-screen">
       <header className="auth-header">
-        {onBack ? <button type="button" onClick={onBack} className="auth-brand" aria-label="Mandalart.AI, início"><BrandLogo iconSize={28} /></button> : <Link href="/" className="auth-brand" aria-label="Mandalart.AI, início"><BrandLogo iconSize={28} /></Link>}
+        {onBack ? <button type="button" onClick={onBack} className="auth-brand" aria-label="Mandalart, início"><BrandLogo iconSize={28} /></button> : <Link href="/" className="auth-brand" aria-label="Mandalart, início"><BrandLogo iconSize={28} /></Link>}
         {onBack && <button type="button" onClick={onBack} className="auth-back"><ArrowLeft size={17} /> Voltar ao início</button>}
       </header>
 
@@ -135,7 +135,6 @@ export const Auth: React.FC<AuthProps> = ({ onLogin, onBack, goal, initialMode =
           </form>
 
           {mode === 'login' && <button type="button" onClick={() => selectMode('forgot')} className="auth-forgot">Esqueci minha senha</button>}
-          {mode === 'login' && <Link href="/acessar" className="auth-forgot auth-access-link">Comprei sem senha · receber link de acesso</Link>}
           <p className="auth-legal">Ao continuar, você concorda com os <Link href="/termos">Termos de Uso</Link> e a <Link href="/privacidade">Política de Privacidade</Link>.</p>
         </section>
       </div>

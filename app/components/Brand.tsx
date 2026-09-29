@@ -22,7 +22,7 @@ export function BrandIcon({
 export function BrandWordmark() {
   return (
     <span className="brand-wordmark">
-      Mandalart<span className="brand-text">.AI</span>
+      Mandal<span className="brand-text">art</span>
     </span>
   )
 }

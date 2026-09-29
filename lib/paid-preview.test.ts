@@ -41,7 +41,7 @@ beforeEach(() => {
   mocks.sql.mockResolvedValue([{ answers, preview }])
 })
 it('loads the authoritative preview scoped to the signed visitor session', async () => {
-  expect(await loadPaidPreview(id, answers.dream, visitor)).toEqual(preview)
+  expect(await loadPaidPreview(id, answers.dream, visitor)).toEqual({ ...preview, checked: [false, false, false] })
   const [sql, ...values] = mocks.sql.mock.calls[0]
   expect(sql.join('')).toContain('session_id=')
   expect(sql.join('')).toContain("p.status='ready'")
@@ -58,4 +58,9 @@ it('rejects a preview for another dream', async () => {
   await expect(loadPaidPreview(id, 'Outro objetivo', visitor)).rejects.toThrow(
     'Prévia indisponível',
   )
+})
+
+it('restores the first-step checks from the authoritative purchased preview', async () => {
+  mocks.sql.mockResolvedValue([{ answers, preview, checked: [true, false, true] }])
+  expect((await loadPaidPreview(id, answers.dream, visitor)).checked).toEqual([true, false, true])
 })

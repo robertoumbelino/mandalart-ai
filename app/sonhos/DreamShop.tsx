@@ -233,7 +233,7 @@ export function DreamShop() {
   return (
     <main className="dream-shop">
       <header className="shop-header">
-        <Link href="/" aria-label="Mandalart.AI, início">
+        <Link href="/" aria-label="Mandalart, início">
           <BrandLogo iconSize={28} />
         </Link>
         <Link

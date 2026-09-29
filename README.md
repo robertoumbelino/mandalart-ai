@@ -1,4 +1,4 @@
-# Mandalart.AI
+# Mandalart
 
 Aplicação que transforma um objetivo em uma matriz Mandalart 9×9: 8 subobjetivos, cada um com 8 tarefas e checklists acionáveis.
 

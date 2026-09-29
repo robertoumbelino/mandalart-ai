@@ -142,6 +142,10 @@
   margin-inline: auto;
 }
 
+.home-content > .product-method {
+  max-width: none;
+}
+
 .home-hero {
   min-height: 640px;
   display: grid;
@@ -220,6 +224,16 @@
 }
 
 .home-visitor-card p svg { flex: none; color: #5d47e8; }
+
+.home-final-cta {
+  max-width: 500px;
+  margin: 28px auto 0;
+  text-align: center;
+}
+
+.home-final-cta p {
+  justify-content: center;
+}
 
 .home-screen-member .home-hero {
   min-height: 580px;
@@ -971,4 +985,13 @@
   .home-art-note {
     left: -5px;
   }
+}
+
+/* Keep the entry action above the fold even when the interactive example grows. */
+.home-screen-visitor .home-hero { align-items: start; }
+@media (min-width: 901px) {
+  .home-screen-visitor .home-hero-copy { padding-top: 28px; }
+}
+@media (max-width: 900px) {
+  .home-screen-visitor .home-hero > .product-demo { margin-top: 24px; }
 }

@@ -12,12 +12,13 @@ import {
   interviewAnswerSchema,
 } from '@/lib/validation'
 import type { GoalProposal, InterviewAnswer, MandalartData } from '@/types'
+import { previewProgress } from '@/lib/preview-progress'
 import type { OnboardingPreview } from '@/lib/onboarding'
 
 export const buildMandalartData = async (
   rawGoal: string,
   rawAnswers: InterviewAnswer[],
-  preview?: OnboardingPreview,
+  preview?: OnboardingPreview & { checked?: boolean[] },
   rawProposal?: GoalProposal,
 ): Promise<MandalartData> => {
   const mainGoal = goalSchema.parse(rawGoal)
@@ -160,6 +161,7 @@ export const buildMandalartData = async (
     })),
   })
 
+  const checked = previewProgress(preview?.checked)
   return {
     mainGoal: generated.mainGoal,
     subGoals: generated.subGoals.map((subGoal, pillarIndex) => ({
@@ -180,14 +182,14 @@ export const buildMandalartData = async (
           preview && pillarIndex === 0 && taskIndex === 0
             ? `Reserve cerca de ${preview.firstStep.minutes} minutos e avance uma ação de cada vez.`
             : task.advice,
-        isCompleted: false,
+        isCompleted: Boolean(preview && pillarIndex === 0 && taskIndex === 0 && checked.every(Boolean)),
         checklist: (preview && pillarIndex === 0 && taskIndex === 0
           ? preview.firstStep.checklist
           : task.checklist
-        ).map((text) => ({
+        ).map((text, checkIndex) => ({
           id: crypto.randomUUID(),
           text,
-          checked: false,
+          checked: Boolean(preview && pillarIndex === 0 && taskIndex === 0 && checked[checkIndex]),
         })),
       })),
     })),

@@ -1,10 +1,7 @@
 import React from 'react';
 import type { Metadata } from 'next';
 import localFont from 'next/font/local';
-import { Analytics } from '@vercel/analytics/next';
-import { GoogleAnalytics } from './components/GoogleAnalytics';
-import { MetaPixel } from './components/MetaPixel';
-import { PostHogAnalytics } from './components/PostHogAnalytics';
+import { SiteAnalytics } from './components/SiteAnalytics';
 import './globals.css';
 
 export const maxDuration = 180;
@@ -25,9 +22,9 @@ const poppins = localFont({
 });
 
 export const metadata: Metadata = {
-  title: 'Mandalart.AI - Transforme sonhos em planos de ação',
-  description: 'Sua estratégia começa aqui. Transforme sonhos vagos em planos de ação concretos com IA.',
-  applicationName: 'Mandalart.AI',
+  title: 'Mandalart - Transforme sonhos em planos de ação',
+  description: 'Transforme seu objetivo em 8 caminhos e ações práticas, personalizados a partir das suas respostas. Experimente seu primeiro passo grátis.',
+  applicationName: 'Mandalart',
 };
 
 export default function RootLayout({
@@ -39,10 +36,7 @@ export default function RootLayout({
     <html lang="pt-BR" className={poppins.variable}>
       <body>
         {children}
-        <Analytics />
-        <GoogleAnalytics />
-        <MetaPixel />
-        <PostHogAnalytics />
+        <SiteAnalytics />
       </body>
     </html>
   );

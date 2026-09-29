@@ -13,5 +13,6 @@ export default async function HomePage({ searchParams }: { searchParams: SearchP
     for (const value of Array.isArray(values) ? values : values ? [values] : [])
       params.append(key, value)
   }
+  params.set('iniciar', '1')
   return <HomeApp loginIntent={loginIntent} initialVisitor={!user} onboardingHref={`/comecar${params.size ? `?${params}` : ''}`} />
 }

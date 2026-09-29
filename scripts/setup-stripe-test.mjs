@@ -10,13 +10,14 @@ let product = products.data.find(
 )
 product ||= await stripe.products.create(
   {
-    name: 'Sonhos Mandalart.AI',
+    name: 'Sonhos Mandalart',
     description:
-      'Cada sonho cria um planner completo: 8 pilares, 64 ações e 192 próximos passos. Compra avulsa, sem assinatura.',
+      '8 caminhos, 64 tarefas com checklists e progresso salvo para um objetivo. Pagamento único · Garantia de 7 dias',
     metadata: { app: 'mandalart', kind: 'dream_credits' },
   },
   { idempotencyKey: 'mandalart-dream-product-v1' },
 )
+await stripe.products.update(product.id, { description: '8 caminhos, 64 tarefas com checklists e progresso salvo para um objetivo. Pagamento único · Garantia de 7 dias' })
 let env = await readFile('.env.local', 'utf8')
 const set = (name, value) => {
   env = env.replace(new RegExp('^' + name + '=.*\\n?', 'm'), '')

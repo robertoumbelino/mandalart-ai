@@ -20,6 +20,9 @@ import { DRAFT_STORAGE_KEY, restoreDraft, answersSchema, getAnswerContext } from
 import { getJourneyProgress } from '@/lib/journey';
 import { DREAM_PACKS } from '@/lib/dream-packs';
 import { getPurchasedPreviewContext } from '@/actions/purchased-preview';
+import { sendGoogleAnalyticsEvent } from './components/GoogleAnalytics'
+import { captureAttribution } from '@/lib/attribution'
+import { ProductDemo, ProductMethod } from './components/ProductDemo'
 import { CAREER_PLAN } from '@/lib/example-plan';
 import './home.css';
 
@@ -94,6 +97,13 @@ export default function Home({ loginIntent = false, initialVisitor = false, onbo
     data: MandalartData;
   } | null>(null);
   const mandalartUpdateInFlightRef = useRef(false);
+  const openedPlanRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (step !== 'result' || !currentMandalartId || openedPlanRef.current === currentMandalartId) return;
+    openedPlanRef.current = currentMandalartId;
+    captureProductEvent('plan_opened', { plan_id: currentMandalartId, preview_id: previewId || '' });
+  }, [step, currentMandalartId, previewId]);
+
 
   useEffect(() => {
     let active = true;
@@ -620,7 +630,7 @@ export default function Home({ loginIntent = false, initialVisitor = false, onbo
       <header className="home-header">
         <div className="home-header-inner">
           {step === 'input' ? (
-            <div className="home-header-brand" aria-label="Mandalart.AI"><BrandLogo iconSize={28} /></div>
+            <div className="home-header-brand" aria-label="Mandalart"><BrandLogo iconSize={28} /></div>
           ) : (
             <button onClick={handleReset} aria-label="Voltar ao início" className="home-header-brand home-header-brand-button">
               <BrandLogo iconSize={28} />
@@ -766,14 +776,15 @@ export default function Home({ loginIntent = false, initialVisitor = false, onbo
             <section className="home-hero" aria-labelledby="home-title">
               <div className="home-hero-copy">
                 <span className="home-eyebrow"><Sparkles size={16} /> {visitorHome ? 'UM PRIMEIRO PASSO PARA O SEU SONHO' : 'SEU ESPAÇO PARA COMEÇAR'}</span>
-                <h1 id="home-title">Seu sonho pode virar <span className="brand-text">um plano possível.</span></h1>
-                <p className="home-lead">{visitorHome ? 'Responda algumas perguntas e veja, de graça, um primeiro caminho feito para o seu momento. Sem cadastro para começar.' : 'Dê nome ao que você quer viver. A gente ajuda a organizar o caminho em passos claros, no seu ritmo.'}</p>
+                <h1 id="home-title">Saiba por onde começar. <span className="brand-text">E como continuar.</span></h1>
+                <p className="home-lead">{visitorHome ? 'Você entra com um sonho. Sai com um caminho estruturado para executar. Responda 6 perguntas e experimente seu primeiro passo, de graça.' : 'Dê nome ao que você quer viver. A gente ajuda a organizar o caminho em passos claros, no seu ritmo.'}</p>
 
                 {visitorHome ? <div className="home-visitor-card">
-                  <Link href={onboardingHref} className="home-visitor-cta brand-button" onClick={() => captureProductEvent('home_start_clicked')}>
-                    Ver meu primeiro caminho grátis <ArrowRight size={20} aria-hidden="true" />
+                  <Link href={onboardingHref} className="home-visitor-cta brand-button" onClick={() => { const properties = { ...captureAttribution(), journey_version: 'conversion-v2' }; captureProductEvent('home_start_clicked', properties); sendGoogleAnalyticsEvent('home_start_clicked', properties); }}>
+                    Ver meu primeiro passo grátis <ArrowRight size={20} aria-hidden="true" />
                   </Link>
                   <p><Check size={16} aria-hidden="true" /> Prévia personalizada, sem e-mail e sem cartão.</p>
+                  <p>Plano completo por R$37 · pagamento único · garantia de 7 dias.</p>
                 </div> : <div className="home-form-card">
                   <form onSubmit={handleStart}>
                     <label htmlFor="main-goal">Qual sonho você quer tirar do papel?</label>
@@ -821,7 +832,7 @@ export default function Home({ loginIntent = false, initialVisitor = false, onbo
                 </div>}
               </div>
 
-              <div className="home-art" role="region" aria-label="Exemplo de plano para mudar de carreira">
+              {visitorHome ? <ProductDemo /> : <div className="home-art" role="region" aria-label="Exemplo de plano para mudar de carreira">
                 <div className="home-art-note"><span className="home-art-note-icon"><Compass size={18} /></span> Um caminho de cada vez</div>
                 <div className="home-plan-card">
                   <div className="home-plan-top"><span>EXEMPLO DE PLANO</span><Sparkles size={18} /></div>
@@ -837,7 +848,7 @@ export default function Home({ loginIntent = false, initialVisitor = false, onbo
                   </div>
                 </div>
                 <div className="home-art-progress"><span className="home-art-progress-icon"><Check size={18} /></span><span><strong>Pequenos passos</strong><br />Grandes possibilidades.</span></div>
-              </div>
+              </div>}
             </section>
 
             <section className="home-how" aria-labelledby="home-how-title">
@@ -852,6 +863,7 @@ export default function Home({ loginIntent = false, initialVisitor = false, onbo
               </ol>
               <p className="home-how-note">{visitorHome ? 'A prévia é gratuita. Se quiser continuar, o plano completo custa R$ 37, em pagamento único e sem assinatura.' : 'Cada plano é criado para um sonho. Quer planejar mais de um? Você pode comprar pacotes depois. O pagamento é único, sem assinatura.'}</p>
             </section>
+            {visitorHome && <><ProductMethod /><div className="home-visitor-card home-final-cta"><Link href={onboardingHref} className="home-visitor-cta brand-button" onClick={() => { const properties = { ...captureAttribution(), journey_version: 'conversion-v2', cta_location: 'after_method' }; captureProductEvent('home_start_clicked', properties); sendGoogleAnalyticsEvent('home_start_clicked', properties); }}>Ver meu primeiro passo grátis <ArrowRight size={20} aria-hidden="true" /></Link><p>Prévia gratuita · completo por R$37 · sem assinatura.</p></div></>}
           </div>
         )}
 
@@ -955,7 +967,8 @@ export default function Home({ loginIntent = false, initialVisitor = false, onbo
               </div>
             )}
             <MandalartView 
-              data={mandalartData} 
+              data={mandalartData}
+              planId={currentMandalartId || undefined}
               onReset={handleReset} 
               onDataUpdate={handleDataUpdate}
             />
