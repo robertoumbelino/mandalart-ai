@@ -4,11 +4,9 @@ import { getDb } from '@/lib/db'
 import { billingOrigin } from '@/lib/stripe'
 import { createLeadLink, createUnsubscribeLink } from '@/lib/lead-link'
 import { emailDeliveryRecipient, localEmailTestMode } from '@/lib/email-testing'
+import { purchaseEmail, registrationEmail, previewEmail } from '@/lib/email-template'
 
 const digest = (token: string) => createHash('sha256').update(token).digest('hex')
-const escape = (value: string) => value.replace(/[&<>"']/g, character => ({
-  '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
-})[character]!)
 
 async function sendEmail(to: string, subject: string, html: string, options?: { scheduledAt?: string; idempotencyKey?: string }) {
   const recipient = emailDeliveryRecipient(to)
@@ -41,7 +39,7 @@ export async function sendAccessEmail(orderId: string, userId: string, email: st
   if (!order) throw new Error('Compra não encontrada.')
   const price = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(Number(order.amount) / 100)
   const url = `${billingOrigin()}/finalizar-cadastro?token=${encodeURIComponent(token)}`
-  await sendEmail(email, 'Compra confirmada — conclua seu cadastro no Mandalart', `<div style="font-family:Arial,sans-serif;max-width:520px;margin:auto;color:#25304b"><h1>Compra confirmada!</h1><p>Recebemos seu pagamento de <strong>${escape(price)}</strong> por ${Number(order.credits)} Mandalart${Number(order.credits) === 1 ? '' : 's'}. Pagamento único, sem assinatura.</p><p>Seu objetivo está salvo. Confirme seu e-mail e crie sua senha para abrir seu plano e continuar sempre que quiser.</p><p><a href="${escape(url)}" style="display:inline-block;padding:14px 22px;border-radius:10px;background:linear-gradient(90deg,#5335ff,#9815ff);color:white;text-decoration:none">Concluir meu cadastro</a></p><p>Já tem uma conta? <a href="${escape(`${billingOrigin()}/?entrar=1&continuar=sonho`)}">Entre com seu acesso habitual</a>. Sua compra fica vinculada ao e-mail usado no pagamento.</p><p>O link de cadastro funciona por 48 horas e pode ser usado uma vez. Se expirar, solicite outro em <a href="${escape(`${billingOrigin()}/acessar`)}">Concluir cadastro</a>.</p></div>`, { idempotencyKey: `purchase-registration-${orderId}` })
+  await sendEmail(email, 'Compra confirmada — conclua seu cadastro no Mandalart', purchaseEmail(price, Number(order.credits), url, `${billingOrigin()}/?entrar=1&continuar=sonho`, `${billingOrigin()}/acessar`), { idempotencyKey: `purchase-registration-${orderId}` })
   await getDb()`UPDATE dream_orders SET access_email_sent_at=now(),access_email_sending_at=NULL WHERE id=${orderId}::uuid AND user_id=${userId}::uuid`
 }
 
@@ -53,11 +51,7 @@ export async function sendRegistrationEmail(userId: string, email: string) {
   await getDb()`INSERT INTO email_access_tokens(user_id,token_hash,expires_at)
     VALUES(${userId}::uuid,${hash},now()+interval '48 hours')`
   const url = `${billingOrigin()}/finalizar-cadastro?token=${encodeURIComponent(token)}`
-  await sendEmail(email, 'Conclua seu cadastro no Mandalart', `<div style="font-family:Arial,sans-serif;max-width:520px;margin:auto;color:#25304b"><h1>Seu plano está esperando por você</h1><p>Confirme seu e-mail e crie uma senha para concluir seu cadastro. Sua compra e seu objetivo continuam salvos.</p><p><a href="${escape(url)}" style="display:inline-block;padding:14px 22px;border-radius:10px;background:linear-gradient(90deg,#5335ff,#9815ff);color:white;text-decoration:none">Concluir meu cadastro</a></p><p>O link funciona por 48 horas e pode ser usado uma vez. Se você não pediu este e-mail, ignore a mensagem.</p></div>`, { idempotencyKey: `registration-${hash}` })
-}
-
-function previewHtml(subject: string, url: string, extra: string, unsubscribeUrl: string) {
-  return `<div style="font-family:Arial,sans-serif;max-width:520px;margin:auto;color:#25304b"><h1>${escape(subject)}</h1><p>${escape(extra)}</p><p><a href="${escape(url)}" style="display:inline-block;padding:14px 22px;border-radius:10px;background:#6334ff;color:white;text-decoration:none">Abrir meu primeiro caminho</a></p><p>O plano completo é opcional. <a href="${escape(unsubscribeUrl)}">Não quero receber mais lembretes</a>.</p></div>`
+  await sendEmail(email, 'Conclua seu cadastro no Mandalart', registrationEmail(url), { idempotencyKey: `registration-${hash}` })
 }
 
 export async function sendPreviewAndScheduleRecovery(leadId: string) {
@@ -72,15 +66,15 @@ export async function sendPreviewAndScheduleRecovery(leadId: string) {
   const unsubscribeUrl = createUnsubscribeLink(leadId)
   try {
     if (!claim.preview_email_sent_at) {
-      await sendEmail(email, 'Seu primeiro caminho está pronto', previewHtml('Seu primeiro caminho está pronto', url, 'Sua prévia está salva. Abra quando quiser e continue seu primeiro passo.', unsubscribeUrl), { idempotencyKey: `preview-${leadId}` })
+      await sendEmail(email, 'Seu primeiro caminho está pronto', previewEmail('Seu primeiro caminho está pronto', url, 'Sua prévia está salva. Abra quando quiser e continue seu primeiro passo.', unsubscribeUrl), { idempotencyKey: `preview-${leadId}` })
       await sql`UPDATE onboarding_leads SET preview_email_sent_at=now() WHERE id=${leadId}::uuid`
     }
     if (!localEmailTestMode() && !claim.recovery_one_email_id) {
-      const id = await sendEmail(email, 'Seu primeiro caminho está esperando', previewHtml('Seu primeiro caminho está esperando', url, 'Você começou a transformar seu sonho em um caminho possível. Seu primeiro passo continua esperando por você.', unsubscribeUrl), { scheduledAt: new Date(Date.now()+60*60*1000).toISOString(), idempotencyKey: `recovery-1-${leadId}` })
+      const id = await sendEmail(email, 'Seu primeiro caminho está esperando', previewEmail('Seu primeiro caminho está esperando', url, 'Você começou a transformar seu sonho em um caminho possível. Seu primeiro passo continua esperando por você.', unsubscribeUrl), { scheduledAt: new Date(Date.now()+60*60*1000).toISOString(), idempotencyKey: `recovery-1-${leadId}` })
       await sql`UPDATE onboarding_leads SET recovery_one_email_id=${id} WHERE id=${leadId}::uuid`
     }
     if (!localEmailTestMode() && !claim.recovery_two_email_id) {
-      const id = await sendEmail(email, 'Volte ao seu Mandalart quando quiser', previewHtml('Volte ao seu Mandalart quando quiser', url, 'Sua prévia continua disponível. Um pequeno passo hoje pode ajudar a dar clareza ao seu sonho.', unsubscribeUrl), { scheduledAt: new Date(Date.now()+24*60*60*1000).toISOString(), idempotencyKey: `recovery-2-${leadId}` })
+      const id = await sendEmail(email, 'Volte ao seu Mandalart quando quiser', previewEmail('Volte ao seu Mandalart quando quiser', url, 'Sua prévia continua disponível. Um pequeno passo hoje pode ajudar a dar clareza ao seu sonho.', unsubscribeUrl), { scheduledAt: new Date(Date.now()+24*60*60*1000).toISOString(), idempotencyKey: `recovery-2-${leadId}` })
       await sql`UPDATE onboarding_leads SET recovery_two_email_id=${id} WHERE id=${leadId}::uuid`
     }
   } finally {
