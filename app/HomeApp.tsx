@@ -23,6 +23,7 @@ import { getPurchasedPreviewContext } from '@/actions/purchased-preview';
 import { sendGoogleAnalyticsEvent } from './components/GoogleAnalytics'
 import { captureAttribution } from '@/lib/attribution'
 import { ProductDemo, ProductMethod } from './components/ProductDemo'
+import { Testimonials } from './components/Testimonials'
 import { CAREER_PLAN } from '@/lib/example-plan';
 import './home.css';
 
@@ -863,7 +864,7 @@ export default function Home({ loginIntent = false, initialVisitor = false, onbo
               </ol>
               <p className="home-how-note">{visitorHome ? 'A prévia é gratuita. Se quiser continuar, o plano completo custa R$ 37, em pagamento único e sem assinatura.' : 'Cada plano é criado para um sonho. Quer planejar mais de um? Você pode comprar pacotes depois. O pagamento é único, sem assinatura.'}</p>
             </section>
-            {visitorHome && <><ProductMethod /><div className="home-visitor-card home-final-cta"><Link href={onboardingHref} className="home-visitor-cta brand-button" onClick={() => { const properties = { ...captureAttribution(), journey_version: 'conversion-v2', cta_location: 'after_method' }; captureProductEvent('home_start_clicked', properties); sendGoogleAnalyticsEvent('home_start_clicked', properties); }}>Ver meu primeiro passo grátis <ArrowRight size={20} aria-hidden="true" /></Link><p>Prévia gratuita · completo por R$37 · sem assinatura.</p></div></>}
+            {visitorHome && <><Testimonials /><ProductMethod /><div className="home-visitor-card home-final-cta"><Link href={onboardingHref} className="home-visitor-cta brand-button" onClick={() => { const properties = { ...captureAttribution(), journey_version: 'conversion-v2', cta_location: 'after_method' }; captureProductEvent('home_start_clicked', properties); sendGoogleAnalyticsEvent('home_start_clicked', properties); }}>Ver meu primeiro passo grátis <ArrowRight size={20} aria-hidden="true" /></Link><p>Prévia gratuita · completo por R$37 · sem assinatura.</p></div></>}
           </div>
         )}
 

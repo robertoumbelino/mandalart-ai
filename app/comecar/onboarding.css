@@ -2205,12 +2205,26 @@
 .mandala-center span { font-size: 10px; letter-spacing: .1em; font-weight: 700; opacity: .8; }
 .mandala-center strong { font-size: clamp(12px,1.8vw,17px); line-height: 1.24; overflow-wrap: anywhere; }
 .mandala-note { display: grid; grid-template-columns: 17px minmax(0, 1fr); align-items: start; gap: 8px; text-align: left; line-height: 1.6; font-size: 14px; font-weight: 500; color: #5134be; margin-top: 22px !important; }
-.conversion-first-step { margin: 52px auto; padding: clamp(23px,4vw,36px); border: 1px solid #e1e5ed; border-radius: 24px; background: #fff; }
+.conversion-first-step { margin: 52px auto 24px; padding: clamp(23px,4vw,36px); border: 1px solid #e1e5ed; border-radius: 24px; background: #fff; }
 .conversion-first-step h2 { margin: 10px 0; }
 .conversion-first-step > p { color: #4e5b73; line-height: 1.65; }
 .conversion-duration { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: #64718a; margin-top: 14px; }
 .conversion-checklist { display: grid; gap: 10px; margin: 24px 0 12px; }
 .conversion-first-step > small { color: #777e91; }
+.conversion-testimonial { display: grid; grid-template-columns: 210px minmax(0,1fr); align-items: center; gap: 22px; margin: 0 auto 24px; padding: 20px 24px; border: 1px solid #e4def0; border-radius: 20px; background: #fff; box-shadow: 0 8px 26px #3322640a; }
+.conversion-testimonial figcaption { display: flex; align-items: center; gap: 12px; min-width: 0; padding-right: 20px; border-right: 1px solid #e8e4f1; }
+.conversion-testimonial figcaption img { width: 48px; height: 48px; flex: none; border-radius: 50%; object-fit: cover; object-position: center 35%; }
+.conversion-testimonial figcaption span { display: grid; min-width: 0; gap: 2px; }
+.conversion-testimonial figcaption strong { color: #283349; font-size: 13px; font-weight: 700; }
+.conversion-testimonial figcaption small { color: #738098; font-size: 11px; }
+.conversion-testimonial blockquote { display: flex; align-items: center; gap: 12px; min-width: 0; margin: 0; }
+.conversion-testimonial blockquote > span { color: #a594ff; font-family: Georgia, serif; font-size: 46px; line-height: .75; }
+.conversion-testimonial blockquote p { margin: 0; color: #344058; font-size: 14px; font-weight: 500; line-height: 1.65; }
+@media (max-width: 760px) {
+  .conversion-testimonial { grid-template-columns: minmax(0,1fr); gap: 17px; padding: 20px; }
+  .conversion-testimonial blockquote { grid-row: 1; align-items: flex-start; }
+  .conversion-testimonial figcaption { grid-row: 2; padding: 0; border: 0; }
+}
 .conversion-offer { margin: 0 auto; padding: clamp(26px,5vw,52px); text-align: center; border-radius: 28px; background: #23194f; color: #fff; }
 .conversion-offer .begin-eyebrow { color: #c8baff; }
 .conversion-offer h2 { margin: 12px 0; }
@@ -2348,6 +2362,7 @@
   .conversion-hero { margin-bottom: 0; }
   .mandala-reveal { grid-column: 1; align-self: stretch; padding: 20px; }
   .conversion-first-step { grid-column: 2; align-self: stretch; margin: 0; padding: 24px; }
+  .conversion-testimonial { margin: 0; }
   .conversion-save, .conversion-faq { margin-top: 0; }
 }
 

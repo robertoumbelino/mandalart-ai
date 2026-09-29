@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import Image from 'next/image'
 import { ArrowRight, Check, ChevronRight, Clock3, LockKeyhole, Mail, RotateCcw, ShieldCheck, Sparkles, Sprout } from 'lucide-react'
 import { useEffect, useRef, type FormEvent } from 'react'
 import { getDream, previewHeading, type OnboardingAnswers, type OnboardingPreview } from '@/lib/onboarding'
@@ -82,6 +83,17 @@ export function Preview({ previewId, onViewed, preview, answers, checked, onChec
         <small>{checked.filter(Boolean).length} de 3 pequenas ações concluídas</small>
         {checked.every(Boolean) && <div className="preview-reward" role="status"><strong>Primeiro passo concluído.</strong><p>Seu Mandalart completo mostra como continuar. O que você marcou aqui acompanha seu plano.</p><button className="begin-primary" onClick={onCheckout} disabled={checkoutBusy}>Liberar meu Mandalart completo · R$37 <ArrowRight size={18} /></button></div>}
       </section>
+
+      <figure className="conversion-testimonial">
+        <figcaption>
+          <Image src="/testimonials/kaua-santos.png" alt="" width={48} height={48} />
+          <span><strong>Kauã Santos</strong><small>Plano e checklists</small></span>
+        </figcaption>
+        <blockquote>
+          <span aria-hidden="true">“</span>
+          <p>Finalmente consegui tirar esse plano do papel e realizar meu objetivo, um passo de cada vez…</p>
+        </blockquote>
+      </figure>
 
       <section ref={offerRef} className="conversion-offer" aria-labelledby="conversion-offer-title">
         <span className="begin-eyebrow"><Sparkles size={15} /> CONTINUE O QUE COMEÇOU</span>
