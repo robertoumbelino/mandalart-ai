@@ -50,7 +50,7 @@ Na página principal, quem já tem um sonho disponível escreve o objetivo e rec
 
 O login e as sessões usam o Managed Better Auth da mesma branch Neon do banco. Configure `NEON_AUTH_BASE_URL`, `NEON_AUTH_COOKIE_SECRET` e os domínios confiáveis no Neon. A migração começa com o cliente Google compartilhado do Neon, que mostra a marca Neon na tela de consentimento e é destinado a desenvolvimento. Para uso público contínuo, configure um cliente OAuth próprio no Neon e registre no Google Cloud a URI de retorno `{NEON_AUTH_BASE_URL}/callback/google`.
 
-No primeiro login Google depois da migração, o `accountId` (Google `sub`) é comparado com `user_identities`; o vínculo preserva `users.id` e todos os dados de produto. Uma senha antiga pode ser migrada quando o usuário a digitar, antes de criar a credencial Neon. Se a conta já tiver entrado pelo Google no Neon, o usuário define uma senha pelo link recebido por e-mail. Novos cadastros e sessões usam exclusivamente Neon Auth.
+No primeiro login Google depois da migração, o `accountId` (Google `sub`) é comparado com `user_identities`; o vínculo preserva `users.id` e todos os dados de produto. Uma conta existente com o mesmo endereço `@gmail.com` verificado é vinculada automaticamente, desde que não tenha outra identidade Google. E-mails de outros provedores não são vinculados apenas pelo `email_verified` do Google. Uma senha antiga pode ser migrada quando o usuário a digitar, antes de criar a credencial Neon. Se a conta já tiver entrado pelo Google no Neon, o usuário define uma senha pelo link recebido por e-mail. Novos cadastros e sessões usam exclusivamente Neon Auth.
 
 ## Qualidade
 

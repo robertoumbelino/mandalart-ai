@@ -78,9 +78,27 @@ const resolveUser = async (profile: AuthProfile): Promise<{ user: User; created:
     LIMIT 1
   ` as UserRow[]
   if (matchedEmail[0]) {
-    // Um Google subject diferente não pode assumir uma identidade Google existente.
-    if (subject && matchedEmail[0].id !== profile.id) return null
     if (!profile.emailVerified) return null
+    if (subject) {
+      // Google é a autoridade pelo endereço Gmail. Para domínios de terceiros,
+      // a verificação antiga do Google não prova o controle atual do e-mail.
+      if (!profile.email.toLowerCase().endsWith('@gmail.com')) return null
+      const identities = await sql`
+        WITH inserted AS (
+          INSERT INTO user_identities (user_id, provider, provider_account_id, email)
+          VALUES (${matchedEmail[0].id}::uuid, 'google', ${subject}, ${profile.email.toLowerCase()})
+          ON CONFLICT DO NOTHING
+          RETURNING user_id
+        )
+        SELECT user_id FROM inserted
+        UNION ALL
+        SELECT user_id FROM user_identities
+        WHERE provider = 'google' AND provider_account_id = ${subject}
+        LIMIT 1
+      ` as Array<{ user_id: string }>
+      // Não substitui um Google diferente nem assume uma identidade de outra conta.
+      if (identities[0]?.user_id !== matchedEmail[0].id) return null
+    }
     return { user: toUser(await saveLink(profile.id, matchedEmail[0].id)), created: false }
   }
 

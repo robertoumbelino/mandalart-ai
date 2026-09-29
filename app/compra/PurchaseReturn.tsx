@@ -79,7 +79,7 @@ export function PurchaseReturn() {
         {paid ? (
           <>
             <p style={{ lineHeight: 1.55, color: '#56617a' }}>Seu objetivo{result.dream ? ` — ${result.dream}` : ''} e sua compra estão salvos. {result.registrationRequired
-              ? result.accessEmailSent ? 'Enviamos um e-mail para você concluir seu cadastro e criar sua senha. Depois, seu Mandalart abre com o plano completo.' : 'Falta concluir seu cadastro e criar sua senha. Ainda não conseguimos enviar o e-mail; tente novamente abaixo.'
+              ? result.accessEmailSent ? 'Enviamos um e-mail para você concluir seu cadastro. Depois, seu Mandalart abre com o plano completo.' : 'Falta concluir seu cadastro. Ainda não conseguimos enviar o e-mail; tente novamente abaixo.'
               : 'Entre com sua conta para abrir seu Mandalart. Nas próximas visitas, use o mesmo e-mail e senha ou Google.'}</p>
             {result.registrationRequired && <p style={{ marginTop: 16, padding: 14, borderRadius: 12, background: '#f2edff', color: '#5134be', fontSize: 14 }}>Abra o e-mail da compra e clique em <strong>Concluir meu cadastro</strong>. Pode fechar esta página: sua compra está garantida.{process.env.NODE_ENV === 'development' && <span style={{ display: 'block', marginTop: 8 }}>Teste local: o e-mail está simulado no painel do Resend, identificado pelo endereço informado na compra.</span>}</p>}
             {result.credits === 3 && <p style={{ padding: '12px 14px', borderRadius: 12, background: '#f2edff', fontWeight: 700, color: '#5134be' }}>Seus 2 Mandalarts adicionais estão disponíveis.</p>}

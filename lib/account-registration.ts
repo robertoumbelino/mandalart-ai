@@ -27,6 +27,13 @@ export async function registrationFromToken(token: string) {
   return { id: String(row.id), email: String(row.email), name: String(row.name), pending: Boolean(row.pending) }
 }
 
+export async function consumeRegistrationToken(token: string, userId: string) {
+  if (!validRegistrationToken(token)) return
+  const hash = createHash('sha256').update(token).digest('hex')
+  await getDb()`UPDATE email_access_tokens SET consumed_at=now()
+    WHERE token_hash=${hash} AND user_id=${userId}::uuid AND consumed_at IS NULL`
+}
+
 // Claim the one-time email proof and link the managed identity in one transaction.
 // Never replace a password or identity on an account that is already registered.
 export async function linkRegistration(token: string, authUserId: string, userId: string, name: string) {

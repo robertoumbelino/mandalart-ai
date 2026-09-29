@@ -56,7 +56,7 @@ export function purchaseEmail(price: string, credits: number, url: string, login
     intro: 'Recebemos seu pagamento. Seu objetivo está salvo e seu Mandalart está pronto para você continuar de onde parou.',
     detail: { label: 'Resumo da compra', value: `${credits} Mandalart${credits === 1 ? '' : 's'} · ${price}`, note: 'Pagamento único, sem assinatura.' },
     button: 'Concluir meu cadastro', buttonUrl: url,
-    afterButton: 'Confirme seu e-mail e crie uma senha para abrir seu plano. Este link funciona por 48 horas e pode ser usado uma vez.',
+    afterButton: 'Abra o link para escolher como acessar seu plano. Ele funciona por 48 horas e pode ser usado uma vez.',
     secondary: { text: 'Já tem uma conta?', label: 'Entre com seu acesso habitual.', url: loginUrl },
     footer: 'Sua compra fica vinculada ao e-mail usado no pagamento. Se o link expirar,',
     footerLink: { label: 'solicite outro aqui.', url: renewUrl },
@@ -66,7 +66,7 @@ export function purchaseEmail(price: string, credits: number, url: string, login
 export function registrationEmail(url: string) {
   return renderEmail({
     eyebrow: 'Seu acesso', title: 'Seu plano está esperando por você.',
-    intro: 'Sua compra e seu objetivo continuam salvos. Confirme seu e-mail e crie uma senha para acessar seu Mandalart sempre que quiser.',
+    intro: 'Sua compra e seu objetivo continuam salvos. Abra o link para escolher como acessar seu Mandalart sempre que quiser.',
     button: 'Concluir meu cadastro', buttonUrl: url,
     afterButton: 'O link funciona por 48 horas e pode ser usado uma vez.',
     footer: 'Se você não pediu este e-mail, pode ignorar esta mensagem.',

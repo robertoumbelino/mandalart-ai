@@ -20,7 +20,9 @@ export default async function RegistrationPage({ searchParams }: { searchParams:
         <span className="text-xs font-bold tracking-widest text-indigo-600">SEU PLANO CONTINUA AQUI</span>
         <h1 className="mt-3 text-2xl font-bold">{account?.pending ? 'Conclua seu cadastro' : account ? 'Sua conta já está pronta' : 'Vamos concluir seu cadastro'}</h1>
         {account?.pending ? <>
-          <p className="mt-3 text-sm leading-relaxed text-slate-600">Seu e-mail foi confirmado. Escolha seu nome e uma senha para acessar seu Mandalart agora e sempre que quiser voltar.</p>
+          <p className="mt-3 text-sm leading-relaxed text-slate-600">{account.email.toLowerCase().endsWith('@gmail.com')
+            ? 'Seu e-mail foi confirmado. Continue com o Gmail usado na compra ou escolha um nome e uma senha para acessar seu Mandalart.'
+            : 'Seu e-mail foi confirmado. Escolha seu nome e uma senha para acessar seu Mandalart agora e sempre que quiser voltar.'}</p>
           <RegistrationForm token={token} email={account.email} />
         </> : <>
           <p className="mt-3 text-sm leading-relaxed text-slate-600">{account ? 'Entre com sua senha ou com Google para continuar. Sua compra está associada à sua conta.' : token ? 'Este link expirou ou já foi usado. Se você ainda não criou sua senha, solicite um novo e-mail. Sua compra continua salva.' : 'Abra o link que enviamos para o e-mail da compra para confirmar seu endereço e criar sua senha.'}</p>
