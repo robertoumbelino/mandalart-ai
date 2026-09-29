@@ -87,7 +87,7 @@ const EMPTY: OnboardingDraft = {
 const QUESTION_COPY = [
   {
     eyebrow: 'UM ESPAÇO PARA O QUE IMPORTA',
-    title: 'Onde você quer ver a vida florescer?',
+    title: 'Escolha o que você quer realizar e descubra por onde começar.',
     description: 'Escolha a área que mais importa para você agora.',
     reassurance: 'A área orienta quais caminhos fazem sentido para o seu objetivo.'
   },

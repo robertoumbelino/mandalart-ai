@@ -46,7 +46,7 @@ As respostas entram como contexto de geração, e não como regras determinísti
 
 | Pergunta | Dado | Como influencia o resultado |
 |---|---|---|
-| 1. Onde você quer ver a vida florescer? | Área | Seleciona sonhos sugeridos e contextualiza os caminhos. |
+| 1. Escolha o que você quer realizar e descubra por onde começar. | Área | Seleciona sonhos sugeridos e contextualiza os caminhos. |
 | 2. O que você gostaria de realizar? | Objetivo | Define o assunto da prévia, dos oito caminhos e de todas as ações. Texto livre passa pela triagem existente. |
 | 3. Como está esse sonho hoje? | Estágio | Orienta o ponto de partida e considera o que já foi iniciado/pesquisado. |
 | 4. O que torna o próximo passo mais difícil? | Obstáculo | Orienta prioridades e a justificativa da primeira ação. |
