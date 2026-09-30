@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 vi.mock('server-only', () => ({}))
 
-import { directAsaasPixEnabled } from './asaas'
+import { directAsaasPixEnabled, getAsaasPixPayments } from './asaas'
 
 const pixKey = '11111111-2222-3333-4444-555555555555'
 
@@ -14,7 +14,10 @@ describe('Asaas direct Pix environment gates', () => {
     vi.stubEnv('LOCAL_DATABASE_ONLY', 'false')
   })
 
-  afterEach(() => vi.unstubAllEnvs())
+  afterEach(() => {
+    vi.unstubAllEnvs()
+    vi.restoreAllMocks()
+  })
 
   it('keeps direct Pix available in the Sandbox', () => {
     vi.stubEnv('NODE_ENV', 'development')
@@ -46,5 +49,13 @@ describe('Asaas direct Pix environment gates', () => {
     vi.stubEnv('ASAAS_DIRECT_PIX_ENABLED', 'true')
     vi.stubEnv('ASAAS_PIX_KEY', 'sandbox-placeholder')
     expect(directAsaasPixEnabled()).toBe(false)
+  })
+
+  it('accepts a filtered Pix list without the QR ID field; the payment detail is validated later', async () => {
+    vi.stubEnv('NODE_ENV', 'development')
+    vi.stubEnv('ASAAS_API_KEY', '$aact_hmlg_fixture')
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue(Response.json({ data: [{ id: 'pay_123' }], hasMore: false }))
+
+    await expect(getAsaasPixPayments('qr_123')).resolves.toEqual([{ id: 'pay_123' }])
   })
 })

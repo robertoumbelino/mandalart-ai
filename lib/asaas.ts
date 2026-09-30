@@ -64,10 +64,9 @@ export async function createAsaasPixQr(orderId: string, amount: number) {
 export async function getAsaasPixPayments(qrId: string) {
   const response = await request<{ data: AsaasPayment[]; hasMore?: boolean }>(`/payments?pixQrCodeId=${encodeURIComponent(qrId)}&limit=10`)
   if (response.hasMore) throw new Error('QR Code com cobranças demais.')
-  const payments = response.data || []
-  if (payments.some(payment => payment.pixQrCodeId !== qrId))
-    throw new Error('Cobrança Pix não corresponde ao QR Code.')
-  return payments
+  // A lista filtrada pode omitir pixQrCodeId. O detalhe de cada cobrança é
+  // consultado e validado por asaasPixPaymentState antes de creditar o pedido.
+  return response.data || []
 }
 
 function apiBase() {
