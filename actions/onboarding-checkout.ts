@@ -120,7 +120,7 @@ export async function startGuestPix(rawPreviewId: string, rawOrderId: string, ra
     throw new Error('Este Pix expirou. Inicie uma nova compra.')
   }
   const qr = await createAsaasPixQr(orderId, amount)
-  const [saved] = await sql`UPDATE dream_orders SET asaas_pix_qr_id=${qr.id},asaas_pix_payload=${qr.payload},asaas_pix_image=${qr.image},asaas_pix_expires_at=now()+interval '1 hour'
+  const [saved] = await sql`UPDATE dream_orders SET asaas_pix_qr_id=${qr.id},asaas_pix_payload=${qr.payload},asaas_pix_image=${qr.image},asaas_pix_expires_at=now()+interval '1 hour',payment_method='PIX'
     WHERE id=${orderId}::uuid AND asaas_pix_qr_id IS NULL AND status='pending' RETURNING id`
   if (!saved) throw new Error('O Pix já foi iniciado. Atualize a página e tente novamente.')
   await sql`INSERT INTO onboarding_events(session_id,lead_id,order_id,name,attribution,preview_id,properties)

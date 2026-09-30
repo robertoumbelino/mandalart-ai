@@ -1,18 +1,13 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
-import { connection } from 'next/server'
-import { ArrowLeft, ShieldCheck } from 'lucide-react'
-import { getRefundableOrders } from '@/actions/refunds'
-import { RefundOptions } from './RefundOptions'
+import { ArrowLeft, ArrowRight, ShieldCheck } from 'lucide-react'
 
 export const metadata: Metadata = {
   title: 'Garantia e reembolso | Mandalart',
   robots: { index: false, follow: false },
 }
 
-export default async function RefundPage() {
-  await connection()
-  const orders = await getRefundableOrders()
+export default function RefundPage() {
   return (
     <main className="min-h-screen bg-[radial-gradient(circle_at_90%_0%,#eeeaff,transparent_34rem),#f8faff] px-5 py-8 text-slate-800 sm:px-8 sm:py-12">
       <div className="mx-auto max-w-2xl">
@@ -22,10 +17,9 @@ export default async function RefundPage() {
           <h1 className="mt-5 text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl">Seu plano, com tranquilidade.</h1>
           <p className="mt-4 text-sm leading-7 text-slate-600 sm:text-base">Se o plano não fizer sentido para você, solicite o reembolso integral em até 7 dias após a compra. Não precisa explicar o motivo. O valor volta pelo mesmo meio usado no pagamento; o prazo para aparecer depende do provedor.</p>
         </div>
-        <div className="mt-7">
-          {orders === null ? (
-            <div className="rounded-2xl border border-violet-100 bg-white p-6 text-sm leading-7 text-slate-600">Entre na sua conta para ver as compras elegíveis. <Link href="/sonhos" className="font-bold text-violet-700 underline">Criar conta ou entrar</Link>.</div>
-          ) : <RefundOptions orders={orders} />}
+        <div className="mt-7 rounded-2xl border border-violet-100 bg-white p-6 text-sm leading-7 text-slate-600">
+          <p>Na página “Minhas compras”, você pode consultar seus pagamentos e solicitar o reembolso de uma compra elegível. Entre com a conta vinculada ao e-mail usado na compra.</p>
+          <Link href="/compras" className="mt-4 inline-flex min-h-11 items-center gap-2 rounded-xl border border-violet-300 px-4 font-bold text-violet-700 hover:bg-violet-50">Ver minhas compras <ArrowRight size={17} /></Link>
         </div>
       </div>
     </main>

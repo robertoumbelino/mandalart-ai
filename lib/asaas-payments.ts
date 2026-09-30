@@ -101,7 +101,7 @@ export async function reconcileAsaasPix(orderId: string, expectedUser?: string, 
     mode: order.mode, source: order.preview_id ? 'comecar' as const : 'account' as const,
     accessEmailSent: Boolean(simulation.access_email_sent_at),
   }
-  if (payment) await sql`UPDATE dream_orders SET external_order_id=COALESCE(external_order_id,${state.paid ? payment.id : null}),provider_checked_at=now()
+  if (payment) await sql`UPDATE dream_orders SET external_order_id=COALESCE(external_order_id,${state.paid ? payment.id : null}),payment_method='PIX',provider_checked_at=now()
     WHERE id=${order.id}::uuid AND (external_order_id IS NULL OR external_order_id=${payment.id})`
   else await sql`UPDATE dream_orders SET provider_checked_at=now() WHERE id=${order.id}::uuid`
   return fulfillOrder({
@@ -149,7 +149,7 @@ export async function reconcileAsaasCheckout(id: string, expectedUser?: string, 
   const payments = await Promise.all(listed.map(item => getAsaasPayment(item.id)))
   const payment = selectAsaasPayment(payments, order)
   const state = asaasPaymentState(payment, order)
-  if (payment) await sql`UPDATE dream_orders SET external_order_id=COALESCE(external_order_id,${state.paid ? payment.id : null}),provider_checked_at=now()
+  if (payment) await sql`UPDATE dream_orders SET external_order_id=COALESCE(external_order_id,${state.paid ? payment.id : null}),payment_method=${payment.billingType},provider_checked_at=now()
     WHERE id=${order.id}::uuid AND (external_order_id IS NULL OR external_order_id=${payment.id})`
   else await sql`UPDATE dream_orders SET provider_checked_at=now() WHERE id=${order.id}::uuid`
   const paidEmail = state.paid && order.preview_id && payment?.customer

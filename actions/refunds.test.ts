@@ -1,5 +1,5 @@
 import { beforeEach, expect, it, vi } from 'vitest'
-import { requestDreamRefund } from './refunds'
+import { getPurchaseHistory, requestDreamRefund } from './refunds'
 
 const mocks = vi.hoisted(() => ({
   user: vi.fn(),
@@ -70,4 +70,22 @@ it('refunds a direct Asaas Pix payment without requiring a checkout session', as
   expect(mocks.reconcileAsaasPix).toHaveBeenCalledTimes(2)
   expect(mocks.asaasRefund).toHaveBeenCalledWith('pay_test')
   expect(mocks.reconcileAsaasCheckout).not.toHaveBeenCalled()
+})
+
+it('shows paid and refunded purchases, and only offers a refund for an eligible payment', async () => {
+  const paidAt = new Date().toISOString()
+  mocks.sql.mockResolvedValueOnce([
+    { ...order, provider: 'asaas', payment_method: 'PIX', refunded: 0,
+      external_order_id: 'pay_test', asaas_pix_qr_id: 'qr_test', payment_intent_id: null,
+      session_id: null, created_at: paidAt, refund_requested_at: null },
+    { ...order, id: 'c112b423-6396-40ba-961d-b04b3e821621', status: 'refunded',
+      provider: 'asaas', payment_method: 'CREDIT_CARD', refunded: 3700,
+      external_order_id: 'pay_refunded', asaas_pix_qr_id: null,
+      created_at: paidAt, refund_requested_at: paidAt },
+  ])
+
+  const purchases = await getPurchaseHistory()
+  expect(purchases).toHaveLength(2)
+  expect(purchases?.[0]).toMatchObject({ method: 'PIX', status: 'paid', canRefund: true })
+  expect(purchases?.[1]).toMatchObject({ method: 'CREDIT_CARD', status: 'refunded', canRefund: false })
 })

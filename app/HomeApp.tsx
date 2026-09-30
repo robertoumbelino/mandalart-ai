@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { BrandLogo } from '@/app/components/Brand';
-import { ArrowRight, Sparkles, BrainCircuit, Loader2, History, X, Trash2, Calendar, LogOut, Check, Compass, ListChecks, ShieldCheck } from 'lucide-react';
+import { ArrowRight, Sparkles, BrainCircuit, Loader2, History, X, Trash2, Calendar, LogOut, Check, Compass, ListChecks, ShieldCheck, ReceiptText } from 'lucide-react';
 import { discoverGoal } from '@/actions/ai';
 import { MandalartData, Question, AppStep, GoalProposal, GoalSafetyCategory, InterviewAnswer, HistoryItem, User } from '@/types';
 import { MandalartView } from '@/app/components/MandalartView';
@@ -685,6 +685,15 @@ export default function Home({ loginIntent = false, initialVisitor = false, onbo
                     <span className="ph-mask">{user.email}</span>
                   </p>
                 </div>
+                <Link
+                  href="/compras"
+                  role="menuitem"
+                  onClick={() => setIsUserMenuOpen(false)}
+                  className="mt-1 w-full flex items-center gap-2 rounded-xl px-3 py-2.5 text-sm font-medium text-gray-700 hover:bg-violet-50 hover:text-violet-700 transition-colors"
+                >
+                  <ReceiptText size={16} />
+                  Minhas compras
+                </Link>
                 <button
                   type="button"
                   role="menuitem"

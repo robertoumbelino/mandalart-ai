@@ -357,6 +357,7 @@ export function DreamShop() {
                 </Link>
               )}
             </section>
+            <Link href="/compras" className="shop-purchases-link">Ver minhas compras e reembolsos <ArrowRight size={16} /></Link>
             {wallet && wallet.balance < 0 && (
               <p className="shop-message">
                 Um pagamento de sonhos já utilizados foi estornado ou contestado. Os
