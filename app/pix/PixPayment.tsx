@@ -93,26 +93,25 @@ export function PixPayment() {
   }
 
   return <main className="pix-page">
-    <header className="pix-header"><Link href="/" aria-label="Mandalart, início"><BrandLogo iconSize={29} /></Link><span>Ambiente de teste Asaas</span></header>
+    <header className="pix-header"><Link href="/" aria-label="Mandalart, início"><BrandLogo iconSize={29} /></Link></header>
     <section className="pix-card" aria-live="polite">
       {!payment && !error && <div className="pix-loading"><Loader2 className="animate-spin" /><p>Preparando seu Pix…</p></div>}
       {error && <p className="pix-alert" role="alert">{error}</p>}
       {payment?.status === 'pending' && <>
-        <span className="pix-kicker">PAGAMENTO ÚNICO · SANDBOX</span>
+        <span className="pix-kicker">PAGAMENTO ÚNICO</span>
         <h1>Seu Pix está pronto.</h1>
-        <p className="pix-lead">Veja como o QR Code e o Pix Copia e Cola aparecerão para quem comprar.</p>
+        <p className="pix-lead">Escaneie o QR Code ou copie o código para pagar pelo aplicativo do seu banco.</p>
         <div className="pix-amount"><span>{payment.credits === 3 ? '3 Mandalarts completos' : 'Mandalart completo'}</span><strong>{formattedAmount}</strong></div>
         {payment.image && <div className="pix-qr"><Image src={`data:image/png;base64,${payment.image}`} alt="QR Code Pix deste pedido" width={260} height={260} unoptimized /></div>}
         <button className="pix-copy" onClick={copyCode} disabled={!payment.payload}>{copied ? <Check size={19} /> : <Copy size={19} />}{copied ? 'Código copiado' : 'Copiar código Pix'}</button>
         <label className="pix-code-label" htmlFor="pix-code">Pix Copia e Cola</label>
         <textarea id="pix-code" readOnly value={payment.payload || ''} onFocus={event => event.currentTarget.select()} />
-        <div className="pix-wait"><Loader2 size={17} className="animate-spin" /><span>Aguardando a confirmação do Asaas</span><strong>{remaining}</strong></div>
+        <div className="pix-wait"><Loader2 size={17} className="animate-spin" /><span>Aguardando a confirmação do pagamento</span><strong>{remaining}</strong></div>
         <p className="pix-note"><ShieldCheck size={17} /> O QR Code é exclusivo deste pedido. {payment.email ? `Após a confirmação, enviaremos o acesso para ${payment.email}.` : 'Seus créditos entram na sua conta após a confirmação.'}</p>
-        {payment.canSimulate && <div className="pix-local-simulation"><strong>Quer ver o que acontece depois?</strong><p>Confirme esta compra fictícia no banco de dados local, sem pagar o QR Code e sem movimentar saldo no Asaas.</p><button type="button" onClick={simulatePayment} disabled={simulating}>{simulating ? 'Simulando confirmação…' : 'Simular pagamento local'}</button></div>}
+        {payment.canSimulate && <div className="pix-local-simulation"><strong>Quer ver o que acontece depois?</strong><p>Confirme esta compra fictícia no banco de dados local, sem pagar o QR Code.</p><button type="button" onClick={simulatePayment} disabled={simulating}>{simulating ? 'Simulando confirmação…' : 'Simular pagamento local'}</button></div>}
       </>}
-      {payment?.status === 'paid' && <div className="pix-result"><span className="pix-success-icon"><Check size={28} /></span><h1>{payment.simulated ? 'Simulação concluída!' : 'Pagamento confirmado!'}</h1><p>{payment.simulated ? 'Este pedido foi marcado como pago apenas no ambiente local. O Asaas não confirmou nem recebeu este Pix. ' : ''}{payment.source === 'comecar' ? 'Continue para conferir a experiência de acesso.' : 'Os créditos foram adicionados à sua conta local.'}</p><Link className="pix-copy" href={returnUrl}>Continuar <ArrowRight size={18} /></Link></div>}
+      {payment?.status === 'paid' && <div className="pix-result"><span className="pix-success-icon"><Check size={28} /></span><h1>{payment.simulated ? 'Simulação concluída!' : 'Pagamento confirmado!'}</h1><p>{payment.simulated ? 'Este pedido foi marcado como pago apenas no ambiente local. Nenhum pagamento foi realizado. ' : ''}{payment.source === 'comecar' ? 'Continue para conferir a experiência de acesso.' : 'Os créditos foram adicionados à sua conta.'}</p><Link className="pix-copy" href={returnUrl}>Continuar <ArrowRight size={18} /></Link></div>}
       {payment && payment.status !== 'pending' && payment.status !== 'paid' && <div className="pix-result"><h1>{payment.status === 'expired' ? 'Este Pix expirou.' : 'Pagamento não concluído.'}</h1><p>Você pode voltar e gerar um novo código para tentar novamente.</p><Link className="pix-copy" href={backUrl}>Voltar <ArrowLeft size={18} /></Link></div>}
     </section>
-    <p className="pix-sandbox-note">QR Code de teste: para simular o pagamento, use outra conta Sandbox Asaas com saldo. Bancos reais não conseguem pagar este código.</p>
   </main>
 }

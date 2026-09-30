@@ -1,6 +1,5 @@
 .pix-page{min-height:100dvh;padding:24px 18px 64px;background:radial-gradient(ellipse at 20% 0%,#ede9ff,transparent 46%),#f8fafc;color:#1e2433}
-.pix-header{max-width:1040px;margin:auto;display:flex;align-items:center;justify-content:space-between;gap:20px}
-.pix-header>span{font-size:12px;font-weight:700;color:#5b45ae;background:#ede9ff;border-radius:100px;padding:9px 14px}
+.pix-header{max-width:1040px;margin:auto;display:flex;align-items:center}
 .pix-card{max-width:540px;margin:48px auto 0;padding:clamp(24px,5vw,42px);border:1px solid #e3ddf4;border-radius:28px;background:#fff;box-shadow:0 20px 70px #43318412}
 .pix-kicker{font-size:11px;font-weight:800;letter-spacing:.12em;color:#6340cb}
 .pix-card h1{font-size:clamp(29px,5vw,39px);letter-spacing:-.045em;line-height:1.15;margin:12px 0}
@@ -23,5 +22,5 @@
 .pix-alert{padding:14px;border-radius:12px;background:#fff1f2;color:#9f1239}
 .pix-loading,.pix-result{text-align:center}.pix-loading{padding:50px 0}.pix-loading svg{color:#6340cb}
 .pix-success-icon{width:56px;height:56px;border-radius:18px;display:inline-flex;align-items:center;justify-content:center;background:#e7f6eb;color:#177245}
-.pix-result .pix-copy{margin-top:24px}.pix-sandbox-note{text-align:center;color:#7a7488;font-size:12px;margin:22px auto}
+.pix-result .pix-copy{margin-top:24px}
 @media(max-width:540px){.pix-page{padding-inline:14px}.pix-card{margin-top:30px;border-radius:22px}.pix-amount{align-items:flex-start;flex-direction:column;gap:4px}.pix-qr{padding-top:18px}}
