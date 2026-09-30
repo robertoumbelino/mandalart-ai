@@ -1,5 +1,9 @@
 import type { NextConfig } from 'next'
 
+const devTunnelHost = process.env.NODE_ENV === 'development' && process.env.APP_URL?.startsWith('https://')
+  ? new URL(process.env.APP_URL).hostname
+  : null
+
 const securityHeaders = [
   { key: 'X-Content-Type-Options', value: 'nosniff' },
   { key: 'X-Frame-Options', value: 'DENY' },
@@ -9,6 +13,10 @@ const securityHeaders = [
 
 const nextConfig: NextConfig = {
   poweredByHeader: false,
+  ...(devTunnelHost ? {
+    allowedDevOrigins: [devTunnelHost],
+    experimental: { serverActions: { allowedOrigins: [devTunnelHost] } },
+  } : {}),
   async redirects() {
     return [
       {

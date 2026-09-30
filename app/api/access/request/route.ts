@@ -4,7 +4,7 @@ import { getDb } from '@/lib/db'
 import { sendRegistrationEmail } from '@/lib/transactional-email'
 import { registrationPending } from '@/lib/account-registration'
 import { auth } from '@/lib/auth/server'
-import { billingOrigin } from '@/lib/stripe'
+import { emailOrigin } from '@/lib/stripe'
 import { isSameOrigin } from '@/lib/request-origin'
 
 export const runtime = 'nodejs'
@@ -44,7 +44,7 @@ export async function POST(request: Request) {
       try {
         if (await registrationPending(String(user.id))) await sendRegistrationEmail(String(user.id), email)
         else {
-          const result = await auth.requestPasswordReset({ email, redirectTo: `${billingOrigin()}/redefinir-senha` })
+          const result = await auth.requestPasswordReset({ email, redirectTo: `${emailOrigin()}/redefinir-senha` })
           if (result.error) throw new Error('Password recovery failed')
         }
       }

@@ -1,6 +1,6 @@
 'use client'
 
-import { startGuestCheckout } from '@/actions/onboarding-checkout'
+import { getOnboardingPaymentOptions, startGuestCheckout, startGuestPix } from '@/actions/onboarding-checkout'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import { track } from '@vercel/analytics'
@@ -46,6 +46,7 @@ import { Preview } from './Preview'
 
 type Screen = OnboardingDraft['screen']
 type Choice = { id: string; title: string; hint?: string; icon?: string }
+const CHECKOUT_EMAIL_ERROR = 'Informe um e-mail válido para receber seu acesso após o pagamento.'
 const DREAM_ICONS = {
   'Organizar minha vida financeira': 'wallet',
   'Sair das dívidas': 'credit-card',
@@ -150,6 +151,9 @@ export function Onboarding() {
   const [emailBusy, setEmailBusy] = useState(false)
   const [emailError, setEmailError] = useState('')
   const [checkoutBusy, setCheckoutBusy] = useState(false)
+  const [directPixAvailable, setDirectPixAvailable] = useState(false)
+  const [checkoutMethod, setCheckoutMethod] = useState<'pix' | 'card'>('pix')
+  const [bumpSelected, setBumpSelected] = useState(false)
   const [blocked, setBlocked] = useState<'illegal' | 'self-harm'>('illegal')
   const [dialog, setDialog] = useState<'restart' | null>(null)
   const [slow, setSlow] = useState(false)
@@ -161,6 +165,20 @@ export function Onboarding() {
   const busyRef = useRef(false)
   const viewedPreviewRef = useRef<string | null>(null)
   const advanceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  useEffect(() => {
+    let active = true
+    void getOnboardingPaymentOptions().then(options => {
+      if (active) setDirectPixAvailable(options.directPix)
+    }).catch(() => {})
+    return () => { active = false }
+  }, [])
+
+  useEffect(() => {
+    const resetCheckout = () => setCheckoutBusy(false)
+    window.addEventListener('pageshow', resetCheckout)
+    return () => window.removeEventListener('pageshow', resetCheckout)
+  }, [])
 
   useEffect(() => {
     const frame = requestAnimationFrame(() => {
@@ -537,8 +555,21 @@ export function Onboarding() {
     } finally { setEmailBusy(false) }
   }
 
+  function updateEmail(value: string) {
+    setEmail(value)
+    setEmailError('')
+    setError(current => current === CHECKOUT_EMAIL_ERROR ? '' : current)
+  }
+
   async function checkout() {
     if (!draft.result || checkoutBusy) return
+    const useDirectPix = directPixAvailable && checkoutMethod === 'pix'
+    if (useDirectPix && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
+      setError(CHECKOUT_EMAIL_ERROR)
+      document.getElementById('conversion-offer-title')?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      return
+    }
+    setError('')
     setCheckoutBusy(true)
     try {
       const orderId = crypto.randomUUID()
@@ -547,9 +578,12 @@ export function Onboarding() {
       await progressQueue.current
       let marketingConsent = false
       try { marketingConsent = localStorage.getItem(MARKETING_CONSENT_KEY) === 'accepted' } catch {}
-      const result = await startGuestCheckout(draft.result.id, orderId, { checked: draft.checked, marketingConsent, analyticsDistinctId: getProductDistinctId() })
+      const context = { checked: draft.checked, bump: bumpSelected, marketingConsent, analyticsDistinctId: getProductDistinctId() }
+      const result = useDirectPix
+        ? await startGuestPix(draft.result.id, orderId, email, context)
+        : await startGuestCheckout(draft.result.id, orderId, context)
       analytics('checkout_started', { order_id: orderId, preview_id: draft.result.id, lead_id: draft.leadId || '' })
-      trackMetaEvent({ name: 'InitiateCheckout', data: { value: 37, currency: 'BRL' }, onceKey: `checkout.${orderId}`, eventId: `checkout-${orderId}` })
+      trackMetaEvent({ name: 'InitiateCheckout', data: { value: bumpSelected ? 99 : 37, currency: 'BRL' }, onceKey: `checkout.${orderId}`, eventId: `checkout-${orderId}` })
       window.location.assign(result.url)
     } catch (cause) {
       analytics('checkout_error', { preview_id: draft.result.id })
@@ -810,9 +844,14 @@ export function Onboarding() {
           onRestart={restartFromBeginning}
           onCheckout={checkout}
           checkoutBusy={checkoutBusy}
+          directPixAvailable={directPixAvailable}
+          checkoutMethod={checkoutMethod}
+          onCheckoutMethodChange={setCheckoutMethod}
+          bumpSelected={bumpSelected}
+          onBumpChange={setBumpSelected}
           checkoutError={error}
           email={email}
-          onEmailChange={setEmail}
+          onEmailChange={updateEmail}
           onEmailSubmit={captureEmail}
           emailBusy={emailBusy}
           emailSaved={Boolean(draft.leadId)}

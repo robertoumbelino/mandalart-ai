@@ -21,6 +21,7 @@ vi.mock('@/lib/transactional-email', () => ({ cancelRecoveryEmails: vi.fn(), sen
 vi.mock('@/lib/meta-capi', () => ({ sendMetaPurchase: vi.fn() }))
 vi.mock('@/lib/stripe', () => ({
   billingMode: () => 'test',
+  stripeMode: () => 'test',
   getStripe: () => ({
     checkout: {
       sessions: { retrieve: mocks.retrieve, listLineItems: mocks.lines },

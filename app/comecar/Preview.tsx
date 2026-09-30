@@ -2,7 +2,8 @@
 
 import Link from 'next/link'
 import Image from 'next/image'
-import { ArrowRight, Check, ChevronRight, Clock3, LockKeyhole, Mail, RotateCcw, ShieldCheck, Sparkles, Sprout } from 'lucide-react'
+import { ArrowRight, Check, ChevronRight, Clock3, CreditCard, LockKeyhole, Mail, RotateCcw, ShieldCheck, Sparkles, Sprout } from 'lucide-react'
+import { PixMark } from '@/app/components/PixMark'
 import { useEffect, useRef, type FormEvent } from 'react'
 import { getDream, previewHeading, type OnboardingAnswers, type OnboardingPreview } from '@/lib/onboarding'
 import { ChecklistItem } from '@/app/components/ChecklistItem'
@@ -17,6 +18,11 @@ type Props = {
   onRestart: () => void
   onCheckout: () => void
   checkoutBusy: boolean
+  directPixAvailable: boolean
+  checkoutMethod: 'pix' | 'card'
+  onCheckoutMethodChange: (method: 'pix' | 'card') => void
+  bumpSelected: boolean
+  onBumpChange: (selected: boolean) => void
   checkoutError: string
   email: string
   onEmailChange: (email: string) => void
@@ -26,7 +32,7 @@ type Props = {
   emailError: string
 }
 
-export function Preview({ previewId, onViewed, preview, answers, checked, onCheck, onRestart, onCheckout, checkoutBusy, checkoutError, email, onEmailChange, onEmailSubmit, emailBusy, emailSaved, emailError }: Props) {
+export function Preview({ previewId, onViewed, preview, answers, checked, onCheck, onRestart, onCheckout, checkoutBusy, directPixAvailable, checkoutMethod, onCheckoutMethodChange, bumpSelected, onBumpChange, checkoutError, email, onEmailChange, onEmailSubmit, emailBusy, emailSaved, emailError }: Props) {
   const offerRef = useRef<HTMLElement>(null)
   const emailRef = useRef<HTMLElement>(null)
   const onViewedRef = useRef(onViewed)
@@ -49,6 +55,10 @@ export function Preview({ previewId, onViewed, preview, answers, checked, onChec
   }, [previewId])
   const dream = getDream(answers)
   const localTest = process.env.NODE_ENV === 'development'
+  const priceLabel = bumpSelected ? 'R$ 99' : 'R$ 37'
+  const paymentCta = directPixAvailable
+    ? checkoutMethod === 'pix' ? `Pagar ${priceLabel} com Pix` : `Pagar ${priceLabel} com cartão`
+    : `Continuar para pagar ${priceLabel}`
   return <>
     <main id="begin-main" className="conversion-preview begin-enter">
       <header className="conversion-hero">
@@ -81,7 +91,7 @@ export function Preview({ previewId, onViewed, preview, answers, checked, onChec
           {preview.firstStep.checklist.map((item,index) => <ChecklistItem key={item} text={item} checked={checked[index]} onToggle={() => onCheck(index)} />)}
         </div>
         <small>{checked.filter(Boolean).length} de 3 pequenas ações concluídas</small>
-        {checked.every(Boolean) && <div className="preview-reward" role="status"><strong>Primeiro passo concluído.</strong><p>Seu Mandalart completo mostra como continuar. O que você marcou aqui acompanha seu plano.</p><button className="begin-primary" onClick={onCheckout} disabled={checkoutBusy}>Liberar meu Mandalart completo · R$37 <ArrowRight size={18} /></button></div>}
+        {checked.every(Boolean) && <div className="preview-reward" role="status"><strong>Primeiro passo concluído.</strong><p>Seu Mandalart completo mostra como continuar. O que você marcou aqui acompanha seu plano.</p><button className="begin-primary" onClick={onCheckout} disabled={checkoutBusy}>Liberar {bumpSelected ? '3 Mandalarts · R$99' : 'meu Mandalart completo · R$37'} <ArrowRight size={18} /></button></div>}
       </section>
 
       <figure className="conversion-testimonial">
@@ -100,10 +110,26 @@ export function Preview({ previewId, onViewed, preview, answers, checked, onChec
         <h2 id="conversion-offer-title">Seu próximo passo não precisa ficar no papel.</h2>
         <p>Desbloqueie os 8 caminhos do seu objetivo, com ações organizadas para você saber o que fazer e por onde continuar.</p>
         <p className="offer-features">8 caminhos · ações práticas · estrutura visual</p>
-        <ul className="offer-benefits"><li>Abra a próxima ação e veja como começar.</li><li>Marque o que fez e acompanhe seu progresso.</li><li>Volte ao mesmo objetivo neste ou em outro aparelho.</li></ul>
-        <div className="conversion-price"><strong>R$ 37</strong><span>pagamento único<br />sem assinatura</span></div>
+        <div className="conversion-price"><strong>{bumpSelected ? 'R$ 99' : 'R$ 37'}</strong><span>pagamento único<br />sem assinatura</span></div>
+        <label className="conversion-bump"><input type="checkbox" checked={bumpSelected} disabled={checkoutBusy} onChange={event => onBumpChange(event.target.checked)} /><span className="conversion-bump-check" aria-hidden="true">{bumpSelected && <Check size={14} strokeWidth={3} />}</span><span><strong>Adicionar mais 2 Mandalarts por R$ 62</strong><small>Total R$ 99 para planejar 3 sonhos, sem assinatura.</small></span></label>
+        {directPixAvailable && <div className="conversion-payment-choice">
+          <span>Como você quer pagar?</span>
+          <div role="group" aria-label="Forma de pagamento">
+            <button type="button" aria-pressed={checkoutMethod === 'pix'} onClick={() => onCheckoutMethodChange('pix')} disabled={checkoutBusy}>
+              <span className="conversion-payment-icon conversion-payment-icon--pix"><PixMark size={25} /></span>
+              <span className="conversion-payment-label"><strong>Pix</strong><small>QR Code no Mandalart</small></span>
+              <span className="conversion-payment-indicator" aria-hidden="true">{checkoutMethod === 'pix' && <Check size={13} strokeWidth={3} />}</span>
+            </button>
+            <button type="button" aria-pressed={checkoutMethod === 'card'} onClick={() => onCheckoutMethodChange('card')} disabled={checkoutBusy}>
+              <span className="conversion-payment-icon conversion-payment-icon--card"><CreditCard size={24} strokeWidth={1.8} /></span>
+              <span className="conversion-payment-label"><strong>Cartão de crédito</strong><small>Checkout seguro Asaas</small></span>
+              <span className="conversion-payment-indicator" aria-hidden="true">{checkoutMethod === 'card' && <Check size={13} strokeWidth={3} />}</span>
+            </button>
+          </div>
+          {checkoutMethod === 'pix' && <label className="conversion-payment-email">Seu e-mail para receber o acesso<input type="email" value={email} onChange={event => onEmailChange(event.target.value)} autoComplete="email" placeholder="voce@exemplo.com" required /></label>}
+        </div>}
         {checkoutError && <p role="alert" className="begin-error">{checkoutError}</p>}
-        <button className="begin-primary" onClick={onCheckout} disabled={checkoutBusy}>{checkoutBusy ? 'Abrindo pagamento…' : 'Liberar meu Mandalart completo · R$37'} <ArrowRight size={18} /></button>
+        <button className="begin-primary" onClick={onCheckout} disabled={checkoutBusy}>{checkoutBusy ? 'Preparando pagamento…' : paymentCta} <ArrowRight size={18} aria-hidden="true" /></button>
         <p className="conversion-guarantee"><ShieldCheck size={16} /> Pagamento único · Garantia de 7 dias</p>
         <small>Compre sem cadastro prévio. Depois do pagamento, você recebe um e-mail para criar sua senha e acessar seu plano.</small>
       </section>
@@ -132,6 +158,6 @@ export function Preview({ previewId, onViewed, preview, answers, checked, onChec
         <details><summary>Posso pedir reembolso?</summary><p>Sim. Veja as condições em <Link href="/reembolso">nossa política de reembolso</Link>.</p></details>
       </div>
     </main>
-    <div className="conversion-sticky"><span><strong>Seu Mandalart completo</strong><small>R$37 · pagamento único</small></span><button onClick={onCheckout} disabled={checkoutBusy}>Liberar por R$37 <ArrowRight size={16} /></button></div>
+    <div className="conversion-sticky"><span><strong>{bumpSelected ? '3 Mandalarts completos' : 'Seu Mandalart completo'}</strong><small>{priceLabel} · pagamento único</small></span><button onClick={onCheckout} disabled={checkoutBusy}>Pagar {priceLabel} <ArrowRight size={16} /></button></div>
   </>
 }

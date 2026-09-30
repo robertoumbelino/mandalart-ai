@@ -1,6 +1,6 @@
 import 'server-only'
 import jwt from 'jsonwebtoken'
-import { billingOrigin } from '@/lib/stripe'
+import { emailOrigin } from '@/lib/stripe'
 
 function secret() {
   const value = process.env.JWT_SECRET
@@ -10,7 +10,7 @@ function secret() {
 
 export function createLeadLink(leadId: string) {
   const token = jwt.sign({}, secret(), { subject: leadId, audience: 'mandalart-lead', expiresIn: '7d', algorithm: 'HS256' })
-  return `${billingOrigin()}/api/onboarding/resume?token=${encodeURIComponent(token)}`
+  return `${emailOrigin()}/api/onboarding/resume?token=${encodeURIComponent(token)}`
 }
 
 export function verifyLeadLink(token: string) {
@@ -21,7 +21,7 @@ export function verifyLeadLink(token: string) {
 
 export function createUnsubscribeLink(leadId: string) {
   const token = jwt.sign({}, secret(), { subject: leadId, audience: 'mandalart-unsubscribe', expiresIn: '30d', algorithm: 'HS256' })
-  return `${billingOrigin()}/api/onboarding/unsubscribe?token=${encodeURIComponent(token)}`
+  return `${emailOrigin()}/api/onboarding/unsubscribe?token=${encodeURIComponent(token)}`
 }
 
 export function verifyUnsubscribeLink(token: string) {

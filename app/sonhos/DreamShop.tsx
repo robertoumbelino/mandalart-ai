@@ -13,6 +13,7 @@ import {
   Sprout,
 } from 'lucide-react'
 import { BrandLogo } from '@/app/components/Brand'
+import { PixMark } from '@/app/components/PixMark'
 import { Auth } from '@/app/components/Auth'
 import { getCurrentUserWithCreation } from '@/actions/auth'
 import { authClient } from '@/lib/auth/client'
@@ -24,6 +25,7 @@ import {
   checkDreamPayment,
   getPaymentOptions,
   startDreamCheckout,
+  startDreamPix,
 } from '@/actions/payments'
 import {
   checkOnboardingPayment,
@@ -58,8 +60,15 @@ export function DreamShop() {
   const [paymentOrder, setPaymentOrder] = useState<{ id: string; amount: number; mode: string } | null>(null)
   const [cancelled, setCancelled] = useState(false)
   const [busy, setBusy] = useState(false)
+  const [checkoutMethod, setCheckoutMethod] = useState<'pix' | 'card'>('pix')
   const [error, setError] = useState<string | null>(null)
   const request = useRef<{ id: string; pack: DreamPack } | null>(null)
+
+  useEffect(() => {
+    const resetCheckout = () => setBusy(false)
+    window.addEventListener('pageshow', resetCheckout)
+    return () => window.removeEventListener('pageshow', resetCheckout)
+  }, [])
 
   useEffect(() => {
     let active = true
@@ -80,8 +89,8 @@ export function DreamShop() {
           if (account?.created) captureProductEvent('registration_completed', { method: 'google' })
           setPack(params.get('pacote') === '3' ? 3 : 1)
           setSource(params.get('origem') === 'comecar' ? 'comecar' : 'account')
-          setSessionId(params.get('session_id'))
-          if (fromOnboarding && !params.has('session_id')) {
+          setSessionId(params.get('asaas_order') || params.get('session_id'))
+          if (fromOnboarding && !params.has('session_id') && !params.has('asaas_order')) {
             try {
               setKiwifyOrderId(sessionStorage.getItem(KIWIFY_ORDER_KEY))
             } catch {
@@ -175,8 +184,9 @@ export function DreamShop() {
         ? request.current
         : { id: crypto.randomUUID(), pack }
     try {
-      const checkout =
-        source === 'comecar'
+      const checkout = options?.directPix && checkoutMethod === 'pix'
+        ? await startDreamPix(pack, request.current.id, captureAttribution())
+        : source === 'comecar'
           ? await startOnboardingCheckout(pack, request.current.id, captureAttribution())
           : await startDreamCheckout(pack, request.current.id, 'account', captureAttribution())
       if (source === 'comecar' && options?.provider === 'kiwify') {
@@ -277,7 +287,7 @@ export function DreamShop() {
               {success
                 ? 'Seus sonhos foram adicionados à sua conta. Agora você pode transformar seu objetivo em um plano possível.'
                 : paymentStatus === 'pending' || !paymentStatus
-                  ? `Os créditos aparecem assim que ${kiwifyOrderId ? 'a Kiwify' : 'o Stripe'} confirma o pagamento. Você pode voltar depois; eles ficam na sua conta.`
+                  ? `Os créditos aparecem assim que ${kiwifyOrderId ? 'a Kiwify' : options?.provider === 'asaas' ? 'o Asaas' : 'o Stripe'} confirma o pagamento. Você pode voltar depois; eles ficam na sua conta.`
                   : 'O saldo abaixo já considera a situação desta compra.'}
             </p>
             {success && (
@@ -404,6 +414,10 @@ export function DreamShop() {
               </ul>
             </section>
             <div className="shop-purchase">
+              {options?.directPix && <div className="shop-payment-choice" role="group" aria-label="Forma de pagamento">
+                <button type="button" aria-pressed={checkoutMethod === 'pix'} disabled={busy} onClick={() => setCheckoutMethod('pix')}><span className="shop-payment-icon shop-payment-icon--pix"><PixMark size={22} /></span><span className="shop-payment-label"><strong>Pix</strong><small>QR Code no Mandalart</small></span><span className="shop-payment-indicator" aria-hidden="true">{checkoutMethod === 'pix' && <Check size={12} strokeWidth={3} />}</span></button>
+                <button type="button" aria-pressed={checkoutMethod === 'card'} disabled={busy} onClick={() => setCheckoutMethod('card')}><span className="shop-payment-icon shop-payment-icon--card"><CreditCard size={22} strokeWidth={1.8} /></span><span className="shop-payment-label"><strong>Cartão de crédito</strong><small>Checkout Asaas</small></span><span className="shop-payment-indicator" aria-hidden="true">{checkoutMethod === 'card' && <Check size={12} strokeWidth={3} />}</span></button>
+              </div>}
               <button
                 className="brand-button shop-cta"
                 disabled={busy || !options?.available}
@@ -411,18 +425,18 @@ export function DreamShop() {
               >
                 {busy ? (
                   <>
-                    <Loader2 size={19} className="animate-spin" /> Abrindo checkout…
+                    <Loader2 size={19} className="animate-spin" /> Preparando pagamento…
                   </>
                 ) : (
                   <>
-                    Escolher {DREAM_PACKS[pack].label}{' '}
+                    {options?.directPix && checkoutMethod === 'pix' ? 'Gerar Pix' : `Escolher ${DREAM_PACKS[pack].label}`}{' '}
                     · {DREAM_PACKS[pack].price} <ArrowRight size={18} />
                   </>
                 )}
               </button>
               <p>
                 <ShieldCheck size={15} /> Checkout seguro pela{' '}
-                {options?.provider === 'kiwify' ? 'Kiwify' : 'Stripe'}
+                {options?.provider === 'kiwify' ? 'Kiwify' : options?.provider === 'asaas' ? 'Asaas' : 'Stripe'}
                 {options?.provider !== 'kiwify' &&
                   ` · ${options?.pix ? 'Cartão de crédito e Pix' : 'Cartão de crédito'}`}
               </p>

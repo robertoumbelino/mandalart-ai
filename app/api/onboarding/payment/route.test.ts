@@ -9,6 +9,7 @@ vi.mock('@/actions/auth', () => ({ getCurrentUser: vi.fn() }))
 vi.mock('@/lib/account-registration', () => ({ registrationPending: vi.fn() }))
 vi.mock('@/lib/onboarding-server', () => ({ getPreviewSession: vi.fn(async () => 'visitor') }))
 vi.mock('@/lib/payments', () => ({ reconcileCheckout: vi.fn() }))
+vi.mock('@/lib/asaas-payments', () => ({ reconcileAsaasCheckout: vi.fn() }))
 vi.mock('@/lib/stripe', () => ({ billingMode: () => 'test' }))
 
 const answers = { category: 'learning', dream: 'Aprender um idioma', stage: 'idea', obstacle: 'direction', time: 'one', horizon: 'quarter' }

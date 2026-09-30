@@ -1,7 +1,7 @@
 import 'server-only'
 import { randomBytes, createHash, createHmac } from 'node:crypto'
 import { getDb } from '@/lib/db'
-import { billingOrigin } from '@/lib/stripe'
+import { emailOrigin } from '@/lib/stripe'
 import { createLeadLink, createUnsubscribeLink } from '@/lib/lead-link'
 import { emailDeliveryRecipient, localEmailTestMode } from '@/lib/email-testing'
 import { purchaseEmail, registrationEmail, previewEmail } from '@/lib/email-template'
@@ -38,8 +38,9 @@ export async function sendAccessEmail(orderId: string, userId: string, email: st
   const [order] = await getDb()`SELECT amount,credits FROM dream_orders WHERE id=${orderId}::uuid AND user_id=${userId}::uuid`
   if (!order) throw new Error('Compra não encontrada.')
   const price = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(Number(order.amount) / 100)
-  const url = `${billingOrigin()}/finalizar-cadastro?token=${encodeURIComponent(token)}`
-  await sendEmail(email, 'Compra confirmada — conclua seu cadastro no Mandalart', purchaseEmail(price, Number(order.credits), url, `${billingOrigin()}/?entrar=1&continuar=sonho`, `${billingOrigin()}/acessar`), { idempotencyKey: `purchase-registration-${orderId}` })
+  const origin = emailOrigin()
+  const url = `${origin}/finalizar-cadastro?token=${encodeURIComponent(token)}`
+  await sendEmail(email, 'Compra confirmada — conclua seu cadastro no Mandalart', purchaseEmail(price, Number(order.credits), url, `${origin}/?entrar=1&continuar=sonho`, `${origin}/acessar`), { idempotencyKey: `purchase-registration-${orderId}` })
   await getDb()`UPDATE dream_orders SET access_email_sent_at=now(),access_email_sending_at=NULL WHERE id=${orderId}::uuid AND user_id=${userId}::uuid`
 }
 
@@ -50,7 +51,7 @@ export async function sendRegistrationEmail(userId: string, email: string) {
   const hash = digest(token)
   await getDb()`INSERT INTO email_access_tokens(user_id,token_hash,expires_at)
     VALUES(${userId}::uuid,${hash},now()+interval '48 hours')`
-  const url = `${billingOrigin()}/finalizar-cadastro?token=${encodeURIComponent(token)}`
+  const url = `${emailOrigin()}/finalizar-cadastro?token=${encodeURIComponent(token)}`
   await sendEmail(email, 'Conclua seu cadastro no Mandalart', registrationEmail(url), { idempotencyKey: `registration-${hash}` })
 }
 

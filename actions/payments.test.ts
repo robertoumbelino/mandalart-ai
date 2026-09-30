@@ -7,6 +7,7 @@ vi.mock('@/actions/auth', () => ({ getCurrentUser: vi.fn() }))
 vi.mock('@/lib/db', () => ({ getDb: vi.fn() }))
 vi.mock('@/lib/payments', () => ({ reconcileCheckout: vi.fn() }))
 vi.mock('@/lib/stripe', () => ({
+  paymentProvider: () => 'stripe',
   billingConfig: mocks.config,
   billingMode: vi.fn(),
   billingOrigin: vi.fn(),

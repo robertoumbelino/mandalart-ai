@@ -4,7 +4,7 @@ import { sendAccessEmail, sendRegistrationEmail } from './transactional-email'
 vi.mock('server-only', () => ({}))
 const { sql } = vi.hoisted(() => ({ sql: vi.fn() }))
 vi.mock('@/lib/db', () => ({ getDb: () => sql }))
-vi.mock('@/lib/stripe', () => ({ billingOrigin: () => 'http://localhost:3100' }))
+vi.mock('@/lib/stripe', () => ({ emailOrigin: () => 'http://localhost:3100' }))
 
 beforeEach(() => {
   sql.mockReset().mockImplementation(async (strings: TemplateStringsArray) => strings.join('').startsWith('SELECT amount') ? [{ amount: 3700, credits: 1 }] : [])
@@ -41,7 +41,7 @@ it.each([
       expect(payload.to).toEqual(['test@gmail.com'])
       expect(payload.subject).not.toContain('TESTE LOCAL')
     }
-    expect(payload.html).toContain('/finalizar-cadastro?token=')
+    expect(payload.html).toContain('http://localhost:3100/finalizar-cadastro?token=')
     expect(payload.html).toContain('Concluir meu cadastro')
   }
   expect(JSON.parse(send.mock.calls[0][1].body).html).toContain('37,00')

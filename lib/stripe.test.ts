@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 vi.mock('server-only', () => ({}))
 
-import { billingMode, billingOrigin } from './stripe'
+import { billingMode, billingOrigin, emailOrigin } from './stripe'
 
 describe('Stripe environment isolation', () => {
   beforeEach(() => {
@@ -12,12 +12,29 @@ describe('Stripe environment isolation', () => {
     vi.stubEnv('VERCEL_URL', 'preview.example.com')
     vi.stubEnv('STRIPE_SECRET_KEY', 'sk_live_fixture')
     vi.stubEnv('APP_URL', 'https://mandalart.com.br')
+    vi.stubEnv('LOCAL_APP_URL', undefined)
   })
   afterEach(() => vi.unstubAllEnvs())
 
   it('uses real payments and the canonical return origin in production', () => {
     expect(billingMode()).toBe('live')
     expect(billingOrigin()).toBe('https://mandalart.com.br')
+    expect(emailOrigin()).toBe('https://mandalart.com.br')
+  })
+  it('uses localhost for test emails while keeping the HTTPS tunnel for Asaas callbacks', () => {
+    vi.stubEnv('NODE_ENV', 'development')
+    vi.stubEnv('VERCEL_ENV', undefined)
+    vi.stubEnv('STRIPE_SECRET_KEY', 'sk_test_fixture')
+    vi.stubEnv('APP_URL', 'https://sandbox-tunnel.ngrok-free.app')
+    expect(billingOrigin()).toBe('https://sandbox-tunnel.ngrok-free.app')
+    expect(emailOrigin()).toBe('http://localhost:3000')
+    vi.stubEnv('LOCAL_APP_URL', 'http://localhost:3100')
+    expect(emailOrigin()).toBe('http://localhost:3100')
+  })
+  it('rejects a nonlocal email origin in development', () => {
+    vi.stubEnv('NODE_ENV', 'development')
+    vi.stubEnv('LOCAL_APP_URL', 'https://sandbox-tunnel.ngrok-free.app')
+    expect(() => emailOrigin()).toThrow('LOCAL_APP_URL')
   })
   it('rejects test payments on the production deployment', () => {
     vi.stubEnv('STRIPE_SECRET_KEY', 'sk_test_fixture')
