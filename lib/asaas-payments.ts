@@ -56,19 +56,16 @@ export function asaasPaymentState(payment: AsaasPayment | null, order: AsaasOrde
 
 export function asaasPixPaymentState(payment: AsaasPayment | null, order: AsaasOrder) {
   if (!payment) return { paid: false, refunded: 0, disputed: false, status: 'pending' }
-  const checks = {
-    qrPresent: Boolean(payment.pixQrCodeId),
-    qrMatches: Boolean(order.asaas_pix_qr_id && payment.pixQrCodeId === order.asaas_pix_qr_id),
-    externalPresent: Boolean(payment.externalReference),
-    externalMatches: payment.externalReference === order.id,
-    pix: payment.billingType === 'PIX',
-    amountMatches: cents(payment.value) === order.amount,
-    paymentIdMatches: !order.external_order_id || order.external_order_id === payment.id,
-  }
-  if (!checks.qrMatches || !checks.pix || !checks.amountMatches || !checks.paymentIdMatches) {
-    console.error('asaas_pix_detail_mismatch', checks)
-    throw new Error('Pagamento Pix não corresponde ao pedido.')
-  }
+  const qrMatches = Boolean(order.asaas_pix_qr_id && payment.pixQrCodeId === order.asaas_pix_qr_id)
+  // O Asaas pode omitir pixQrCodeId na consulta, inclusive após um estorno.
+  // O QR foi filtrado na listagem e sua externalReference é o ID deste pedido.
+  const referenceMatches = !payment.pixQrCodeId && payment.externalReference === order.id
+  if (
+    !order.asaas_pix_qr_id || (!qrMatches && !referenceMatches) ||
+    (payment.externalReference && payment.externalReference !== order.id) ||
+    payment.billingType !== 'PIX' || cents(payment.value) !== order.amount ||
+    (order.external_order_id && order.external_order_id !== payment.id)
+  ) throw new Error('Pagamento Pix não corresponde ao pedido.')
   const paid = paidStatuses.has(payment.status)
   const refunded = Math.min(order.amount, Math.max(
     payment.status === 'REFUNDED' ? order.amount : 0,
