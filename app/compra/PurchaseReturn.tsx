@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { BrandLogo } from '@/app/components/Brand'
+import { PaymentSupport } from '@/app/components/PaymentSupport'
 import { trackMetaEvent } from '@/lib/meta-events'
 import { sendGoogleAnalyticsEvent } from '@/app/components/GoogleAnalytics'
 import { captureProductEvent } from '@/lib/posthog'
@@ -96,6 +97,7 @@ export function PurchaseReturn() {
             <p style={{ lineHeight: 1.55, color: '#56617a' }}>{result.status === 'pending' ? 'A confirmação pode levar alguns instantes. Seu objetivo continua salvo. Assim que o pagamento for confirmado, enviaremos seu acesso por e-mail.' : 'Sua prévia continua salva. Volte para tentar novamente com outro pagamento.'}</p>
             {result.status !== 'pending' && <Link href="/comecar?cancelado=1">Voltar à minha prévia</Link>}
             {error && <p role="alert" style={{ color: '#b42318' }}>{error}</p>}
+            {(error || result.status === 'failed') && <PaymentSupport />}
             <button onClick={() => window.location.reload()} style={{ marginTop: 18, border: '1px solid #c9baff', borderRadius: 10, padding: '12px 17px', color: '#5134be', background: 'white', fontWeight: 700, cursor: 'pointer' }}>Verificar novamente</button>
           </>
         )}
