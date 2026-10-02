@@ -77,11 +77,12 @@ export function Preview({ previewId, onViewed, preview, answers, checked, onChec
 
       <section className="mandala-reveal" aria-label="Seu Mandalart começando a tomar forma">
         <div className="mandala-grid" role="group" aria-label="Oito caminhos ao redor do seu sonho">
-          {[0,1,2,7,-1,3,6,5,4].map(index => index === -1
-            ? <div className="mandala-center" key="center"><span>SEU SONHO</span><strong>{dream}</strong></div>
-            : <div className={`mandala-cell ${index === 0 ? 'is-open' : 'is-locked'}`} key={index} data-path={index + 1} aria-label={`Caminho ${index + 1}: ${preview.pillars[index].title}${index ? ', ações disponíveis no plano completo' : ', primeiro passo disponível abaixo'}`}>
-                <span>{index === 0 ? <Sprout size={14} /> : <LockKeyhole size={12} />} CAMINHO {index + 1}</span>
-                <strong>{preview.pillars[index].title}</strong>
+          <div className="mandala-center"><span>OBJETIVO</span><strong>{dream}</strong></div>
+          {preview.pillars.map((pillar, index) =>
+            <div className={`mandala-cell ${index === 0 ? 'is-open' : 'is-locked'}`} key={index} aria-label={`Caminho ${index + 1}: ${pillar.title}${index ? ', ações disponíveis no plano completo' : ', primeiro passo disponível abaixo'}`}>
+                {index > 0 && <LockKeyhole className="mandala-lock" size={13} aria-hidden="true" />}
+                <span>{String(index + 1).padStart(2, '0')}</span>
+                {pillar.title}
               </div>)}
         </div>
         <details className="preview-path-details"><summary><ChevronRight size={17} aria-hidden="true" /><span>Entenda o papel de cada caminho</span></summary><p>{preview.introduction}</p><ol>{preview.pillars.map((pillar, index) => <li key={pillar.title}><strong>{index + 1}. {pillar.title}</strong><p>{pillar.description}</p></li>)}</ol></details>
@@ -90,7 +91,8 @@ export function Preview({ previewId, onViewed, preview, answers, checked, onChec
 
       <section className="conversion-first-step" aria-labelledby="conversion-step-title">
         <span className="begin-eyebrow"><Sprout size={15} /> COMECE POR AQUI</span>
-        <h2 id="conversion-step-title">{preview.firstStep.title}</h2>
+        <h2 id="conversion-step-title">{preview.pillars[0].title}</h2>
+        {preview.firstStep.title !== preview.pillars[0].title && <h3 className="conversion-action-title">{preview.firstStep.title}</h3>}
         <p>{preview.firstStep.description}</p>
         <span className="conversion-duration"><Clock3 size={14} /> Cerca de {preview.firstStep.minutes} minutos</span>
         <div className="conversion-checklist">
