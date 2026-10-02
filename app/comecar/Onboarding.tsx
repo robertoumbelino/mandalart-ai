@@ -14,8 +14,12 @@ import {
   ArrowRight,
   Check,
   ChevronRight,
+  Clock3,
+  Compass,
   Heart,
   LoaderCircle,
+  LockKeyhole,
+  MessageSquareText,
   ShieldCheck,
   Sprout,
   X
@@ -41,6 +45,7 @@ import {
 import { previewProgress } from '@/lib/preview-progress'
 import { clearOnboardingDraft, purchasedPreview, PURCHASED_PREVIEWS_KEY } from '@/lib/onboarding-storage'
 import { DreamIcon, MandalaBloom } from './Visuals'
+import { IntroPlanVisual } from './IntroPlanVisual'
 import { BrandLogo } from '@/app/components/Brand'
 import { Preview } from './Preview'
 
@@ -76,7 +81,7 @@ const DREAM_ICONS = {
 const EMPTY: OnboardingDraft = {
   version: 1,
   savedAt: 0,
-  screen: 'questions',
+  screen: 'welcome',
   question: 0,
   answers: {},
   result: null,
@@ -207,16 +212,9 @@ export function Onboarding() {
         savedAt: Date.now()
       }
       initial.attribution = { ...initial.attribution, ...captureAttribution() }
-      const startsQuiz = !restored || initial.screen === 'welcome'
-      if (initial.screen === 'welcome') {
-        initial.screen = initial.result ? 'preview' : 'questions'
-        if (!initial.result) {
-          const missing = answerFields.findIndex((_, index) => !isStepComplete(initial.answers, index))
-          initial.question = missing < 0 ? 5 : missing
-        }
-      }
+      if (initial.screen === 'welcome' && initial.result) initial.screen = 'preview'
       const state = window.history.state?.mandalartBegin
-      if (restored && state && ['questions', 'email', 'preview'].includes(state.screen)) {
+      if (restored && initial.screen !== 'welcome' && state && ['questions', 'email', 'preview'].includes(state.screen)) {
         if (state.screen === 'email') {
           initial.screen = initial.result ? 'preview' : 'questions'
           initial.question = 5
@@ -244,12 +242,7 @@ export function Onboarding() {
       )
       setHydrated(true)
       analytics('landing_view')
-      if (startsQuiz && !initial.result) {
-        analytics('quiz_started')
-      }
-      void fetch('/api/onboarding/event', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: 'landing_view', attribution: initial.attribution }) }).then(() => {
-        if (startsQuiz && !initial.result) return fetch('/api/onboarding/event', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: 'quiz_started', attribution: initial.attribution }) })
-      }).catch(() => {})
+      void fetch('/api/onboarding/event', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: 'landing_view', attribution: initial.attribution }) }).catch(() => {})
       if (new URLSearchParams(window.location.search).has('retomar')) {
         void fetch('/api/onboarding/restore').then(response => response.json()).then(result => {
           if (result.status !== 'ready') return
@@ -272,6 +265,8 @@ export function Onboarding() {
         const screen =
           state?.screen === 'preview' && current.result
             ? 'preview'
+            : state?.screen === 'welcome'
+              ? 'welcome'
             : state?.screen === 'email'
               ? current.result ? 'preview' : 'questions'
               : state?.screen === 'questions' || state?.screen === 'generating'
@@ -313,7 +308,7 @@ export function Onboarding() {
       const attemptId = crypto.randomUUID()
       setDraft(current => {
         if (!purchasedPreview(current.result?.id)) return current
-        return { ...EMPTY, attemptId, screen: 'questions', question: 0, attribution: current.attribution, savedAt: Date.now() }
+        return { ...EMPTY, attemptId, screen: 'welcome', question: 0, attribution: current.attribution, savedAt: Date.now() }
       })
     }
     function onStorage(event: StorageEvent) {
@@ -368,8 +363,8 @@ export function Onboarding() {
     setEmailError('')
     setError('')
     setDialog(null)
-    setDraft({ ...EMPTY, attemptId: crypto.randomUUID(), screen: 'questions', question: 0, attribution: draft.attribution, savedAt: Date.now() })
-    window.history.replaceState({ ...window.history.state, mandalartBegin: { screen: 'questions', question: 0 } }, '', '/comecar')
+    setDraft({ ...EMPTY, attemptId: crypto.randomUUID(), screen: 'welcome', question: 0, attribution: draft.attribution, savedAt: Date.now() })
+    window.history.replaceState({ ...window.history.state, mandalartBegin: { screen: 'welcome', question: 0 } }, '', '/comecar')
     window.scrollTo({ top: 0, behavior: 'instant' })
   }
 
@@ -408,6 +403,12 @@ export function Onboarding() {
     },
     []
   )
+
+  function startJourney() {
+    analytics('quiz_started')
+    void fetch('/api/onboarding/event', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: 'quiz_started', attribution: draft.attribution }) }).catch(() => {})
+    navigate('questions', 0)
+  }
 
   function select(value: string) {
     const field = answerFields[draft.question]
@@ -618,11 +619,11 @@ export function Onboarding() {
   const isPreview = draft.screen === 'preview' && !!draft.result
 
   return (
-    <div className={`begin-shell ${isPreview ? 'has-preview' : ''} ${draft.screen === 'questions' ? 'has-questions' : ''} ${draft.screen === 'generating' ? 'has-generation' : ''}`}>
+    <div className={`begin-shell ${draft.screen === 'welcome' ? 'has-welcome' : ''} ${isPreview ? 'has-preview' : ''} ${draft.screen === 'questions' ? 'has-questions' : ''} ${draft.screen === 'generating' ? 'has-generation' : ''}`}>
       <a href="#begin-main" className="begin-skip">
         Pular para o conteúdo
       </a>
-      <header className="begin-header">
+      {draft.screen !== 'welcome' && <header className="begin-header">
         <Link
           href="/"
           className="begin-brand"
@@ -633,12 +634,35 @@ export function Onboarding() {
         <span className="header-assurance">
           <span className="live-dot" /> No seu ritmo.
         </span>
-      </header>
+      </header>}
       {!storageAvailable && (
         <p className="storage-notice" role="status">
           Seu navegador não permitiu salvar o progresso. Você pode continuar,
           mas mantenha esta página aberta.
         </p>
+      )}
+
+      {draft.screen === 'welcome' && (
+        <main id="begin-main" className="intro-page begin-enter">
+          <div className="intro-content">
+            <div className="intro-brand" aria-label="Mandalart"><BrandLogo iconSize={32} /></div>
+            <div className="intro-copy">
+              <h1 tabIndex={-1} data-step-heading>Responda 6 perguntas e veja seu objetivo virar um plano.</h1>
+              <p>Em cerca de 2 minutos, o Mandalart organiza seu objetivo em 8 caminhos, etapas e tarefas práticas para você saber por onde começar e o que fazer depois.</p>
+            </div>
+            <IntroPlanVisual />
+            <ul className="intro-benefits">
+              <li><span className="intro-benefit-icon"><MessageSquareText size={20} aria-hidden="true" /></span><span><strong>Você responde 6 perguntas</strong><small>É rápido e simples.</small></span></li>
+              <li><span className="intro-benefit-icon"><Compass size={20} aria-hidden="true" /></span><span><strong>Recebe seu primeiro direcionamento</strong><small>Veja uma prévia do seu plano personalizado.</small></span></li>
+              <li><span className="intro-benefit-icon"><LockKeyhole size={20} aria-hidden="true" /></span><span><strong>Se fizer sentido, libera a jornada completa</strong><small>Com todas as etapas e tarefas práticas.</small></span></li>
+            </ul>
+          </div>
+          <div className="intro-action">
+            <button type="button" className="begin-primary" onClick={startJourney}>Começar as 6 perguntas <ArrowRight size={19} aria-hidden="true" /></button>
+            <p>Você verá uma prévia do seu plano antes de decidir comprar.</p>
+            <span><Clock3 size={14} aria-hidden="true" /> Leva cerca de 2 minutos</span>
+          </div>
+        </main>
       )}
 
       {draft.screen === 'questions' && (
@@ -660,9 +684,9 @@ export function Onboarding() {
           <div className="question-panel">
             <div className="question-navigation">
               {draft.question === 0 ? (
-                <Link href="/" className="back-button">
+                <button type="button" className="back-button" onClick={() => navigate('welcome', 0, true)}>
                   <ArrowLeft size={16} /> Voltar
-                </Link>
+                </button>
               ) : (
                 <button
                   className="back-button"
@@ -917,7 +941,7 @@ export function Onboarding() {
         </main>
       )}
 
-      <footer className="begin-footer">
+      {draft.screen !== 'welcome' && <footer className="begin-footer">
         <span>Feito para o seu próximo passo.</span>
         <div>
           <Link href="/privacidade" target="_blank" rel="noopener noreferrer">
@@ -928,7 +952,7 @@ export function Onboarding() {
             Termos de uso
           </Link>
         </div>
-      </footer>
+      </footer>}
 
       <dialog
         ref={dialogRef}
