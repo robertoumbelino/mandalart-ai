@@ -62,7 +62,7 @@ export default function TermsPage() {
           <section id="reembolso">
             <h2 className="text-lg font-bold text-slate-900">7. Garantia e reembolso</h2>
             <p className="mt-2">
-              Você pode solicitar o reembolso integral de uma compra feita pelo Stripe em até 7 dias após a confirmação do pagamento, sem precisar justificar. Acesse a <Link href="/reembolso" className="font-semibold text-indigo-700 underline">página de reembolso</Link> com a mesma conta usada na compra. O reembolso é iniciado pelo Stripe no meio de pagamento original; o prazo para o valor aparecer depende do banco ou provedor. Os créditos daquela compra são ajustados após a confirmação do estorno. Planos já salvos permanecem acessíveis.
+              Você pode solicitar o reembolso integral em até 7 dias após a confirmação do pagamento, sem precisar justificar. Acesse a <Link href="/reembolso" className="font-semibold text-indigo-700 underline">página de reembolso</Link> com a mesma conta usada na compra. O estorno é feito pelo provedor da compra no meio de pagamento original; o prazo para o valor aparecer depende do banco ou provedor. Os créditos daquela compra são ajustados após a confirmação do estorno. Planos já salvos permanecem acessíveis.
             </p>
           </section>
         </div>

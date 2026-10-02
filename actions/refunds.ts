@@ -7,6 +7,7 @@ import { billingMode, getStripe } from '@/lib/stripe'
 import { idSchema } from '@/lib/validation'
 import { refundAsaasPayment } from '@/lib/asaas'
 import { reconcileAsaasCheckout, reconcileAsaasPix } from '@/lib/asaas-payments'
+import { KiwifyRefundRejectedError, kiwifyRefundConfigured, refundKiwifySale, verifyKiwifySaleForRefund } from '@/lib/kiwify-refunds'
 
 type RefundableOrder = {
   id: string
@@ -62,7 +63,9 @@ export async function getPurchaseHistory() {
     const guaranteeEndsAt = paidAt ? new Date(new Date(paidAt).getTime() + 7 * 24 * 60 * 60 * 1000).toISOString() : null
     const refundable = row.provider === 'asaas'
       ? Boolean(row.external_order_id && (row.asaas_pix_qr_id || row.session_id))
-      : row.provider === 'stripe' && Boolean(row.payment_intent_id && row.session_id)
+      : row.provider === 'stripe'
+        ? Boolean(row.payment_intent_id && row.session_id)
+        : row.provider === 'kiwify' && kiwifyRefundConfigured() && Boolean(row.external_order_id)
     return {
       id: String(row.id),
       amount: Number(row.amount),
@@ -97,15 +100,34 @@ export async function requestDreamRefund(rawId: string) {
       ORDER BY created_at ASC LIMIT 1
     ) payment ON true
     WHERE orders.id=${id}::uuid AND orders.user_id=${user.id} AND orders.mode=${billingMode()}
-      AND orders.provider IN ('stripe','asaas') AND orders.refund_requested_at IS NULL
+      AND orders.provider IN ('stripe','asaas','kiwify') AND orders.refund_requested_at IS NULL
   ` as RefundableOrder[]
   if (!order) throw new Error('Compra não encontrada nesta conta.')
   if (order.status !== 'paid') throw new Error('Esta compra já foi reembolsada ou está em análise.')
   if (Date.now() - new Date(order.paid_at).getTime() > 7 * 24 * 60 * 60 * 1000)
     throw new Error('O prazo de 7 dias desta compra terminou.')
   if ((order.provider === 'stripe' && (!order.session_id || !order.payment_intent_id)) ||
-    (order.provider === 'asaas' && (!order.external_order_id || (!order.session_id && !order.asaas_pix_qr_id))))
+    (order.provider === 'asaas' && (!order.external_order_id || (!order.session_id && !order.asaas_pix_qr_id))) ||
+    (order.provider === 'kiwify' && !order.external_order_id))
     throw new Error('Ainda estamos conferindo o pagamento. Tente novamente em instantes.')
+
+  if (order.provider === 'kiwify') {
+    if (!kiwifyRefundConfigured())
+      throw new Error('O reembolso pela Kiwify ainda não está configurado. Fale com o suporte.')
+    await verifyKiwifySaleForRefund(order.external_order_id!, id, Number(order.amount))
+    const [claim] = await getDb()`UPDATE dream_orders SET refund_requested_at=now()
+      WHERE id=${id}::uuid AND user_id=${user.id} AND status='paid' AND refund_requested_at IS NULL RETURNING id`
+    if (!claim) throw new Error('Esta compra já foi reembolsada ou está em análise.')
+    try {
+      await refundKiwifySale(order.external_order_id!)
+    } catch (error) {
+      if (error instanceof KiwifyRefundRejectedError)
+        await getDb()`UPDATE dream_orders SET refund_requested_at=NULL
+          WHERE id=${id}::uuid AND status='paid'`
+      throw error
+    }
+    return { accepted: true }
+  }
 
   if (order.provider === 'asaas') {
     const reconcile = () => order.asaas_pix_qr_id

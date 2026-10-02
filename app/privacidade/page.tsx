@@ -74,7 +74,7 @@ export default function PrivacyPage() {
           <section>
             <h2 className="text-lg font-bold text-slate-900">Pagamentos e créditos</h2>
             <p className="mt-2">
-              O checkout é processado pelo Stripe. Compartilhamos seu e-mail e os dados do pedido necessários para confirmar a compra. Uma conta é criada ou vinculada após o pagamento; se o e-mail já pertence a uma conta, o acesso exige confirmação pelo link enviado a esse endereço. Os dados do cartão são informados diretamente ao Stripe; o Mandalart não recebe nem armazena o número completo do cartão ou o código de segurança. Guardamos identificadores e situação do pagamento, valores, saldo e movimentações de sonhos para entregar o serviço e conciliar compras, reembolsos e contestações.
+              O checkout é processado pelo provedor de pagamento escolhido, como Stripe, Asaas ou Kiwify. Compartilhamos seu e-mail e os dados do pedido necessários para confirmar a compra. Uma conta é criada ou vinculada após o pagamento; se o e-mail já pertence a uma conta, o acesso exige confirmação pelo link enviado a esse endereço. Os dados do cartão são informados diretamente ao provedor; o Mandalart não recebe nem armazena o número completo do cartão ou o código de segurança. Guardamos identificadores e situação do pagamento, valores, saldo e movimentações de sonhos para entregar o serviço e conciliar compras, reembolsos e contestações.
             </p>
           </section>
 

@@ -43,10 +43,20 @@ describe('checkout return account access', () => {
     vi.mocked(registrationPending).mockResolvedValue(false)
     expect(await (await GET(request())).json()).toMatchObject({ registrationRequired: false, authenticated: true })
   })
-  it('does not check account access until payment is confirmed', async () => {
+it('does not check account access until payment is confirmed', async () => {
     order('pending')
     expect(await (await GET(request())).json()).toEqual({ status: 'pending' })
     expect(registrationPending).not.toHaveBeenCalled()
     expect(getCurrentUser).not.toHaveBeenCalled()
+  })
+  it('checks a Kiwify guest order using the anonymous preview session', async () => {
+    order()
+    vi.mocked(getCurrentUser).mockResolvedValue(null)
+    vi.mocked(registrationPending).mockResolvedValue(true)
+    const response = await GET(new Request('http://localhost:3100/api/onboarding/payment?provider=kiwify&order_id=60e62b8f-e9ac-4f97-94e8-6d27732fbd5e'))
+    expect(await response.json()).toMatchObject({ status: 'paid', mode: 'test', simulated: true, registrationRequired: true })
+    const firstQuery = vi.mocked(getDb).mock.results[0].value.mock.calls[0][0].join('?')
+    expect(firstQuery).toContain('p.session_id=')
+    expect(firstQuery).toContain('o.provider=')
   })
 })

@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { kiwifyCheckoutLink } from './kiwify-checkout'
+import { kiwifyCheckoutLink, kiwifyCheckoutPreviewLink } from './kiwify-checkout'
 
 vi.mock('server-only', () => ({}))
 
@@ -12,6 +12,14 @@ afterEach(() => {
 })
 
 describe('Kiwify offer link preparation', () => {
+  it('shows the real checkout for visual review without a local order reference', () => {
+    process.env.KIWIFY_CHECKOUT_ONE = 'https://pay.kiwify.com.br/abc123?afid=partner'
+    const url = new URL(kiwifyCheckoutPreviewLink(1))
+    expect(url.origin).toBe('https://pay.kiwify.com.br')
+    expect(url.searchParams.get('afid')).toBe('partner')
+    expect(url.searchParams.has('sck')).toBe(false)
+  })
+
   it('keeps the affiliate link and adds the buyer and order reference', () => {
     process.env.KIWIFY_CHECKOUT_ONE =
       'https://pay.kiwify.com.br/abc123?afid=partner&src=campaign&utm_source=old'
@@ -41,5 +49,12 @@ describe('Kiwify offer link preparation', () => {
     expect(() => kiwifyCheckoutLink(1, 'buyer@example.com', 'not-an-id')).toThrow(
       'Pedido da Kiwify inválido.',
     )
+  })
+
+  it('lets Kiwify collect the email when the visitor did not save a preview', () => {
+    process.env.KIWIFY_CHECKOUT_ONE = 'https://pay.kiwify.com.br/abc123'
+    const url = new URL(kiwifyCheckoutLink(1, null, orderId))
+    expect(url.searchParams.has('email')).toBe(false)
+    expect(url.searchParams.get('sck')).toBe(orderId)
   })
 })

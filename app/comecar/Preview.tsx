@@ -19,6 +19,9 @@ type Props = {
   onCheckout: () => void
   checkoutBusy: boolean
   directPixAvailable: boolean
+  kiwifyCheckout: boolean
+  kiwifyDemo: boolean
+  kiwifyPreviewLinks: { one: string; three: string } | null
   checkoutMethod: 'pix' | 'card'
   onCheckoutMethodChange: (method: 'pix' | 'card') => void
   bumpSelected: boolean
@@ -32,7 +35,7 @@ type Props = {
   emailError: string
 }
 
-export function Preview({ previewId, onViewed, preview, answers, checked, onCheck, onRestart, onCheckout, checkoutBusy, directPixAvailable, checkoutMethod, onCheckoutMethodChange, bumpSelected, onBumpChange, checkoutError, email, onEmailChange, onEmailSubmit, emailBusy, emailSaved, emailError }: Props) {
+export function Preview({ previewId, onViewed, preview, answers, checked, onCheck, onRestart, onCheckout, checkoutBusy, directPixAvailable, kiwifyCheckout, kiwifyDemo, kiwifyPreviewLinks, checkoutMethod, onCheckoutMethodChange, bumpSelected, onBumpChange, checkoutError, email, onEmailChange, onEmailSubmit, emailBusy, emailSaved, emailError }: Props) {
   const offerRef = useRef<HTMLElement>(null)
   const emailRef = useRef<HTMLElement>(null)
   const onViewedRef = useRef(onViewed)
@@ -55,8 +58,11 @@ export function Preview({ previewId, onViewed, preview, answers, checked, onChec
   }, [previewId])
   const dream = getDream(answers)
   const localTest = process.env.NODE_ENV === 'development'
+  const localKiwifyDemo = kiwifyCheckout && kiwifyDemo
   const priceLabel = bumpSelected ? 'R$ 99' : 'R$ 37'
-  const paymentCta = directPixAvailable
+  const paymentCta = localKiwifyDemo
+    ? `Simular compra de ${priceLabel}`
+    : directPixAvailable
     ? checkoutMethod === 'pix' ? `Pagar ${priceLabel} com Pix` : `Pagar ${priceLabel} com cartão`
     : `Continuar para pagar ${priceLabel}`
   return <>
@@ -91,7 +97,7 @@ export function Preview({ previewId, onViewed, preview, answers, checked, onChec
           {preview.firstStep.checklist.map((item,index) => <ChecklistItem key={item} text={item} checked={checked[index]} onToggle={() => onCheck(index)} />)}
         </div>
         <small>{checked.filter(Boolean).length} de 3 pequenas ações concluídas</small>
-        {checked.every(Boolean) && <div className="preview-reward" role="status"><strong>Primeiro passo concluído.</strong><p>Seu Mandalart completo mostra como continuar. O que você marcou aqui acompanha seu plano.</p><button className="begin-primary" onClick={onCheckout} disabled={checkoutBusy}>Liberar {bumpSelected ? '3 Mandalarts · R$99' : 'meu Mandalart completo · R$37'} <ArrowRight size={18} /></button></div>}
+        {checked.every(Boolean) && <div className="preview-reward" role="status"><strong>Primeiro passo concluído.</strong><p>Seu Mandalart completo mostra como continuar. O que você marcou aqui acompanha seu plano.</p><button className="begin-primary" onClick={onCheckout} disabled={checkoutBusy}>{localKiwifyDemo ? `Simular compra de ${priceLabel}` : `Liberar ${bumpSelected ? '3 Mandalarts · R$99' : 'meu Mandalart completo · R$37'}`} <ArrowRight size={18} /></button></div>}
       </section>
 
       <figure className="conversion-testimonial">
@@ -129,7 +135,12 @@ export function Preview({ previewId, onViewed, preview, answers, checked, onChec
           {checkoutMethod === 'pix' && <label className="conversion-payment-email">Seu e-mail para receber o acesso<input type="email" value={email} onChange={event => onEmailChange(event.target.value)} autoComplete="email" placeholder="voce@exemplo.com" required /></label>}
         </div>}
         {checkoutError && <p role="alert" className="begin-error">{checkoutError}</p>}
-        <button className="begin-primary" onClick={onCheckout} disabled={checkoutBusy}>{checkoutBusy ? 'Preparando pagamento…' : paymentCta} <ArrowRight size={18} aria-hidden="true" /></button>
+        <button className="begin-primary" onClick={onCheckout} disabled={checkoutBusy}>{checkoutBusy ? (localKiwifyDemo ? 'Preparando simulação…' : 'Preparando pagamento…') : paymentCta} <ArrowRight size={18} aria-hidden="true" /></button>
+        {kiwifyCheckout && <small>{localKiwifyDemo ? 'Simulação local sem cobrança. Em produção, Pix ou cartão no checkout seguro da Kiwify.' : 'Pix ou cartão no checkout seguro da Kiwify.'}</small>}
+        {localKiwifyDemo && kiwifyPreviewLinks && <div className="mt-4 rounded-xl border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-950">
+          <a className="font-semibold underline" href={bumpSelected ? kiwifyPreviewLinks.three : kiwifyPreviewLinks.one} target="_blank" rel="noopener noreferrer">Ver o checkout real da Kiwify para {priceLabel}</a>
+          <p className="mt-1">Esse link serve para conferir a página. Uma compra feita por ele não será vinculada ao seu pedido local.</p>
+        </div>}
         <p className="conversion-guarantee"><ShieldCheck size={16} /> Pagamento único · Garantia de 7 dias</p>
         <small>Compre sem cadastro prévio. Depois do pagamento, você recebe um e-mail para criar sua senha e acessar seu plano.</small>
       </section>
@@ -158,6 +169,6 @@ export function Preview({ previewId, onViewed, preview, answers, checked, onChec
         <details><summary>Posso pedir reembolso?</summary><p>Sim. Veja as condições em <Link href="/reembolso">nossa política de reembolso</Link>.</p></details>
       </div>
     </main>
-    <div className="conversion-sticky"><span><strong>{bumpSelected ? '3 Mandalarts completos' : 'Seu Mandalart completo'}</strong><small>{priceLabel} · pagamento único</small></span><button onClick={onCheckout} disabled={checkoutBusy}>Pagar {priceLabel} <ArrowRight size={16} /></button></div>
+    <div className="conversion-sticky"><span><strong>{bumpSelected ? '3 Mandalarts completos' : 'Seu Mandalart completo'}</strong><small>{priceLabel} · pagamento único</small></span><button onClick={onCheckout} disabled={checkoutBusy}>{localKiwifyDemo ? `Simular ${priceLabel}` : `Pagar ${priceLabel}`} <ArrowRight size={16} /></button></div>
   </>
 }

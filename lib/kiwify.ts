@@ -4,12 +4,16 @@ import { getDb } from '@/lib/db'
 import { DREAM_PACKS, type DreamPack } from '@/lib/dream-packs'
 import { billingMode } from '@/lib/stripe'
 import { idSchema } from '@/lib/validation'
+import { fulfillOrder } from '@/lib/order-fulfillment'
+import type { DreamOrder } from '@/lib/payments'
 
 type KiwifyEvent = {
   order_id?: unknown
   order_status?: unknown
   webhook_event_type?: unknown
   Product?: { product_id?: unknown }
+  Customer?: { email?: unknown }
+  payment_method?: unknown
   Commissions?: {
     charge_amount?: unknown
     currency?: unknown
@@ -31,10 +35,18 @@ export function kiwifyConfigured() {
 
 export function kiwifyOnboardingEnabled() {
   return (
-    process.env.KIWIFY_ONBOARDING_ENABLED === 'true' &&
+    process.env.KIWIFY_GUEST_ENABLED === 'true' &&
     kiwifyConfigured() &&
     billingMode() === 'live'
   )
+}
+
+export function kiwifyLocalDemoEnabled() {
+  return process.env.NODE_ENV === 'development' &&
+    process.env.LOCAL_DATABASE_ONLY === 'true' &&
+    process.env.KIWIFY_GUEST_ENABLED === 'true' &&
+    kiwifyConfigured() &&
+    billingMode() === 'test'
 }
 
 export function verifyKiwifySignature(body: string, signature: string | null) {
@@ -93,6 +105,8 @@ export function validateKiwifyEvent(raw: unknown) {
     amount,
     basePrice,
     checkoutLink: event.checkout_link,
+    email: typeof event.Customer?.email === 'string' ? event.Customer.email : '',
+    paymentMethod: event.payment_method === 'pix' ? 'PIX' : event.payment_method === 'credit_card' ? 'CREDIT_CARD' : null,
   }
 }
 
@@ -101,10 +115,10 @@ export async function processKiwifyEvent(raw: unknown) {
   if (!event) return 'ignored' as const
 
   const sql = getDb()
-  const [order] = await sql`
-    SELECT id, mode, provider, credits, amount, price_id, external_order_id
+  const [order] = (await sql`
+    SELECT *
     FROM dream_orders WHERE id=${event.id}::uuid
-  `
+  `) as (DreamOrder & { provider: string; external_order_id: string | null })[]
   if (!order) return 'ignored' as const
   const credits = Number(order.credits) as DreamPack
   if (
@@ -121,7 +135,7 @@ export async function processKiwifyEvent(raw: unknown) {
   }
 
   const linked = await sql`
-    UPDATE dream_orders SET external_order_id=${event.externalOrderId}
+    UPDATE dream_orders SET external_order_id=${event.externalOrderId},payment_method=COALESCE(payment_method,${event.paymentMethod})
     WHERE id=${event.id}::uuid AND (external_order_id IS NULL OR external_order_id=${event.externalOrderId})
     RETURNING id
   `
@@ -130,11 +144,11 @@ export async function processKiwifyEvent(raw: unknown) {
   const paid = event.eventType === 'order_approved'
   const refunded = event.eventType === 'order_refunded' ? Number(order.amount) : 0
   const disputed = event.eventType === 'chargeback'
-  await sql`
-    SELECT dream_reconcile_order(
-      ${event.id}::uuid, ${paid}, ${refunded}, ${disputed},
-      ${disputed ? Date.now() : 0}::bigint, 'pending'
-    )
-  `
+  await fulfillOrder({
+    order, paid, refunded, disputed, revision: disputed ? Date.now() : 0,
+    pendingStatus: 'pending', paidEmail: event.email,
+    bump: Boolean(order.preview_id && credits === 3),
+    source: order.preview_id ? 'comecar' : 'account',
+  })
   return 'processed' as const
 }

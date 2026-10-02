@@ -7,13 +7,12 @@ process.loadEnvFile('.env.local')
 const database = new URL(process.env.DATABASE_URL)
 if (!['localhost', '127.0.0.1', '[::1]'].includes(database.hostname))
   throw new Error('Este teste só pode usar Postgres local.')
-if (process.env.KIWIFY_ONBOARDING_ENABLED === 'true')
-  throw new Error('Desative o checkout Kiwify para este teste sintético.')
 const base = new URL(process.env.KIWIFY_TEST_BASE_URL || 'http://localhost:3001')
 if (!['localhost', '127.0.0.1', '[::1]'].includes(base.hostname))
   throw new Error('Este teste só pode chamar o servidor local.')
 
-const token = 'local-kiwify-fixture'
+const token = process.env.KIWIFY_WEBHOOK_TOKEN
+if (!token) throw new Error('KIWIFY_WEBHOOK_TOKEN ausente.')
 const productId = process.env.KIWIFY_PRODUCT_ID
 const checkoutCode = new URL(process.env.KIWIFY_CHECKOUT_ONE).pathname.slice(1)
 const user = randomUUID()
@@ -48,9 +47,9 @@ const event = {
   webhook_event_type: 'order_approved',
   Product: { product_id: productId },
   Commissions: {
-    charge_amount: '3990',
+    charge_amount: '3700',
     currency: 'BRL',
-    product_base_price: '3990',
+    product_base_price: '3700',
     product_base_price_currency: 'BRL',
   },
   TrackingParameters: { sck: order },
@@ -63,7 +62,7 @@ try {
     [user, `kiwify-${user}@example.com`],
   )
   await client.query(
-    "INSERT INTO dream_orders(id,user_id,mode,provider,credits,amount,price_id) VALUES($1,$2,'test','kiwify',1,3990,$3)",
+    "INSERT INTO dream_orders(id,user_id,mode,provider,credits,amount,price_id) VALUES($1,$2,'test','kiwify',1,3700,$3)",
     [order, user, checkoutCode],
   )
   assert.equal((await send(event, false)).status, 400)
@@ -84,7 +83,7 @@ try {
   const disputedOrder = randomUUID()
   const disputedSale = randomUUID()
   await client.query(
-    "INSERT INTO dream_orders(id,user_id,mode,provider,credits,amount,price_id) VALUES($1,$2,'test','kiwify',1,3990,$3)",
+    "INSERT INTO dream_orders(id,user_id,mode,provider,credits,amount,price_id) VALUES($1,$2,'test','kiwify',1,3700,$3)",
     [disputedOrder, user, checkoutCode],
   )
   const disputedEvent = {

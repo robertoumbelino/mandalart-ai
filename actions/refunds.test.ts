@@ -9,6 +9,9 @@ const mocks = vi.hoisted(() => ({
   asaasRefund: vi.fn(),
   reconcileAsaasCheckout: vi.fn(),
   reconcileAsaasPix: vi.fn(),
+  kiwifyConfigured: vi.fn(),
+  kiwifyVerify: vi.fn(),
+  kiwifyRefund: vi.fn(),
 }))
 vi.mock('server-only', () => ({}))
 vi.mock('@/actions/auth', () => ({ getCurrentUser: mocks.user }))
@@ -19,6 +22,12 @@ vi.mock('@/lib/asaas', () => ({ refundAsaasPayment: mocks.asaasRefund }))
 vi.mock('@/lib/asaas-payments', () => ({
   reconcileAsaasCheckout: mocks.reconcileAsaasCheckout,
   reconcileAsaasPix: mocks.reconcileAsaasPix,
+}))
+vi.mock('@/lib/kiwify-refunds', () => ({
+  KiwifyRefundRejectedError: class KiwifyRefundRejectedError extends Error {},
+  kiwifyRefundConfigured: mocks.kiwifyConfigured,
+  verifyKiwifySaleForRefund: mocks.kiwifyVerify,
+  refundKiwifySale: mocks.kiwifyRefund,
 }))
 
 const id = 'b857878a-22e1-4190-a04f-611d6e03d2a0'
@@ -39,6 +48,9 @@ beforeEach(() => {
   mocks.sql.mockResolvedValue([order])
   mocks.create.mockResolvedValue({ id: 're_test' })
   mocks.asaasRefund.mockResolvedValue({ id: 'pay_test' })
+  mocks.kiwifyConfigured.mockReturnValue(true)
+  mocks.kiwifyVerify.mockResolvedValue(undefined)
+  mocks.kiwifyRefund.mockResolvedValue(undefined)
 })
 
 it('refunds only an authenticated paid order through the original payment', async () => {
@@ -70,6 +82,33 @@ it('refunds a direct Asaas Pix payment without requiring a checkout session', as
   expect(mocks.reconcileAsaasPix).toHaveBeenCalledTimes(2)
   expect(mocks.asaasRefund).toHaveBeenCalledWith('pay_test')
   expect(mocks.reconcileAsaasCheckout).not.toHaveBeenCalled()
+})
+
+it('verifies the Kiwify sale and claims the order before requesting a refund', async () => {
+  const saleId = 'd7224591-861e-4eb9-8411-a321dfaf673b'
+  mocks.sql.mockResolvedValueOnce([{ ...order, provider: 'kiwify', external_order_id: saleId,
+    payment_intent_id: null, session_id: null }]).mockResolvedValueOnce([{ id }])
+  await expect(requestDreamRefund(id)).resolves.toEqual({ accepted: true })
+  expect(mocks.kiwifyVerify).toHaveBeenCalledWith(saleId, id, 3700)
+  expect(mocks.kiwifyRefund).toHaveBeenCalledWith(saleId)
+  expect(mocks.kiwifyVerify.mock.invocationCallOrder[0]).toBeLessThan(mocks.kiwifyRefund.mock.invocationCallOrder[0])
+})
+
+it('does not send a second Kiwify refund when the order is already claimed', async () => {
+  mocks.sql.mockResolvedValueOnce([{ ...order, provider: 'kiwify', external_order_id: 'd7224591-861e-4eb9-8411-a321dfaf673b' }])
+    .mockResolvedValueOnce([])
+  await expect(requestDreamRefund(id)).rejects.toThrow('em análise')
+  expect(mocks.kiwifyRefund).not.toHaveBeenCalled()
+})
+
+it('allows retry after Kiwify explicitly rejects a refund', async () => {
+  const { KiwifyRefundRejectedError } = await import('@/lib/kiwify-refunds')
+  mocks.sql.mockResolvedValueOnce([{ ...order, provider: 'kiwify', external_order_id: 'd7224591-861e-4eb9-8411-a321dfaf673b' }])
+    .mockResolvedValueOnce([{ id }]).mockResolvedValueOnce([])
+  mocks.kiwifyRefund.mockRejectedValueOnce(new KiwifyRefundRejectedError('rejected'))
+  await expect(requestDreamRefund(id)).rejects.toThrow('rejected')
+  expect(mocks.sql).toHaveBeenCalledTimes(3)
+  expect(String(mocks.sql.mock.calls[2][0][0])).toContain('refund_requested_at=NULL')
 })
 
 it('shows paid and refunded purchases, and only offers a refund for an eligible payment', async () => {

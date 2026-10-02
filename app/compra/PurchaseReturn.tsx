@@ -30,21 +30,34 @@ export function PurchaseReturn() {
   useEffect(() => {
     const params = new URLSearchParams(window.location.search)
     const sessionId = params.get('session_id')
-    const orderId = params.get('order_id')
-    if (!sessionId && !orderId) return
+    const kiwify = params.has('kiwify')
+    let orderId = kiwify ? null : params.get('order_id')
+    if (kiwify) {
+      try { orderId = sessionStorage.getItem('mandalart_kiwify_guest_order') } catch {}
+      if (!orderId) try { orderId = localStorage.getItem('mandalart_kiwify_guest_order') } catch {}
+      if (!orderId) orderId = params.get('sck')
+    }
+    if (!sessionId && !orderId) {
+      queueMicrotask(() => setError('Não encontramos a referência da compra neste navegador. Confira o e-mail usado no pagamento para receber seu acesso.'))
+      return
+    }
     let active = true
     let count = 0
     let timer: ReturnType<typeof setTimeout>
 
     const check = async () => {
       try {
-        const response = await fetch(`/api/onboarding/payment?${orderId ? `order_id=${encodeURIComponent(orderId)}` : `session_id=${encodeURIComponent(sessionId!)}`}`, { cache: 'no-store' })
+        const response = await fetch(`/api/onboarding/payment?${orderId ? `order_id=${encodeURIComponent(orderId)}${kiwify ? '&provider=kiwify' : ''}` : `session_id=${encodeURIComponent(sessionId!)}`}`, { cache: 'no-store' })
         if (!response.ok) throw new Error('Não foi possível confirmar o pagamento agora.')
         const payment = await response.json() as Result
         if (!active) return
         setResult(payment)
         setError('')
         if (payment.status === 'paid' && payment.id) {
+          if (kiwify) {
+            try { sessionStorage.removeItem('mandalart_kiwify_guest_order') } catch {}
+            try { localStorage.removeItem('mandalart_kiwify_guest_order') } catch {}
+          }
           if (payment.previewId) markOnboardingPurchased(payment.previewId)
           const purchase = { transaction_id: payment.id, order_id: payment.id, preview_id: payment.previewId || '', currency: 'BRL', value: (payment.amount || 0) / 100, journey_version: 'conversion-v2' }
           let alreadySent = false
@@ -82,7 +95,7 @@ export function PurchaseReturn() {
         </h1>
         {paid ? (
           <>
-            {result.simulated && <p style={{ margin: '0 0 14px', padding: 12, borderRadius: 10, background: '#fff5db', color: '#6d4d10', fontSize: 13, lineHeight: 1.5 }}>Este pedido foi marcado como pago apenas no banco local. O Asaas não recebeu nem confirmou o Pix.</p>}
+            {result.simulated && <p style={{ margin: '0 0 14px', padding: 12, borderRadius: 10, background: '#fff5db', color: '#6d4d10', fontSize: 13, lineHeight: 1.5 }}>Este pedido foi marcado como pago apenas no banco local. Nenhuma cobrança real foi feita.</p>}
             <p style={{ lineHeight: 1.55, color: '#56617a' }}>Seu objetivo{result.dream ? ` — ${result.dream}` : ''} e sua compra estão salvos. {result.registrationRequired
               ? result.accessEmailSent ? 'Enviamos um e-mail para você concluir seu cadastro. Depois, seu Mandalart abre com o plano completo.' : 'Falta concluir seu cadastro. Ainda não conseguimos enviar o e-mail; tente novamente abaixo.'
               : 'Entre com sua conta para abrir seu Mandalart. Nas próximas visitas, use o mesmo e-mail e senha ou Google.'}</p>

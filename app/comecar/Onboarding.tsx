@@ -151,7 +151,10 @@ export function Onboarding() {
   const [emailBusy, setEmailBusy] = useState(false)
   const [emailError, setEmailError] = useState('')
   const [checkoutBusy, setCheckoutBusy] = useState(false)
+  const kiwifyCheckout = typeof window !== 'undefined' && new URLSearchParams(window.location.search).has('kiwify')
   const [directPixAvailable, setDirectPixAvailable] = useState(false)
+  const [kiwifyDemo, setKiwifyDemo] = useState(false)
+  const [kiwifyPreviewLinks, setKiwifyPreviewLinks] = useState<{ one: string; three: string } | null>(null)
   const [checkoutMethod, setCheckoutMethod] = useState<'pix' | 'card'>('pix')
   const [bumpSelected, setBumpSelected] = useState(false)
   const [blocked, setBlocked] = useState<'illegal' | 'self-harm'>('illegal')
@@ -168,11 +171,15 @@ export function Onboarding() {
 
   useEffect(() => {
     let active = true
-    void getOnboardingPaymentOptions().then(options => {
-      if (active) setDirectPixAvailable(options.directPix)
+    void getOnboardingPaymentOptions(kiwifyCheckout).then(options => {
+      if (active) {
+        setDirectPixAvailable(options.directPix)
+        setKiwifyDemo('localDemo' in options && options.localDemo === true)
+        setKiwifyPreviewLinks('previewLinks' in options ? options.previewLinks : null)
+      }
     }).catch(() => {})
     return () => { active = false }
-  }, [])
+  }, [kiwifyCheckout])
 
   useEffect(() => {
     const resetCheckout = () => setCheckoutBusy(false)
@@ -581,7 +588,11 @@ export function Onboarding() {
       const context = { checked: draft.checked, bump: bumpSelected, marketingConsent, analyticsDistinctId: getProductDistinctId() }
       const result = useDirectPix
         ? await startGuestPix(draft.result.id, orderId, email, context)
-        : await startGuestCheckout(draft.result.id, orderId, context)
+        : await startGuestCheckout(draft.result.id, orderId, context, kiwifyCheckout ? 'kiwify' : 'default')
+      if (kiwifyCheckout) {
+        try { sessionStorage.setItem('mandalart_kiwify_guest_order', orderId) } catch {}
+        try { localStorage.setItem('mandalart_kiwify_guest_order', orderId) } catch {}
+      }
       analytics('checkout_started', { order_id: orderId, preview_id: draft.result.id, lead_id: draft.leadId || '' })
       trackMetaEvent({ name: 'InitiateCheckout', data: { value: bumpSelected ? 99 : 37, currency: 'BRL' }, onceKey: `checkout.${orderId}`, eventId: `checkout-${orderId}` })
       window.location.assign(result.url)
@@ -845,6 +856,9 @@ export function Onboarding() {
           onCheckout={checkout}
           checkoutBusy={checkoutBusy}
           directPixAvailable={directPixAvailable}
+          kiwifyCheckout={kiwifyCheckout}
+          kiwifyDemo={kiwifyDemo}
+          kiwifyPreviewLinks={kiwifyPreviewLinks}
           checkoutMethod={checkoutMethod}
           onCheckoutMethodChange={setCheckoutMethod}
           bumpSelected={bumpSelected}

@@ -3,9 +3,8 @@
 import { getPaymentOptions, startDreamCheckout } from '@/actions/payments'
 import { getCurrentUser } from '@/actions/auth'
 import { getDb } from '@/lib/db'
-import { DREAM_PACKS } from '@/lib/dream-packs'
-import { kiwifyCheckoutLink } from '@/lib/kiwify-checkout'
-import { kiwifyOnboardingEnabled } from '@/lib/kiwify'
+import { kiwifyCheckoutLink, kiwifyCheckoutPreviewLink } from '@/lib/kiwify-checkout'
+import { kiwifyLocalDemoEnabled, kiwifyOnboardingEnabled } from '@/lib/kiwify'
 import { billingMode, paymentProvider } from '@/lib/stripe'
 import { z } from 'zod'
 import { previewProgressSchema } from '@/lib/preview-progress'
@@ -18,7 +17,7 @@ import { createAsaasCheckout, asaasCheckoutUrl, createAsaasPixQr, directAsaasPix
 const guestContextSchema = z.object({ checked: previewProgressSchema.optional(), bump: z.boolean().default(false), marketingConsent: z.boolean().default(false), analyticsDistinctId: z.string().min(1).max(200).optional() })
 
 // The preview itself is the product being purchased. No auth account exists yet.
-export async function startGuestCheckout(rawPreviewId: string, rawOrderId: string, rawContext: unknown = {}) {
+export async function startGuestCheckout(rawPreviewId: string, rawOrderId: string, rawContext: unknown = {}, provider: 'default' | 'kiwify' = 'default') {
   const context = guestContextSchema.parse(rawContext)
   const previewId = idSchema.parse(rawPreviewId)
   const orderId = idSchema.parse(rawOrderId)
@@ -34,6 +33,8 @@ export async function startGuestCheckout(rawPreviewId: string, rawOrderId: strin
     WHERE p.id=${previewId}::uuid AND p.status='ready'
       AND p.expires_at>now() AND p.session_id=${sessionId}::uuid`
   if (!preview) throw new Error('Abra sua prévia antes de continuar para o pagamento.')
+  if (provider === 'kiwify')
+    return startKiwifyGuestCheckout({ preview: preview as { lead_id: string | null; email: string | null; attribution: unknown }, previewId, orderId, sessionId, context })
   if (paymentProvider() === 'asaas')
     return startAsaasGuestCheckout({ preview: preview as { lead_id: string | null; email: string | null; attribution: unknown }, previewId, orderId, sessionId, context })
   const mode = billingMode()
@@ -85,6 +86,37 @@ export async function startGuestCheckout(rawPreviewId: string, rawOrderId: strin
   await sql`INSERT INTO onboarding_events(session_id,lead_id,order_id,name,attribution,preview_id,properties)
     VALUES(${sessionId}::uuid,${preview.lead_id || null}::uuid,${orderId}::uuid,'checkout_started',${JSON.stringify(cleanAttribution(preview.attribution))}::jsonb,${previewId}::uuid,'{"journey_version":"conversion-v2"}'::jsonb)`
   return { url: session.url }
+}
+
+async function startKiwifyGuestCheckout(input: {
+  preview: { lead_id: string | null; email: string | null; attribution: unknown }
+  previewId: string
+  orderId: string
+  sessionId: string
+  context: z.infer<typeof guestContextSchema>
+}) {
+  const localDemo = kiwifyLocalDemoEnabled()
+  if (!localDemo && !kiwifyOnboardingEnabled()) throw new Error('Checkout da Kiwify indisponível neste ambiente.')
+  const { preview, previewId, orderId, sessionId, context } = input
+  const credits = context.bump ? 3 : 1
+  const amount = context.bump ? 9900 : 3700
+  const attribution = cleanAttribution(preview.attribution)
+  const url = kiwifyCheckoutLink(credits, preview.email, orderId, attribution)
+  const checkoutCode = new URL(url).pathname.slice(1).replace(/\/$/, '')
+  const sql = getDb()
+  const [count] = await sql`SELECT count(*)::int AS n FROM dream_orders WHERE preview_id=${previewId}::uuid AND created_at>now()-interval '1 hour'`
+  if (Number(count.n) >= 10) throw new Error('Muitas tentativas. Aguarde um pouco antes de tentar de novo.')
+  await sql`INSERT INTO dream_orders(id,user_id,mode,provider,credits,amount,price_id,lead_id,preview_id,guest_email,attribution,marketing_consent,journey_version,analytics_distinct_id)
+    VALUES(${orderId}::uuid,NULL,${localDemo ? 'test' : 'live'},'kiwify',${credits},${amount},${checkoutCode},${preview.lead_id || null}::uuid,${previewId}::uuid,${preview.email || null},${JSON.stringify(attribution)}::jsonb,${context.marketingConsent},'conversion-v2',${context.analyticsDistinctId || null})
+    ON CONFLICT DO NOTHING`
+  const [order] = await sql`SELECT * FROM dream_orders WHERE id=${orderId}::uuid`
+  if (!order || order.provider !== 'kiwify' || order.mode !== (localDemo ? 'test' : 'live') || order.preview_id !== previewId || order.lead_id !== (preview.lead_id || null) ||
+    Number(order.credits) !== credits || Number(order.amount) !== amount || order.price_id !== checkoutCode || order.status !== 'pending')
+    throw new Error('Pedido inválido.')
+  if (context.checked) await sql`UPDATE onboarding_previews SET checked=${JSON.stringify(context.checked)}::jsonb WHERE id=${previewId}::uuid AND session_id=${sessionId}::uuid`
+  await sql`INSERT INTO onboarding_events(session_id,lead_id,order_id,name,attribution,preview_id,properties)
+    VALUES(${sessionId}::uuid,${preview.lead_id || null}::uuid,${orderId}::uuid,'checkout_started',${JSON.stringify(attribution)}::jsonb,${previewId}::uuid,${JSON.stringify({ journey_version: 'conversion-v2', provider: 'kiwify' })}::jsonb)`
+  return { url: localDemo ? `/kiwify-demo?order_id=${orderId}` : url }
 }
 
 export async function startGuestPix(rawPreviewId: string, rawOrderId: string, rawEmail: string, rawContext: unknown = {}) {
@@ -171,14 +203,17 @@ async function startAsaasGuestCheckout(input: {
 }
 
 // Ponto exclusivo do funil /comecar. Compras iniciadas pela conta usam o provedor ativo.
-export async function getOnboardingPaymentOptions() {
-  if (process.env.KIWIFY_ONBOARDING_ENABLED === 'true') {
+export async function getOnboardingPaymentOptions(useKiwify = false) {
+  if (useKiwify) {
+    const localDemo = kiwifyLocalDemoEnabled()
     return {
-      available: kiwifyOnboardingEnabled(),
+      available: kiwifyOnboardingEnabled() || localDemo,
       provider: 'kiwify' as const,
       mode: billingMode(),
       pix: false,
       directPix: false,
+      localDemo,
+      previewLinks: localDemo ? { one: kiwifyCheckoutPreviewLink(1), three: kiwifyCheckoutPreviewLink(3) } : null,
     }
   }
   return getPaymentOptions()
@@ -186,48 +221,7 @@ export async function getOnboardingPaymentOptions() {
 
 export async function startOnboardingCheckout(pack: number, id: string, rawAttribution: Attribution = {}) {
   const attribution = cleanAttribution(rawAttribution)
-  if (process.env.KIWIFY_ONBOARDING_ENABLED !== 'true')
-    return startDreamCheckout(pack, id, 'comecar', attribution)
-  if (!kiwifyOnboardingEnabled())
-    throw new Error('Checkout da Kiwify ainda não disponível.')
-
-  const user = await getCurrentUser()
-  if (!user) throw new Error('Faça login para guardar seus sonhos na sua conta.')
-  if (pack !== 1 && pack !== 3) throw new Error('Pacote inválido.')
-  const orderId = idSchema.parse(id)
-  const offer = DREAM_PACKS[pack]
-  const url = kiwifyCheckoutLink(pack, user.email, orderId, attribution)
-  const checkoutCode = new URL(url).pathname.slice(1).replace(/\/$/, '')
-  const mode = billingMode()
-  const sql = getDb()
-  const [count] = await sql`
-    SELECT count(*)::int AS n FROM dream_orders
-    WHERE user_id=${user.id} AND created_at>now()-interval '1 hour'
-  `
-  if (Number(count.n) >= 30)
-    throw new Error('Muitas tentativas. Aguarde um pouco antes de tentar de novo.')
-
-  await sql`
-    INSERT INTO dream_orders(id,user_id,mode,provider,credits,amount,price_id,attribution)
-    VALUES(${orderId}::uuid,${user.id},${mode},'kiwify',${pack},${offer.amount},${checkoutCode},${JSON.stringify(attribution)}::jsonb)
-    ON CONFLICT DO NOTHING
-  `
-  const [order] = await sql`
-    SELECT user_id,mode,provider,credits,amount,price_id,status
-    FROM dream_orders WHERE id=${orderId}::uuid
-  `
-  if (
-    !order ||
-    order.user_id !== user.id ||
-    order.mode !== mode ||
-    order.provider !== 'kiwify' ||
-    Number(order.credits) !== pack ||
-    Number(order.amount) !== offer.amount ||
-    order.price_id !== checkoutCode ||
-    order.status !== 'pending'
-  ) throw new Error('Pedido inválido.')
-
-  return { url }
+  return startDreamCheckout(pack, id, 'comecar', attribution)
 }
 
 export async function checkOnboardingPayment(rawId: string) {

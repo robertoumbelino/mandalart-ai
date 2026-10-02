@@ -5,7 +5,7 @@ import { cleanAttribution, type Attribution } from '@/lib/attribution'
 
 // A Kiwify usa um link distinto para cada oferta. O link de afiliado pode
 // conter afid; preservar essa query é necessário para a atribuição oficial.
-export function kiwifyCheckoutLink(pack: DreamPack, email: string, orderId: string, rawAttribution: Attribution = {}) {
+function configuredCheckoutUrl(pack: DreamPack) {
   const configured = process.env[
     pack === 1 ? 'KIWIFY_CHECKOUT_ONE' : 'KIWIFY_CHECKOUT_THREE'
   ]
@@ -27,6 +27,15 @@ export function kiwifyCheckoutLink(pack: DreamPack, email: string, orderId: stri
   ) {
     throw new Error('Link de checkout da Kiwify inválido.')
   }
+  return url
+}
+
+export function kiwifyCheckoutPreviewLink(pack: DreamPack) {
+  return configuredCheckoutUrl(pack).toString()
+}
+
+export function kiwifyCheckoutLink(pack: DreamPack, email: string | null, orderId: string, rawAttribution: Attribution = {}) {
+  const url = configuredCheckoutUrl(pack)
   if (!idSchema.safeParse(orderId).success)
     throw new Error('Pedido da Kiwify inválido.')
 
@@ -35,7 +44,7 @@ export function kiwifyCheckoutLink(pack: DreamPack, email: string, orderId: stri
     if (key !== 'sck' && key !== 'afid' && value)
       url.searchParams.set(key, value)
   }
-  url.searchParams.set('email', email)
+  if (email) url.searchParams.set('email', email)
   url.searchParams.set('sck', orderId)
   return url.toString()
 }
