@@ -14,11 +14,8 @@ import {
   ArrowRight,
   Check,
   ChevronRight,
-  Compass,
   Heart,
   LoaderCircle,
-  LockKeyhole,
-  MessageSquareText,
   ShieldCheck,
   Sprout,
   X
@@ -44,13 +41,21 @@ import {
 import { previewProgress } from '@/lib/preview-progress'
 import { clearOnboardingDraft, purchasedPreview, PURCHASED_PREVIEWS_KEY } from '@/lib/onboarding-storage'
 import { DreamIcon, MandalaBloom } from './Visuals'
-import { IntroPlanVisual } from './IntroPlanVisual'
 import { BrandLogo } from '@/app/components/Brand'
 import { Preview } from './Preview'
 
 type Screen = OnboardingDraft['screen']
 type Choice = { id: string; title: string; hint?: string; icon?: string }
 const CHECKOUT_EMAIL_ERROR = 'Informe um e-mail válido para receber seu acesso após o pagamento.'
+const ENTRY_VERSION = 'direct-category-v1'
+const ENTRY_CATEGORY_COPY = {
+  money: { title: 'Dinheiro', hint: 'Sair das dívidas, guardar dinheiro' },
+  career: { title: 'Carreira', hint: 'Novo emprego ou outra profissão' },
+  business: { title: 'Meu negócio', hint: 'Dar vida a uma ideia' },
+  wellbeing: { title: 'Saúde', hint: 'Cuidar melhor de mim' },
+  learning: { title: 'Estudos', hint: 'Aprender e evoluir' },
+  experiences: { title: 'Viagens e experiências', hint: 'Viver algo que sempre quis' }
+} satisfies Record<(typeof CATEGORIES)[number]['id'], { title: string; hint: string }>
 const DREAM_ICONS = {
   'Organizar minha vida financeira': 'wallet',
   'Sair das dívidas': 'credit-card',
@@ -240,8 +245,9 @@ export function Onboarding() {
         ''
       )
       setHydrated(true)
-      analytics('landing_view')
-      void fetch('/api/onboarding/event', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: 'landing_view', attribution: initial.attribution }) }).catch(() => {})
+      const entryProperties = { entry_version: ENTRY_VERSION, entry_visible: Number(initial.screen === 'welcome' || (initial.screen === 'questions' && initial.question === 0)) }
+      analytics('landing_view', entryProperties)
+      void fetch('/api/onboarding/event', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: 'landing_view', properties: entryProperties, attribution: initial.attribution }) }).catch(() => {})
       if (new URLSearchParams(window.location.search).has('retomar')) {
         void fetch('/api/onboarding/restore').then(response => response.json()).then(result => {
           if (result.status !== 'ready') return
@@ -403,12 +409,6 @@ export function Onboarding() {
     []
   )
 
-  function startJourney() {
-    analytics('quiz_started')
-    void fetch('/api/onboarding/event', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: 'quiz_started', attribution: draft.attribution }) }).catch(() => {})
-    navigate('questions', 0)
-  }
-
   function select(value: string) {
     const field = answerFields[draft.question]
     const selectedAnswers: DraftAnswers = { ...draft.answers, [field]: value }
@@ -436,6 +436,12 @@ export function Onboarding() {
       if (advanceRef.current) clearTimeout(advanceRef.current)
       const question = draft.question
       advanceRef.current = setTimeout(() => {
+        // Choosing a category starts the journey directly from the landing page.
+        if (draft.screen === 'welcome') {
+          const properties = { entry_version: ENTRY_VERSION }
+          analytics('quiz_started', properties)
+          void fetch('/api/onboarding/event', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: 'quiz_started', properties, attribution: draft.attribution }) }).catch(() => {})
+        }
         analytics('quiz_question', { question: question + 1 })
         void fetch('/api/onboarding/event', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: 'quiz_question', properties: { question: question + 1 }, leadId: draft.leadId || undefined, attribution: draft.attribution }) }).catch(() => {})
         if (question === 5) {
@@ -616,13 +622,14 @@ export function Onboarding() {
     [...HORIZONS]
   ]
   const isPreview = draft.screen === 'preview' && !!draft.result
+  const isEntry = draft.screen === 'welcome' || (draft.screen === 'questions' && draft.question === 0)
 
   return (
-    <div className={`begin-shell ${draft.screen === 'welcome' ? 'has-welcome' : ''} ${isPreview ? 'has-preview' : ''} ${draft.screen === 'questions' ? 'has-questions' : ''} ${draft.screen === 'generating' ? 'has-generation' : ''}`}>
+    <div className={`begin-shell ${isEntry ? 'has-welcome' : ''} ${isPreview ? 'has-preview' : ''} ${draft.screen === 'questions' && !isEntry ? 'has-questions' : ''} ${draft.screen === 'generating' ? 'has-generation' : ''}`}>
       <a href="#begin-main" className="begin-skip">
         Pular para o conteúdo
       </a>
-      {draft.screen !== 'welcome' && <header className="begin-header">
+      {!isEntry && <header className="begin-header">
         <Link
           href="/"
           className="begin-brand"
@@ -641,32 +648,41 @@ export function Onboarding() {
         </p>
       )}
 
-      {draft.screen === 'welcome' && (<>
-        <main id="begin-main" className="intro-page begin-enter">
-          <div className="intro-content">
-            <div className="intro-brand" aria-label="Mandalart"><BrandLogo iconSize={32} /></div>
-            <div className="intro-copy">
-              <h1 tabIndex={-1} data-step-heading>Descubra o próximo passo para realizar seu objetivo.</h1>
-              <p>Responda 6 perguntas e receba uma prévia personalizada em cerca de 2 minutos.</p>
-            </div>
-          </div>
-          <div className="intro-details">
-            <IntroPlanVisual />
-            <ul className="intro-benefits">
-              <li><span className="intro-benefit-icon"><MessageSquareText size={20} aria-hidden="true" /></span><span><strong>Você responde 6 perguntas</strong><small>É rápido e simples.</small></span></li>
-              <li><span className="intro-benefit-icon"><Compass size={20} aria-hidden="true" /></span><span><strong>Recebe seu primeiro direcionamento</strong><small>Veja uma prévia do seu plano personalizado.</small></span></li>
-              <li><span className="intro-benefit-icon"><LockKeyhole size={20} aria-hidden="true" /></span><span><strong>Se fizer sentido, libera a jornada completa</strong><small>Com todas as etapas e tarefas práticas.</small></span></li>
-            </ul>
+      {isEntry && (
+        <main id="begin-main" className="entry-page begin-enter">
+          <div className="entry-brand" aria-label="Mandalart"><BrandLogo iconSize={30} /></div>
+          <div className="entry-layout">
+            <header className="entry-copy">
+              <span className="entry-free"><Sprout size={16} aria-hidden="true" /> Seu primeiro passo é grátis</span>
+              <h1 tabIndex={-1} data-step-heading>Tire seu objetivo <em>do papel.</em></h1>
+              <p id="entry-description">Veja os <strong>8 caminhos do seu objetivo</strong> e receba um primeiro passo feito para você.</p>
+              <span className="entry-duration">6 perguntas · cerca de 2 minutos · sem cadastro</span>
+            </header>
+            <section className="entry-selection" aria-labelledby="entry-question-title">
+              <div className="entry-question-heading">
+                <h2 id="entry-question-title">Qual área importa mais agora?</h2>
+                <span className="entry-step" aria-label="Pergunta 1 de 6">1 de 6</span>
+              </div>
+              <fieldset className="entry-categories" aria-labelledby="entry-question-title" aria-describedby="entry-description">
+                <legend className="sr-only">Escolha a área do seu objetivo para continuar.</legend>
+                {CATEGORIES.map(category => {
+                  const selected = draft.answers.category === category.id
+                  const copy = ENTRY_CATEGORY_COPY[category.id]
+                  return <label className={`entry-choice tone-${category.id} ${selected ? 'selected' : ''}`} key={category.id}>
+                    <input type="radio" name="category" value={category.id} checked={selected} onChange={() => select(category.id)} onClick={() => { if (selected) select(category.id) }} />
+                    <span className="entry-choice-icon"><DreamIcon name={category.icon} size={23} /></span>
+                    <span className="entry-choice-text"><strong>{copy.title}</strong><small>{copy.hint}</small></span>
+                    <ArrowRight size={15} className="entry-choice-arrow" aria-hidden="true" />
+                  </label>
+                })}
+              </fieldset>
+              <p className="entry-next">Escolha uma área para começar sua Mandala.</p>
+            </section>
           </div>
         </main>
-        <footer className="intro-action">
-          <button type="button" className="begin-primary" onClick={startJourney}>Descobrir meu próximo passo <ArrowRight size={19} aria-hidden="true" /></button>
-          <p>Prévia grátis · sem cadastro</p>
-          <span>Plano completo opcional por R$37</span>
-        </footer>
-      </>)}
+      )}
 
-      {draft.screen === 'questions' && (
+      {draft.screen === 'questions' && !isEntry && (
         <main id="begin-main" className="questions-page">
           <aside className="question-aside">
             <span className="begin-eyebrow">UM SONHO, MUITOS CAMINHOS</span>
@@ -942,7 +958,7 @@ export function Onboarding() {
         </main>
       )}
 
-      {draft.screen !== 'welcome' && <footer className="begin-footer">
+      {!isEntry && <footer className="begin-footer">
         <span>Feito para o seu próximo passo.</span>
         <div>
           <Link href="/privacidade" target="_blank" rel="noopener noreferrer">
