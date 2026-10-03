@@ -14,7 +14,6 @@ import {
   ArrowRight,
   Check,
   ChevronRight,
-  Clock3,
   Compass,
   Heart,
   LoaderCircle,
@@ -642,14 +641,16 @@ export function Onboarding() {
         </p>
       )}
 
-      {draft.screen === 'welcome' && (
+      {draft.screen === 'welcome' && (<>
         <main id="begin-main" className="intro-page begin-enter">
           <div className="intro-content">
             <div className="intro-brand" aria-label="Mandalart"><BrandLogo iconSize={32} /></div>
             <div className="intro-copy">
-              <h1 tabIndex={-1} data-step-heading>Responda 6 perguntas e veja seu objetivo virar um plano.</h1>
-              <p>Em cerca de 2 minutos, o Mandalart organiza seu objetivo em 8 caminhos, etapas e tarefas práticas para você saber por onde começar e o que fazer depois.</p>
+              <h1 tabIndex={-1} data-step-heading>Descubra o próximo passo para realizar seu objetivo.</h1>
+              <p>Responda 6 perguntas e receba uma prévia personalizada em cerca de 2 minutos.</p>
             </div>
+          </div>
+          <div className="intro-details">
             <IntroPlanVisual />
             <ul className="intro-benefits">
               <li><span className="intro-benefit-icon"><MessageSquareText size={20} aria-hidden="true" /></span><span><strong>Você responde 6 perguntas</strong><small>É rápido e simples.</small></span></li>
@@ -657,13 +658,13 @@ export function Onboarding() {
               <li><span className="intro-benefit-icon"><LockKeyhole size={20} aria-hidden="true" /></span><span><strong>Se fizer sentido, libera a jornada completa</strong><small>Com todas as etapas e tarefas práticas.</small></span></li>
             </ul>
           </div>
-          <div className="intro-action">
-            <button type="button" className="begin-primary" onClick={startJourney}>Começar as 6 perguntas <ArrowRight size={19} aria-hidden="true" /></button>
-            <p>Você verá uma prévia do seu plano antes de decidir comprar.</p>
-            <span><Clock3 size={14} aria-hidden="true" /> Leva cerca de 2 minutos</span>
-          </div>
         </main>
-      )}
+        <footer className="intro-action">
+          <button type="button" className="begin-primary" onClick={startJourney}>Descobrir meu próximo passo <ArrowRight size={19} aria-hidden="true" /></button>
+          <p>Prévia grátis · sem cadastro</p>
+          <span>Plano completo opcional por R$37</span>
+        </footer>
+      </>)}
 
       {draft.screen === 'questions' && (
         <main id="begin-main" className="questions-page">
