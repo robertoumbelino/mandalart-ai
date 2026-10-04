@@ -86,27 +86,41 @@ export function Preview({ previewId, onViewed, preview, answers, checked, onChec
         <h2 id="conversion-offer-title" className="guided-visually-hidden">Seu Mandalart completo</h2>
         <div className="conversion-offer-layout">
           <div className="guided-plan-overview">
-            <div className="mandala-reveal" role="group" aria-label="Os oito caminhos do seu Mandalart completo">
-              <div className="mandala-grid" role="group" aria-label="Oito caminhos ao redor do seu sonho">
-                <div className="mandala-center"><span>OBJETIVO</span><strong title={dream}>{dream}</strong></div>
-                {preview.pillars.map((pillar, index) =>
-                  <div className={`mandala-cell ${index === 0 ? 'is-open' : 'is-locked'}`} key={index} aria-label={`Caminho ${index + 1}: ${pillar.title}${index ? ', ações disponíveis no plano completo' : ', primeiro passo gratuito disponível abaixo'}`}>
-                    {index > 0 && <LockKeyhole className="mandala-lock" size={13} aria-hidden="true" />}
-                    <span>{String(index + 1).padStart(2, '0')}</span>
-                    <strong title={pillar.title}>{pillar.title}</strong>
-                  </div>)}
+            <div className="guided-plan-intro">
+              <div className="mandala-reveal" role="group" aria-label="Os oito caminhos do seu Mandalart completo">
+                <div className="mandala-grid" role="group" aria-label="Oito caminhos ao redor do seu sonho">
+                  <div className="mandala-center"><span>OBJETIVO</span><strong title={dream}>{dream}</strong></div>
+                  {preview.pillars.map((pillar, index) =>
+                    <div className={`mandala-cell ${index === 0 ? 'is-open' : 'is-locked'}`} key={index} aria-label={`Caminho ${index + 1}: ${pillar.title}${index ? ', ações disponíveis no plano completo' : ', primeiro passo gratuito disponível abaixo'}`}>
+                      {index > 0 && <LockKeyhole className="mandala-lock" size={13} aria-hidden="true" />}
+                      <span>{String(index + 1).padStart(2, '0')}</span>
+                      <strong title={pillar.title}>{pillar.title}</strong>
+                    </div>)}
+                </div>
+                <p className="mandala-note"><LockKeyhole size={15} aria-hidden="true" /><span>O plano completo libera as ações destes caminhos.</span></p>
               </div>
-              <p className="mandala-note"><LockKeyhole size={15} aria-hidden="true" /><span>O plano completo libera as ações destes caminhos.</span></p>
+              <section ref={emailRef} className="guided-save-preview" aria-label="Guardar a prévia para voltar depois">
+                <button type="button" className="guided-save-trigger" aria-haspopup="dialog" onClick={() => {
+                  emailDialogRef.current?.showModal()
+                  emailInputRef.current?.focus()
+                }}>
+                  {emailSaved ? <Check size={18} aria-hidden="true" /> : <Mail size={18} aria-hidden="true" />}
+                  {emailSaved ? 'Prévia enviada para seu e-mail' : 'Receber minha prévia grátis'}
+                </button>
+                <small>Receba o link para voltar a este plano quando quiser.</small>
+              </section>
             </div>
-            <section ref={emailRef} className="guided-save-preview" aria-label="Guardar a prévia para voltar depois">
-              <button type="button" className="guided-save-trigger" aria-haspopup="dialog" onClick={() => {
-                emailDialogRef.current?.showModal()
-                emailInputRef.current?.focus()
-              }}>
-                {emailSaved ? <Check size={18} aria-hidden="true" /> : <Mail size={18} aria-hidden="true" />}
-                {emailSaved ? 'Prévia enviada para seu e-mail' : 'Receber minha prévia grátis'}
-              </button>
-              <small>Receba o link para voltar a este plano quando quiser.</small>
+            <section className="guided-platform" aria-labelledby="guided-platform-title">
+              <span className="begin-eyebrow">SEU ESPAÇO PARA AVANÇAR</span>
+              <h3 id="guided-platform-title">Seu plano em uma plataforma online</h3>
+              <p>Entre na sua conta, siga as tarefas e acompanhe seu progresso. Tudo fica salvo para continuar de onde parou.</p>
+              <figure>
+                <div className="guided-platform-screens">
+                  <div className="guided-platform-journey-frame"><Image src="/product/platform-journey-white.jpg" width={1280} height={740} sizes="(max-width: 760px) 70vw, 330px" alt="Jornada na plataforma Mandalart, com a próxima tarefa e o progresso geral de um plano de mudança de carreira." /></div>
+                  <div className="guided-platform-task-frame"><Image src="/product/platform-checklist.jpg" width={400} height={900} sizes="(max-width: 760px) 30vw, 150px" alt="Tarefa aberta na plataforma, com instruções, três ações em checklist e uma barra de progresso." /></div>
+                </div>
+                <figcaption>Telas reais da plataforma · exemplo de mudança de carreira.</figcaption>
+              </figure>
             </section>
             <section className="guided-outcomes" aria-labelledby="guided-outcomes-title">
               <span className="begin-eyebrow">O RESULTADO</span>
@@ -126,44 +140,53 @@ export function Preview({ previewId, onViewed, preview, answers, checked, onChec
                 <li><LayoutGrid size={20} aria-hidden="true" /><span><strong>Seu plano personalizado</strong><small>8 caminhos e 64 tarefas para o seu objetivo.</small></span></li>
                 <li><Route size={20} aria-hidden="true" /><span><strong>Jornada guiada</strong><small>Uma tarefa por vez, na ordem recomendada.</small></span></li>
                 <li><ListChecks size={20} aria-hidden="true" /><span><strong>Passo a passo para agir</strong><small>192 pequenas ações com instruções práticas.</small></span></li>
-                <li><BookmarkCheck size={20} aria-hidden="true" /><span><strong>Checklists e progresso salvo</strong><small>Marque o que fez e retome de onde parou.</small></span></li>
+                <li><BookmarkCheck size={20} aria-hidden="true" /><span><strong>Sua conta para acompanhar cada conquista</strong><small>Marque suas ações e continue de onde parou, no celular ou computador.</small></span></li>
                 <li><Lightbulb size={20} aria-hidden="true" /><span><strong>Dicas em cada tarefa</strong><small>Orientação prática para ajudar você a avançar.</small></span></li>
                 <li><MonitorSmartphone size={20} aria-hidden="true" /><span><strong>No celular e no computador</strong><small>Acesse pelo navegador, sem instalar nada.</small></span></li>
               </ul>
             </div>
-            <div className="conversion-price"><strong>{bumpSelected ? 'R$ 99' : 'R$ 37'}</strong><span>pagamento único<br />sem assinatura</span></div>
-            {directPixAvailable && <div className="conversion-payment-choice">
-              <span>Como você quer pagar?</span>
-              <div role="group" aria-label="Forma de pagamento">
-                <button type="button" aria-pressed={checkoutMethod === 'pix'} onClick={() => onCheckoutMethodChange('pix')} disabled={checkoutBusy}>
-                  <span className="conversion-payment-icon conversion-payment-icon--pix"><PixMark size={25} /></span>
-                  <span className="conversion-payment-label"><strong>Pix</strong><small>QR Code no Mandalart</small></span>
-                  <span className="conversion-payment-indicator" aria-hidden="true">{checkoutMethod === 'pix' && <Check size={13} strokeWidth={3} />}</span>
-                </button>
-                <button type="button" aria-pressed={checkoutMethod === 'card'} onClick={() => onCheckoutMethodChange('card')} disabled={checkoutBusy}>
-                  <span className="conversion-payment-icon conversion-payment-icon--card"><CreditCard size={24} strokeWidth={1.8} /></span>
-                  <span className="conversion-payment-label"><strong>Cartão de crédito</strong><small>Checkout seguro Asaas</small></span>
-                  <span className="conversion-payment-indicator" aria-hidden="true">{checkoutMethod === 'card' && <Check size={13} strokeWidth={3} />}</span>
-                </button>
+            <div className="guided-purchase">
+              <div className="guided-checkout">
+                <div className="guided-purchase-summary">
+                  <p>Acesso à plataforma + {bumpSelected ? '3 planos personalizados' : 'seu plano personalizado'}</p>
+                  <div className="conversion-price"><strong>{bumpSelected ? 'R$ 99' : 'R$ 37'}</strong><span>pagamento único<br />sem assinatura</span></div>
+                </div>
+                {directPixAvailable && <div className="conversion-payment-choice">
+                  <span>Como você quer pagar?</span>
+                  <div role="group" aria-label="Forma de pagamento">
+                    <button type="button" aria-pressed={checkoutMethod === 'pix'} onClick={() => onCheckoutMethodChange('pix')} disabled={checkoutBusy}>
+                      <span className="conversion-payment-icon conversion-payment-icon--pix"><PixMark size={25} /></span>
+                      <span className="conversion-payment-label"><strong>Pix</strong><small>QR Code no Mandalart</small></span>
+                      <span className="conversion-payment-indicator" aria-hidden="true">{checkoutMethod === 'pix' && <Check size={13} strokeWidth={3} />}</span>
+                    </button>
+                    <button type="button" aria-pressed={checkoutMethod === 'card'} onClick={() => onCheckoutMethodChange('card')} disabled={checkoutBusy}>
+                      <span className="conversion-payment-icon conversion-payment-icon--card"><CreditCard size={24} strokeWidth={1.8} /></span>
+                      <span className="conversion-payment-label"><strong>Cartão de crédito</strong><small>Checkout seguro Asaas</small></span>
+                      <span className="conversion-payment-indicator" aria-hidden="true">{checkoutMethod === 'card' && <Check size={13} strokeWidth={3} />}</span>
+                    </button>
+                  </div>
+                  {checkoutMethod === 'pix' && <label className="conversion-payment-email">Seu e-mail para receber o acesso<input type="email" value={email} onChange={event => onEmailChange(event.target.value)} autoComplete="email" placeholder="voce@exemplo.com" required /></label>}
+                </div>}
+                {checkoutError && <p role="alert" className="begin-error">{checkoutError}</p>}
+                <button ref={checkoutRef} className="begin-primary" onClick={onCheckout} disabled={checkoutBusy}>{checkoutBusy ? (localKiwifyDemo ? 'Preparando simulação…' : 'Preparando pagamento…') : paymentCta} <ArrowRight size={18} aria-hidden="true" /></button>
+                {kiwifyCheckout && <small>{localKiwifyDemo ? 'Simulação local sem cobrança. Em produção, Pix ou cartão no checkout seguro da Kiwify.' : 'Pix ou cartão no checkout seguro da Kiwify.'}</small>}
+                {localKiwifyDemo && kiwifyPreviewLinks && <details className="guided-local-demo"><summary>Opções do teste local</summary><div className="mt-2 rounded-xl border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-950">
+                  <a className="font-semibold underline" href={bumpSelected ? kiwifyPreviewLinks.three : kiwifyPreviewLinks.one} target="_blank" rel="noopener noreferrer">Ver o checkout real da Kiwify para {priceLabel}</a>
+                  <p className="mt-1">Esse link serve para conferir a página. Uma compra feita por ele não será vinculada ao seu pedido local.</p>
+                </div></details>}
               </div>
-              {checkoutMethod === 'pix' && <label className="conversion-payment-email">Seu e-mail para receber o acesso<input type="email" value={email} onChange={event => onEmailChange(event.target.value)} autoComplete="email" placeholder="voce@exemplo.com" required /></label>}
-            </div>}
-            {checkoutError && <p role="alert" className="begin-error">{checkoutError}</p>}
-            <button ref={checkoutRef} className="begin-primary" onClick={onCheckout} disabled={checkoutBusy}>{checkoutBusy ? (localKiwifyDemo ? 'Preparando simulação…' : 'Preparando pagamento…') : paymentCta} <ArrowRight size={18} aria-hidden="true" /></button>
-            {kiwifyCheckout && <small>{localKiwifyDemo ? 'Simulação local sem cobrança. Em produção, Pix ou cartão no checkout seguro da Kiwify.' : 'Pix ou cartão no checkout seguro da Kiwify.'}</small>}
-            {localKiwifyDemo && kiwifyPreviewLinks && <details className="guided-local-demo"><summary>Opções do teste local</summary><div className="mt-2 rounded-xl border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-950">
-              <a className="font-semibold underline" href={bumpSelected ? kiwifyPreviewLinks.three : kiwifyPreviewLinks.one} target="_blank" rel="noopener noreferrer">Ver o checkout real da Kiwify para {priceLabel}</a>
-              <p className="mt-1">Esse link serve para conferir a página. Uma compra feita por ele não será vinculada ao seu pedido local.</p>
-            </div></details>}
-            <section className="guided-guarantee" aria-labelledby="guided-guarantee-title">
-              <ShieldCheck size={25} aria-hidden="true" />
-              <div><h3 id="guided-guarantee-title">7 dias de garantia</h3><p>Se o plano não fizer sentido para você, peça o reembolso em até 7 dias após o pagamento. Você recebe todo o valor de volta, sem precisar explicar o motivo.</p></div>
-            </section>
-            <small>Compre sem cadastro prévio. Depois do pagamento, você recebe um e-mail para criar sua senha e acessar seu plano.</small>
-            <details className="guided-extra-plans">
-              <summary><span>{bumpSelected ? 'Mais 2 Mandalarts adicionados · total R$ 99' : 'Quer planejar mais de um sonho?'}</span><ChevronDown size={17} className="guided-disclosure-icon" aria-hidden="true" /></summary>
-              <label className="conversion-bump"><input type="checkbox" checked={bumpSelected} disabled={checkoutBusy} onChange={event => onBumpChange(event.target.checked)} /><span className="conversion-bump-check" aria-hidden="true">{bumpSelected && <Check size={14} strokeWidth={3} />}</span><span><strong>Adicionar mais 2 Mandalarts por R$ 62</strong><small>Total R$ 99 para planejar 3 sonhos, sem assinatura.</small></span></label>
-            </details>
+              <div className="guided-purchase-support">
+                <section className="guided-guarantee" aria-labelledby="guided-guarantee-title">
+                  <ShieldCheck size={25} aria-hidden="true" />
+                  <div><h3 id="guided-guarantee-title">7 dias de garantia</h3><p>Se o plano não fizer sentido para você, peça o reembolso em até 7 dias após o pagamento. Você recebe todo o valor de volta, sem precisar explicar o motivo.</p></div>
+                </section>
+                <small>Depois do pagamento, você recebe um e-mail para criar sua conta e acessar seu plano na plataforma.</small>
+                <details className="guided-extra-plans">
+                  <summary><span>{bumpSelected ? 'Mais 2 Mandalarts adicionados · total R$ 99' : 'Quer planejar mais de um sonho?'}</span><ChevronDown size={17} className="guided-disclosure-icon" aria-hidden="true" /></summary>
+                  <label className="conversion-bump"><input type="checkbox" checked={bumpSelected} disabled={checkoutBusy} onChange={event => onBumpChange(event.target.checked)} /><span className="conversion-bump-check" aria-hidden="true">{bumpSelected && <Check size={14} strokeWidth={3} />}</span><span><strong>Adicionar mais 2 Mandalarts por R$ 62</strong><small>Total R$ 99 para planejar 3 sonhos, sem assinatura.</small></span></label>
+                </details>
+              </div>
+            </div>
           </div>
         </div>
       </section>
@@ -203,7 +226,7 @@ export function Preview({ previewId, onViewed, preview, answers, checked, onChec
       </figure>
 
       <div className="conversion-faq">
-        <details><summary>O que recebo ao comprar?</summary><p>Um Mandalart completo para o sonho que você acabou de configurar, com oito caminhos, 64 tarefas e progresso salvo.</p></details>
+        <details><summary>O que recebo ao comprar?</summary><p>Acesso à plataforma online com sua conta e um Mandalart completo para o sonho que você acabou de configurar: oito caminhos, 64 tarefas e 192 pequenas ações. Você marca seus checklists e acompanha o progresso salvo, no celular ou computador.</p></details>
         <details><summary>Por que não simplesmente pedir um plano para uma IA?</summary><p>Você pode criar um plano em um chat. O Mandalart entrega uma estrutura pronta para usar: oito caminhos, ações com checklists, próximo passo e progresso salvo. Assim você não precisa organizar e manter tudo por conta própria.</p></details>
         <details><summary>Preciso criar uma senha?</summary><p>Você compra primeiro. Depois da confirmação, recebe um e-mail para concluir o cadastro com seu nome e uma senha. Nas próximas visitas, basta entrar com seu e-mail e senha. Se já tem uma conta, use seu acesso habitual.</p></details>
         <details><summary>Posso pedir reembolso?</summary><p>Sim. Veja as condições em <Link href="/reembolso">nossa política de reembolso</Link>.</p></details>

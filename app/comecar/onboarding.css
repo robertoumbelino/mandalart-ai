@@ -2597,7 +2597,7 @@
 .conversion-offer .begin-primary:focus-visible { outline: 3px solid #b9a4ee; outline-offset: 3px; }
 .conversion-guarantee { display: flex; align-items: center; justify-content: center; gap: 7px; color: #536176 !important; font-size: 12px; margin: 17px 0 8px !important; }
 .conversion-offer > small { color: #71798b; line-height: 1.5; }
-.conversion-offer-details > small { display: block; margin-top: 8px; color: #71798b; line-height: 1.5; }
+:is(.conversion-offer-details, .guided-checkout, .guided-purchase-support) > small { display: block; margin-top: 8px; color: #71798b; line-height: 1.5; }
 .conversion-save { margin: 30px auto 0; padding: 23px 27px; border: 1px solid #e4e0f0; border-radius: 20px; background: #fff; }
 .conversion-save .begin-eyebrow { color: #6243c4; }
 .conversion-save h2 { margin: 10px 0 5px; }
@@ -2715,6 +2715,7 @@
 /* Guided offer: keep the plan first, with clear benefits, outcomes and guarantee. */
 .guided-visually-hidden { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0; }
 .conversion-preview--guided { max-width: 980px; }
+.guided-plan-intro, .guided-purchase, .guided-checkout, .guided-purchase-support { display: contents; }
 .conversion-preview--guided .conversion-hero { display: flex; flex-direction: row; align-items: center; gap: 12px; margin-bottom: 16px; }
 .conversion-preview--guided .conversion-hero > div { flex: 1; min-width: 0; }
 .conversion-preview--guided .conversion-hero h1 { margin-top: 6px; }
@@ -2748,6 +2749,18 @@
 .guided-save-dialog .begin-primary { width: 100%; min-height: 52px; margin-top: 16px; font-size: 14px; }
 .guided-save-dialog small { display: block; margin-top: 12px; color: #697184; font-size: 11px; line-height: 1.6; }
 .guided-save-dialog .begin-error { margin-top: 10px; }
+.guided-platform { margin-top: 28px; }
+.guided-platform h3 { margin: 8px 0 10px; color: #28283e; font-size: 21px; line-height: 1.3; font-weight: 750; }
+.guided-platform > p { margin: 0; color: #626b7f; font-size: 13px; line-height: 1.65; }
+.guided-platform figure { margin: 16px 0 0; }
+.guided-platform-screens { position: relative; display: flex; align-items: center; aspect-ratio: 16 / 11; padding: 14px 24% 14px 12px; border: 1px solid #e8e3f0; border-radius: 16px; background: #fff; overflow: hidden; }
+.guided-platform-journey-frame { width: 100%; aspect-ratio: 2 / 1; overflow: hidden; border: 1px solid #e5def1; border-radius: 9px; }
+.guided-platform-task-frame { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); width: 32%; aspect-ratio: 400 / 725; overflow: hidden; border: 1px solid #e5def1; border-radius: 9px; box-shadow: 0 4px 16px #24163818; }
+.guided-platform-screens img { display: block; width: 100%; height: auto; }
+.guided-platform figcaption { margin-top: 9px; color: #697184; font-size: 10px; line-height: 1.5; }
+.guided-purchase-summary { margin-top: 22px; padding-top: 20px; border-top: 1px solid #e8e3f0; }
+.guided-purchase-summary > p { margin: 0; color: #303249; font-size: 13px; font-weight: 650; line-height: 1.5; }
+.conversion-offer--guided .guided-purchase-summary .conversion-price { margin: 8px 0 16px; padding-top: 0; border-top: 0; }
 .guided-outcomes { margin-top: 28px; padding: 22px; border-radius: 18px; background: #f7f4fd; }
 .guided-outcomes h3 { margin: 8px 0 20px; color: #28283e; font-size: 20px; line-height: 1.3; font-weight: 750; }
 .guided-outcomes ol { display: grid; gap: 20px; margin: 0; padding: 0; list-style: none; }
@@ -2801,7 +2814,21 @@
   .conversion-preview--guided { gap: 16px; }
   .conversion-preview--guided .conversion-hero { margin-bottom: 0; }
   .conversion-preview--guided > .guided-explore, .conversion-preview--guided > .guided-includes { margin-top: 0; }
-  .conversion-preview--guided .conversion-offer-layout { align-items: start; }
+  .conversion-preview--guided .conversion-offer-layout {
+    grid-template-areas: "plan included" "platform outcomes" "purchase purchase";
+    align-items: start;
+    row-gap: 36px;
+  }
+  .guided-plan-overview, .conversion-offer--guided .conversion-offer-details { display: contents; }
+  .guided-plan-intro { display: block; grid-area: plan; }
+  .guided-included { grid-area: included; }
+  .guided-platform { grid-area: platform; margin-top: 0; }
+  .guided-outcomes { grid-area: outcomes; align-self: stretch; display: flex; flex-direction: column; justify-content: center; margin-top: 0; padding: 28px; }
+  .guided-outcomes ol { gap: 26px; }
+  .guided-purchase { grid-area: purchase; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 28px; padding: 26px; border: 1px solid #e8e3f0; border-radius: 18px; background: #faf9fd; }
+  .guided-checkout, .guided-purchase-support { display: block; min-width: 0; }
+  .guided-purchase-summary { margin-top: 0; padding-top: 0; border-top: 0; }
+  .guided-purchase .guided-guarantee { margin-top: 0; }
 }
 @media (max-width: 760px) {
   .conversion-preview--guided { padding-top: 15px; }
