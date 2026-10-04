@@ -5,8 +5,9 @@ import dynamic from 'next/dynamic'
 import Link from 'next/link'
 import { track } from '@vercel/analytics'
 import { sendGoogleAnalyticsEvent } from '@/app/components/GoogleAnalytics'
-import { ArrowLeft, ArrowRight, Check, LoaderCircle, RotateCcw, ShieldCheck, Sparkles, Timer } from 'lucide-react'
+import { ArrowLeft, ArrowRight, Check, CreditCard, LoaderCircle, LockKeyhole, Mail, RotateCcw, ShieldCheck, Sparkles, Timer } from 'lucide-react'
 import { BrandLogo } from '@/app/components/Brand'
+import { PixMark } from '@/app/components/PixMark'
 import { ChecklistItem } from '@/app/components/ChecklistItem'
 import { DreamIcon } from './Visuals'
 import { PlanFeaturePreview } from './PlanFeaturePreview'
@@ -260,7 +261,40 @@ export function SalesJourney() {
       <section className="sales-faq"><h2>Dúvidas</h2><details><summary>É assinatura?</summary><p>Não. Os R$ 37 são um pagamento único para criar um plano completo e acompanhar seu progresso.</p></details><details><summary>Funciona no celular?</summary><p>Sim. Você acessa o Mandalart pelo navegador do celular ou do computador e continua de onde parou.</p></details><details><summary>Como recebo o acesso?</summary><p>Após a confirmação do pagamento, você recebe o acesso por e-mail. Seu objetivo já estará preenchido. Responda às perguntas específicas para gerar seu plano.</p></details></section>
       <div className="sales-sticky" hidden={offerVisible}>{cta('sticky')}</div>
     </main>}
-    {draft.screen === 'checkout' && <main id="begin-main" className="sales-checkout begin-enter"><button className="back-button" type="button" disabled={busy} onClick={() => navigate('closing')}><ArrowLeft size={16} /> Voltar ao plano</button><span className="begin-eyebrow">PAGAMENTO SEGURO</span><h1 data-step-heading tabIndex={-1}>Seu plano, por R$ 37.</h1><p>Pagamento único · garantia de 7 dias.</p><form onSubmit={checkout}>{directPix && !kiwify && <fieldset className="sales-method"><legend>Como você quer pagar?</legend><label><input type="radio" name="payment-method" checked={method === 'pix'} onChange={() => setMethod('pix')} disabled={busy} /> Pix</label><label><input type="radio" name="payment-method" checked={method === 'card'} onChange={() => setMethod('card')} disabled={busy} /> Cartão</label></fieldset>}{directPix && method === 'pix' && !kiwify && <label className="sales-email">E-mail para receber seu acesso<input className="ph-mask" type="email" autoComplete="email" maxLength={254} required value={email} onChange={event => setEmail(event.target.value)} disabled={busy} /></label>}{error && <p className="begin-error" role="alert">{error}</p>}<button className="begin-primary sales-cta" type="submit" disabled={busy}>{busy ? <><LoaderCircle className="animate-spin" size={18} /> Preparando pagamento…</> : <>{directPix && method === 'pix' && !kiwify ? 'Gerar Pix' : 'Continuar para pagamento'} · R$ 37 <ArrowRight size={18} /></>}</button><p className="sales-guarantee"><ShieldCheck size={16} /> Seu acesso é enviado após a confirmação.</p></form></main>}
+    {draft.screen === 'checkout' && <main id="begin-main" className="sales-checkout begin-enter">
+      <button className="back-button" type="button" disabled={busy} onClick={() => navigate('closing')}><ArrowLeft size={16} /> Voltar ao plano</button>
+      <div className="sales-checkout-layout">
+      <div className="sales-checkout-summary">
+      <span className="begin-eyebrow sales-checkout-badge"><LockKeyhole size={14} aria-hidden="true" /> PAGAMENTO SEGURO</span>
+      <h1 data-step-heading tabIndex={-1}>Seu plano, por R$ 37.</h1>
+      <p>Pagamento único · garantia de 7 dias.</p>
+      <div className="sales-checkout-goal"><span className="sales-promise-icon" aria-hidden="true"><Sparkles size={22} /></span><div><small>Seu plano para</small><strong>{getDream(draft.answers)}</strong></div></div>
+      </div>
+      <form className="sales-checkout-form" onSubmit={checkout}>
+        {directPix && !kiwify && <fieldset className="sales-method">
+          <legend>Como você quer pagar?</legend>
+          <label className="sales-method-option">
+            <input type="radio" name="payment-method" value="pix" checked={method === 'pix'} onChange={() => setMethod('pix')} disabled={busy} />
+            <span className="sales-method-icon sales-method-icon--pix"><PixMark size={24} /></span>
+            <span className="sales-method-text"><strong>Pix</strong><small>QR Code ou copia e cola</small></span>
+            <span className="sales-method-indicator" aria-hidden="true">{method === 'pix' && <Check size={12} strokeWidth={3} />}</span>
+          </label>
+          <label className="sales-method-option">
+            <input type="radio" name="payment-method" value="card" checked={method === 'card'} onChange={() => setMethod('card')} disabled={busy} />
+            <span className="sales-method-icon sales-method-icon--card"><CreditCard size={24} strokeWidth={1.8} aria-hidden="true" /></span>
+            <span className="sales-method-text"><strong>Cartão de crédito</strong><small>Checkout seguro Asaas</small></span>
+            <span className="sales-method-indicator" aria-hidden="true">{method === 'card' && <Check size={12} strokeWidth={3} />}</span>
+          </label>
+        </fieldset>}
+        {directPix && method === 'pix' && !kiwify && <label className="sales-email">E-mail para receber seu acesso
+          <span className="sales-email-field"><Mail size={18} aria-hidden="true" /><input className="ph-mask" type="email" autoComplete="email" placeholder="voce@exemplo.com" maxLength={254} required value={email} onChange={event => setEmail(event.target.value)} disabled={busy} /></span>
+        </label>}
+        {error && <p className="begin-error" role="alert">{error}</p>}
+        <button className="begin-primary sales-cta" type="submit" disabled={busy}>{busy ? <><LoaderCircle className="animate-spin" size={18} /> Preparando pagamento…</> : <>{directPix && method === 'pix' && !kiwify ? 'Gerar Pix' : 'Continuar para pagamento'} · R$ 37 <ArrowRight size={18} /></>}</button>
+        <p className="sales-guarantee"><ShieldCheck size={16} aria-hidden="true" /> Seu acesso é enviado após a confirmação.</p>
+      </form>
+      </div>
+    </main>}
     <footer className="begin-footer"><span>Feito para o seu próximo passo.</span><div><Link href="/privacidade">Privacidade</Link><span>·</span><Link href="/termos">Termos de uso</Link></div></footer>
   </div>
 }
