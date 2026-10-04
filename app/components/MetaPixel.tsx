@@ -18,6 +18,7 @@ declare global {
 
 export function MetaPixel() {
   const pathname = usePathname()
+  const hideConsentBanner = pathname === '/comecar' || pathname.startsWith('/comecar/')
   const [consent, setConsent] = useState<'accepted' | 'rejected' | null>(null)
   const [ready, setReady] = useState(false)
   const [decided, setDecided] = useState(false)
@@ -67,7 +68,7 @@ s.parentNode.insertBefore(t,s)}(window,document,'script',
 'https://connect.facebook.net/en_US/fbevents.js');
 fbq('init','975897138891298');`}
     </Script>}
-    {production && decided && consent === null && <aside className="marketing-consent" aria-label="Preferências de cookies">
+    {production && decided && consent === null && !hideConsentBanner && <aside className="marketing-consent" aria-label="Preferências de cookies">
       <div>
         <strong>Podemos usar cookies opcionais?</strong>
         <p>Eles ajudam a medir o desempenho dos nossos anúncios. Você pode aceitar ou recusar sem mudar o uso do site. <a href="/privacidade">Saiba mais</a>.</p>

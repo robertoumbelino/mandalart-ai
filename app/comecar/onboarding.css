@@ -2712,26 +2712,65 @@
   .conversion-save, .conversion-faq { margin-top: 0; }
 }
 
-/* Guided preview: the plan comes first; the free exercise is optional. */
+/* Guided offer: keep the plan first, with clear benefits, outcomes and guarantee. */
 .guided-visually-hidden { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0; }
 .conversion-preview--guided { max-width: 980px; }
 .conversion-preview--guided .conversion-hero { display: flex; flex-direction: row; align-items: center; gap: 12px; margin-bottom: 16px; }
 .conversion-preview--guided .conversion-hero > div { flex: 1; min-width: 0; }
 .conversion-preview--guided .conversion-hero h1 { margin-top: 6px; }
-.conversion-offer--guided { padding: 24px; }
+.conversion-offer--guided { padding: 28px; text-align: left; }
 .conversion-offer--guided .conversion-offer-layout { margin-top: 0; gap: 28px; }
 .conversion-offer--guided .mandala-reveal { padding: 0; border: 0; border-radius: 0; background: none; box-shadow: none; }
 .conversion-offer--guided .mandala-reveal > :is(.mandala-grid, .mandala-note) { max-width: none; margin-inline: 0; }
 .conversion-offer--guided .mandala-grid { gap: clamp(6px, 1.6vw, 12px); }
 .conversion-offer--guided .mandala-cell { overflow-wrap: normal; hyphens: auto; hyphenate-limit-chars: 8 4 4; }
 .conversion-offer--guided .mandala-note { margin-top: 12px !important; font-weight: 400; color: #697184; font-size: 12px; }
-.guided-how-it-helps { text-align: left; }
-.guided-how-it-helps h3 { margin: 0 0 14px; color: #25293b; font-size: 21px; font-weight: 750; line-height: 1.3; letter-spacing: -.025em; }
-.guided-how-it-helps ul { margin: 0; padding: 0; list-style: none; display: grid; gap: 12px; }
-.guided-how-it-helps li { display: flex; align-items: center; gap: 10px; color: #505a71; font-size: 13px; line-height: 1.45; }
-.guided-how-it-helps svg { flex: none; color: #6845c3; }
-.conversion-offer--guided .conversion-price { justify-content: flex-start; margin: 20px 0 14px; gap: 12px; }
-.conversion-offer--guided .conversion-bump { padding: 12px; margin-bottom: 16px; gap: 9px; }
+.guided-save-preview { display: grid; gap: 7px; margin-top: 16px; text-align: center; }
+.guided-save-trigger { display: flex; align-items: center; justify-content: center; gap: 9px; width: 100%; min-height: 48px; padding: 12px 16px; border: 1px solid #d9cfee; border-radius: 12px; background: #fff; color: #6240b1; font: inherit; font-size: 13px; font-weight: 650; cursor: pointer; }
+.guided-save-trigger:hover { border-color: #a994d5; background: #faf8ff; }
+.guided-save-trigger:focus-visible { outline: 3px solid #b9a4ee; outline-offset: 3px; }
+.guided-save-trigger > svg { flex: none; }
+.guided-save-preview > small { color: #697184; font-size: 11px; line-height: 1.5; }
+.guided-save-dialog { width: min(440px, calc(100vw - 32px)); max-height: calc(100dvh - 32px); margin: auto; padding: 0; overflow-y: auto; border: 1px solid #e5def1; border-radius: 22px; background: #fff; color: #303249; box-shadow: 0 24px 80px #24163830; }
+.guided-save-dialog::backdrop { background: #251b4266; backdrop-filter: blur(3px); }
+.guided-save-dialog-content { position: relative; padding: 32px; }
+.guided-save-close { position: absolute; top: 10px; right: 10px; display: grid; place-items: center; width: 44px; height: 44px; padding: 0; border: 0; border-radius: 10px; background: transparent; color: #737084; cursor: pointer; }
+.guided-save-close:hover { background: #f5f2fa; color: #5837a6; }
+.guided-save-close:focus-visible { outline: 3px solid #b9a4ee; outline-offset: -3px; }
+.guided-save-icon { display: grid; place-items: center; width: 54px; height: 54px; margin-bottom: 20px; border-radius: 16px; background: #f0eafa; color: #6845c3; }
+.guided-save-dialog .begin-eyebrow { color: #6845c3; }
+.guided-save-dialog h2 { margin: 8px 0 12px; font-size: 25px; line-height: 1.25; font-weight: 750; letter-spacing: -.035em; }
+.guided-save-dialog-content > p { margin: 0; color: #626b7f; font-size: 14px; line-height: 1.65; overflow-wrap: anywhere; }
+.guided-save-dialog form { margin-top: 24px; }
+.guided-save-dialog label { display: block; margin-bottom: 8px; font-size: 13px; font-weight: 650; }
+.guided-save-dialog input { display: block; width: 100%; min-height: 50px; padding: 0 14px; border: 1px solid #cdc6dc; border-radius: 11px; background: #fff; color: #303249; font: inherit; font-size: 16px; }
+.guided-save-dialog input:focus-visible { outline: 3px solid #d3c5f3; border-color: #6845c3; }
+.guided-save-dialog .begin-primary { width: 100%; min-height: 52px; margin-top: 16px; font-size: 14px; }
+.guided-save-dialog small { display: block; margin-top: 12px; color: #697184; font-size: 11px; line-height: 1.6; }
+.guided-save-dialog .begin-error { margin-top: 10px; }
+.guided-outcomes { margin-top: 28px; padding: 22px; border-radius: 18px; background: #f7f4fd; }
+.guided-outcomes h3 { margin: 8px 0 20px; color: #28283e; font-size: 20px; line-height: 1.3; font-weight: 750; }
+.guided-outcomes ol { display: grid; gap: 20px; margin: 0; padding: 0; list-style: none; }
+.guided-outcomes li { display: flex; align-items: flex-start; gap: 14px; }
+.guided-outcome-number { flex: none; color: #6845c3; font-size: 25px; font-weight: 800; line-height: 1.2; letter-spacing: -.04em; }
+.guided-outcomes strong { color: #303249; font-size: 14px; font-weight: 700; }
+.guided-outcomes p { margin: 4px 0 0; color: #626b7f; font-size: 13px; line-height: 1.6; }
+.guided-included h3 { margin: 6px 0 16px; color: #28283e; font-size: 22px; font-weight: 750; line-height: 1.3; }
+.guided-benefits { display: grid; gap: 10px; margin: 0; padding: 0; list-style: none; }
+.guided-benefits li { display: flex; align-items: center; gap: 12px; padding: 12px; border: 1px solid #e8e3f0; border-radius: 14px; background: #fff; }
+.guided-benefits li > svg { box-sizing: content-box; flex: none; padding: 8px; border-radius: 10px; background: #f3effb; color: #6845c3; }
+.guided-benefits strong, .guided-benefits small { display: block; }
+.guided-benefits strong { color: #303249; font-size: 14px; font-weight: 650; line-height: 1.5; }
+.guided-benefits small { margin-top: 2px; color: #626b7f; font-size: 12px; line-height: 1.5; }
+.conversion-offer--guided .conversion-price { justify-content: flex-start; margin: 22px 0 16px; padding-top: 20px; border-top: 1px solid #e8e3f0; gap: 12px; }
+.guided-guarantee { display: flex; align-items: flex-start; gap: 12px; margin-top: 18px; padding: 18px; border: 1px solid #c4e5d2; border-radius: 16px; background: #edf8f1; }
+.guided-guarantee > svg { flex: none; margin-top: 2px; color: #168154; }
+.guided-guarantee h3 { margin: 0; color: #10633f; font-size: 17px; font-weight: 750; line-height: 1.4; }
+.guided-guarantee p { margin: 6px 0 0; color: #345e49; font-size: 12px; line-height: 1.65; }
+.guided-extra-plans { margin-top: 16px; padding-top: 8px; border-top: 1px solid #ece8f2; }
+.guided-extra-plans > summary { display: flex; align-items: center; min-height: 44px; gap: 8px; list-style: none; cursor: pointer; color: #646079; font-size: 12px; }
+.guided-extra-plans > summary::-webkit-details-marker { display: none; }
+.conversion-offer--guided .conversion-bump { padding: 12px; margin: 8px 0 0; gap: 9px; }
 .conversion-offer--guided .conversion-bump strong { font-size: 12px; }
 .conversion-offer--guided .conversion-bump small { font-size: 11px; }
 .guided-explore, .guided-includes { margin-top: 16px; border: 1px solid #e2deed; border-radius: 18px; background: #fff; overflow: hidden; }
@@ -2742,12 +2781,12 @@
 .guided-explore summary strong, .guided-includes summary { font-size: 14px; font-weight: 650; }
 .guided-explore summary small { color: #748095; margin-top: 3px; font-size: 12px; font-weight: 400; }
 .guided-disclosure-icon { margin-left: auto; flex: none; color: #7b7291; transition: transform 150ms; }
-.guided-explore[open] > summary .guided-disclosure-icon, .guided-includes[open] > summary .guided-disclosure-icon { transform: rotate(180deg); }
-.guided-explore > summary:focus-visible, .guided-includes > summary:focus-visible { outline: 3px solid #b9a4ee; outline-offset: -4px; }
+.guided-explore[open] > summary .guided-disclosure-icon, .guided-includes[open] > summary .guided-disclosure-icon, .guided-extra-plans[open] > summary .guided-disclosure-icon { transform: rotate(180deg); }
+.guided-explore > summary:focus-visible, .guided-includes > summary:focus-visible, .guided-extra-plans > summary:focus-visible { outline: 3px solid #b9a4ee; outline-offset: -4px; }
 .guided-explore .conversion-first-step { border: 0; border-radius: 0; margin: 0; padding: 4px 22px 22px; }
 .guided-explore .conversion-first-step > .begin-eyebrow { display: none; }
 .guided-includes-body { padding: 0 22px 22px; text-align: left; }
-.guided-includes-body > p { color: #687189; margin-top: 20px; font-size: 13px; }
+.guided-includes-body > p { color: #687189; margin: 0; font-size: 13px; }
 .guided-includes-body ol { list-style: none; padding: 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin-top: 16px; }
 .guided-includes-body ol li { padding: 14px; background: #f8f6fc; border-radius: 12px; }
 .guided-includes-body ol strong { font-size: 13px; }
@@ -2768,15 +2807,14 @@
   .conversion-preview--guided { padding-top: 15px; }
   .conversion-preview--guided .conversion-hero { gap: 0 12px; margin-bottom: 14px; }
   .conversion-preview--guided .conversion-hero h1 { font-size: 25px; }
-  .conversion-offer--guided { padding: 16px; }
-  .conversion-offer--guided .conversion-offer-layout { gap: 18px; }
+  .conversion-offer--guided { padding: 18px; }
+  .conversion-offer--guided .conversion-offer-layout { gap: 26px; }
   .conversion-offer--guided .mandala-cell { font-size: clamp(11px, 3.4cqw, 12px); }
-  .guided-how-it-helps h3 { font-size: 18px; margin-bottom: 11px; }
-  .guided-how-it-helps ul { gap: 10px; }
-  .guided-how-it-helps li { font-size: 12px; }
+  .guided-outcomes { padding: 18px; margin-top: 22px; }
   .conversion-sticky--guided button { min-height: 48px; }
   .guided-includes-body ol { grid-template-columns: 1fr; }
 }
+
 @media (max-width: 400px) {
   .conversion-offer--guided .mandala-cell { padding: 16px 4px 4px; }
   .conversion-offer--guided .mandala-cell strong { -webkit-line-clamp: 4; }

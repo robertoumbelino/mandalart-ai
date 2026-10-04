@@ -5,6 +5,7 @@ import { emailOrigin } from '@/lib/stripe'
 import { createLeadLink, createUnsubscribeLink } from '@/lib/lead-link'
 import { emailDeliveryRecipient, localEmailTestMode } from '@/lib/email-testing'
 import { purchaseEmail, registrationEmail, previewEmail } from '@/lib/email-template'
+import { answersSchema, getDream, previewSchema } from '@/lib/onboarding'
 
 const digest = (token: string) => createHash('sha256').update(token).digest('hex')
 
@@ -67,7 +68,12 @@ export async function sendPreviewAndScheduleRecovery(leadId: string) {
   const unsubscribeUrl = createUnsubscribeLink(leadId)
   try {
     if (!claim.preview_email_sent_at) {
-      await sendEmail(email, 'Seu primeiro caminho está pronto', previewEmail('Seu primeiro caminho está pronto', url, 'Sua prévia está salva. Abra quando quiser e continue seu primeiro passo.', unsubscribeUrl), { idempotencyKey: `preview-${leadId}` })
+      const [saved] = await sql`SELECT l.answers,p.preview FROM onboarding_leads l
+        JOIN onboarding_previews p ON p.id=l.preview_id
+        WHERE l.id=${leadId}::uuid AND p.status='ready'`
+      if (!saved) throw new Error('Prévia não encontrada para o envio de e-mail.')
+      const data = { dream: getDream(answersSchema.parse(saved.answers)), preview: previewSchema.parse(saved.preview) }
+      await sendEmail(email, 'Sua prévia Mandalart e seu primeiro passo', previewEmail('Seu sonho já tem um primeiro passo.', url, 'Guarde seu Mandalart e comece com uma ação pequena. Seu primeiro passo está aqui, sem custo, para fazer no seu ritmo.', unsubscribeUrl, data), { idempotencyKey: `preview-${leadId}` })
       await sql`UPDATE onboarding_leads SET preview_email_sent_at=now() WHERE id=${leadId}::uuid`
     }
     if (!localEmailTestMode() && !claim.recovery_one_email_id) {
