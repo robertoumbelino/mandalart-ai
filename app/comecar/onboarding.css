@@ -1191,10 +1191,6 @@
 .generation-dream svg {
   flex-shrink: 0;
 }
-.generation-note {
-  color: var(--color-slate-600);
-  font-size: 12px;
-}
 .generation-page > .text-button {
   margin-top: 20px;
 }
@@ -2532,20 +2528,7 @@
 .conversion-duration { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: #64718a; margin-top: 14px; }
 .conversion-checklist { display: grid; gap: 10px; margin: 24px 0 12px; }
 .conversion-first-step > small { color: #777e91; }
-.conversion-testimonial { display: grid; grid-template-columns: 210px minmax(0,1fr); align-items: center; gap: 22px; margin: 24px auto 0; padding: 20px 24px; border: 1px solid #e4def0; border-radius: 20px; background: #fff; box-shadow: 0 8px 26px #3322640a; }
-.conversion-testimonial figcaption { display: flex; align-items: center; gap: 12px; min-width: 0; padding-right: 20px; border-right: 1px solid #e8e4f1; }
-.conversion-testimonial figcaption img { width: 48px; height: 48px; flex: none; border-radius: 50%; object-fit: cover; object-position: center 35%; }
-.conversion-testimonial figcaption span { display: grid; min-width: 0; gap: 2px; }
-.conversion-testimonial figcaption strong { color: #283349; font-size: 13px; font-weight: 700; }
-.conversion-testimonial figcaption small { color: #738098; font-size: 11px; }
-.conversion-testimonial blockquote { display: flex; align-items: center; gap: 12px; min-width: 0; margin: 0; }
-.conversion-testimonial blockquote > span { color: #a594ff; font-family: Georgia, serif; font-size: 46px; line-height: .75; }
-.conversion-testimonial blockquote p { margin: 0; color: #344058; font-size: 14px; font-weight: 500; line-height: 1.65; }
-@media (max-width: 760px) {
-  .conversion-testimonial { grid-template-columns: minmax(0,1fr); gap: 17px; padding: 20px; }
-  .conversion-testimonial blockquote { grid-row: 1; align-items: flex-start; }
-  .conversion-testimonial figcaption { grid-row: 2; padding: 0; border: 0; }
-}
+
 .conversion-offer { margin: 0 auto; padding: clamp(26px,5vw,48px); text-align: center; border: 1px solid #e7e3ef; border-radius: 28px; background: #fff; color: #23263a; box-shadow: 0 18px 48px #2920450c; }
 .conversion-offer .begin-eyebrow { color: #6446ae; }
 .conversion-offer h2 { margin: 12px 0; color: #24233a; }
@@ -2708,7 +2691,6 @@
   .conversion-hero { margin-bottom: 0; }
   .conversion-offer-layout { grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: start; }
   .conversion-first-step { margin: 0; padding: 24px; }
-  .conversion-testimonial { margin: 0; }
   .conversion-save, .conversion-faq { margin-top: 0; }
 }
 
@@ -2847,6 +2829,29 @@
   .conversion-offer--guided .mandala-cell strong { -webkit-line-clamp: 4; }
 }
 
+/* Keep the loading status and testimonial together on smaller screens. */
+@media (max-width: 999px) {
+  .has-generation .generation-page {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 12px 0;
+  }
+  .has-generation .generation-bloom {
+    width: clamp(80px, calc(100svh - 730px), 160px);
+    margin: 0 auto 4px;
+  }
+  .has-generation .generation-page h1 { margin: 12px 0; }
+  .has-generation .generation-page > p[role='status'] {
+    min-height: 42px;
+    margin: 0;
+    line-height: 1.5;
+  }
+  .has-generation .generation-dream { padding: 8px 16px; margin: 10px 0; }
+  .has-generation .generation-page > .text-button { margin-top: 12px; }
+}
+
 /* Fit the loading content and footer into a laptop viewport. */
 @media (min-width: 1000px) {
   .has-generation .begin-header { height: 76px; }
@@ -2860,7 +2865,7 @@
   }
   .has-generation .generation-page > * { flex-shrink: 0; }
   .has-generation .generation-bloom {
-    width: clamp(100px, calc(100svh - 580px), 230px);
+    width: clamp(100px, calc(100svh - 710px), 230px);
     margin: 0 auto 8px;
   }
   .has-generation .generation-page h1 {

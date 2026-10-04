@@ -7,6 +7,7 @@ import { PixMark } from '@/app/components/PixMark'
 import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { getDream, type OnboardingAnswers, type OnboardingPreview } from '@/lib/onboarding'
 import { ChecklistItem } from '@/app/components/ChecklistItem'
+import { JourneyTestimonial } from '@/app/components/JourneyTestimonial'
 
 type Props = {
   previewId: string
@@ -146,6 +147,7 @@ export function Preview({ previewId, onViewed, preview, answers, checked, onChec
               </ul>
             </div>
             <div className="guided-purchase">
+              <JourneyTestimonial placement="purchase" />
               <div className="guided-checkout">
                 <div className="guided-purchase-summary">
                   <p>Acesso à plataforma + {bumpSelected ? '3 planos personalizados' : 'seu plano personalizado'}</p>
@@ -214,16 +216,6 @@ export function Preview({ previewId, onViewed, preview, answers, checked, onChec
           <ol>{preview.pillars.map((pillar, index) => <li key={pillar.title}><strong>{index + 1}. {pillar.title}</strong><p>{pillar.description}</p></li>)}</ol>
         </div>
       </details>
-      <figure className="conversion-testimonial">
-        <figcaption>
-          <Image src="/testimonials/kaua-santos.png" alt="" width={48} height={48} />
-          <span><strong>Kauã Santos</strong><small>Plano e checklists</small></span>
-        </figcaption>
-        <blockquote>
-          <span aria-hidden="true">“</span>
-          <p>Finalmente consegui tirar esse plano do papel e realizar meu objetivo, um passo de cada vez…</p>
-        </blockquote>
-      </figure>
 
       <div className="conversion-faq">
         <details><summary>O que recebo ao comprar?</summary><p>Acesso à plataforma online com sua conta e um Mandalart completo para o sonho que você acabou de configurar: oito caminhos, 64 tarefas e 192 pequenas ações. Você marca seus checklists e acompanha o progresso salvo, no celular ou computador.</p></details>

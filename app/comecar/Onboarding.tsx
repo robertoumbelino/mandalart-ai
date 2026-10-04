@@ -3,6 +3,7 @@
 import { getOnboardingPaymentOptions, startGuestCheckout, startGuestPix } from '@/actions/onboarding-checkout'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
+import { JourneyTestimonial } from '@/app/components/JourneyTestimonial'
 import { track } from '@vercel/analytics'
 import { sendGoogleAnalyticsEvent } from '@/app/components/GoogleAnalytics'
 import { captureProductEvent, getProductDistinctId } from '@/lib/posthog'
@@ -857,9 +858,7 @@ export function Onboarding() {
             <LoaderCircle className="begin-spinner" size={17} />
             <span>{getDream(draft.answers)}</span>
           </div>
-          <p className="generation-note">
-            Um plano feito para a vida real. A sua.
-          </p>
+          <JourneyTestimonial placement="generation" />
           <button
             className="text-button"
             onClick={() => {

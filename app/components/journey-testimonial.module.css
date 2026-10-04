@@ -1,0 +1,45 @@
+.testimonial {
+  min-width: 0;
+  margin: 0;
+  text-align: left;
+}
+.testimonial blockquote { margin: 0; }
+.testimonial blockquote p { margin: 0; color: #344058; font-size: 14px; line-height: 1.65; }
+.testimonial figcaption { display: flex; align-items: center; gap: 10px; }
+.testimonial figcaption img { width: 40px; height: 40px; flex: none; border-radius: 50%; object-fit: cover; object-position: center 35%; }
+.testimonial figcaption span { display: grid; gap: 2px; }
+.testimonial figcaption strong { color: #283349; font-size: 12px; font-weight: 700; }
+.testimonial figcaption small { color: #697184; font-size: 11px; }
+.generation {
+  width: 100%;
+  max-width: 420px;
+  display: grid;
+  gap: 12px;
+  margin: 8px auto 0;
+  padding: 16px 18px;
+  border: 1px solid #e7e1f2;
+  border-radius: 16px;
+  background: #fff;
+}
+.generation blockquote p { font-size: 13px; }
+.purchase {
+  display: grid;
+  gap: 14px;
+  margin-top: 24px;
+  padding: 20px 0;
+  border-top: 1px solid #e8e3f0;
+}
+@media (min-width: 1000px) {
+  .purchase {
+    grid-column: 1 / -1;
+    grid-template-columns: 190px minmax(0, 1fr);
+    align-items: center;
+    gap: 24px;
+    margin-top: 0;
+    padding: 0 0 22px;
+    border-top: 0;
+    border-bottom: 1px solid #e8e3f0;
+  }
+  .purchase figcaption { grid-column: 1; grid-row: 1; }
+  .purchase blockquote { grid-column: 2; grid-row: 1; }
+}

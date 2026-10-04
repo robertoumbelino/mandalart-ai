@@ -35,16 +35,7 @@
   line-height: 1.7;
 }
 
-.testimonials-preview-note {
-  display: inline-block;
-  margin-top: 13px;
-  padding: 6px 10px;
-  border-radius: 999px;
-  background: #f3f0ff;
-  color: #5d47e8;
-  font-size: 10px;
-  font-weight: 600;
-}
+
 
 .testimonials-grid {
   display: grid;
