@@ -76,7 +76,7 @@ export function startPostHog() {
 
 export function captureProductEvent(name: string, properties?: Record<string, string | number>) {
   if (!startPostHog()) return false
-  posthog.capture(name, { ...properties, site_environment: 'production', journey_version: 'conversion-v2' })
+  posthog.capture(name, { journey_version: 'conversion-v2', ...properties, site_environment: 'production' })
   return true
 }
 

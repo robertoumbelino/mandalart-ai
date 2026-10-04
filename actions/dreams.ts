@@ -1,5 +1,9 @@
 'use server'
 
+import { after } from 'next/server'
+import { salesAnswersSchema } from '@/lib/sales-journey'
+import { getDream } from '@/lib/onboarding'
+import { captureGeneratedPlan } from '@/lib/product-analytics-server'
 import { createHash } from 'node:crypto'
 import { getCurrentUser } from '@/actions/auth'
 import { billingConfig, billingMode } from '@/lib/stripe'
@@ -72,6 +76,7 @@ export async function generateDream(
   rawAnswers: InterviewAnswer[],
   rawPreviewId?: string,
   rawProposal?: GoalProposal,
+  rawSalesOrderId?: string,
 ): Promise<GenerationResponse> {
   const user = await requireUser()
   const id = idSchema.parse(rawId)
@@ -79,12 +84,27 @@ export async function generateDream(
   const answers = interviewAnswerSchema.array().max(6).parse(rawAnswers)
   const proposal = rawProposal ? goalProposalSchema.parse(rawProposal) : undefined
   const previewId = rawPreviewId ? idSchema.parse(rawPreviewId) : undefined
+  const salesOrderId = rawSalesOrderId ? idSchema.parse(rawSalesOrderId) : undefined
+  const [salesOrder] = salesOrderId ? await getDb()`SELECT o.id,o.mode,o.analytics_distinct_id,o.journey_version,p.answers
+    FROM dream_orders o JOIN onboarding_previews p ON p.id=o.preview_id
+    WHERE o.id=${salesOrderId}::uuid AND o.user_id=${user.id}::uuid AND o.mode=${billingMode()} AND o.paid=true AND o.credited>0 AND o.status='paid'` : []
+  const salesContext = salesOrder ? salesAnswersSchema.parse(salesOrder.answers) : undefined
+  if (salesOrderId && (!salesContext || getDream(salesContext) !== goal)) throw new Error('Compra indisponível para este objetivo.')
+  function reportGenerated() {
+    if (!salesOrder) return
+    after(async () => {
+      try { await captureGeneratedPlan({ id, orderId: String(salesOrder.id), mode: String(salesOrder.mode), analyticsDistinctId: salesOrder.analytics_distinct_id as string | null, journeyVersion: String(salesOrder.journey_version) }) }
+      catch { console.error('product_plan_generated_send_failed', { generationId: id }) }
+    })
+  }
   const hash = createHash('sha256')
-    .update(JSON.stringify({ goal, answers, previewId, proposal }))
+    .update(JSON.stringify({ goal, answers, previewId, proposal, ...(salesOrderId ? { salesOrderId } : {}) }))
     .digest('hex')
   const reservation = await reserveDream(user.id, id, hash)
-  if (reservation.status === 'completed')
+  if (reservation.status === 'completed') {
+    reportGenerated()
     return { status: 'completed', item: reservation.result! }
+  }
   if (reservation.status === 'insufficient')
     return {
       status: 'insufficient',
@@ -98,10 +118,10 @@ export async function generateDream(
       ? await loadPaidPreview(previewId, goal, user.id)
       : undefined
     const data = mandalartDataSchema.parse(
-      await buildMandalartData(goal, answers, preview, proposal),
+      await buildMandalartData(goal, answers, preview, proposal, salesContext),
     )
     const item = await completeDream(user.id, id, data)
-    if (item) return { status: 'completed', item }
+    if (item) { reportGenerated(); return { status: 'completed', item } }
   } catch (error) {
     console.error('dream_generation_failed', JSON.stringify({
       id,

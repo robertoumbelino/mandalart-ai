@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, expect, it, vi } from 'vitest'
-import { capturePaidOrder } from './product-analytics-server'
+import { capturePaidOrder, captureGeneratedPlan } from './product-analytics-server'
 vi.mock('server-only', () => ({}))
 beforeEach(() => {
   vi.stubEnv('NODE_ENV', 'production')
@@ -42,4 +42,22 @@ it.each([
   vi.stubGlobal('fetch', send)
   expect(await capturePaidOrder(order)).toBe(false)
   expect(send).not.toHaveBeenCalled()
+})
+
+it('uses the persisted order version on confirmed purchases', async () => {
+  const send = vi.fn().mockResolvedValue({ ok: true }); vi.stubGlobal('fetch', send)
+  await capturePaidOrder({ ...order, journey_version: 'sales-v3' })
+  expect(JSON.parse(send.mock.calls[0][1].body).properties.journey_version).toBe('sales-v3')
+})
+it('deduplicates saved-plan retries separately from the paid-order event', async () => {
+  const send = vi.fn().mockResolvedValue({ ok: true }); vi.stubGlobal('fetch', send)
+  const plan = { id: '7b0bfbb2-68de-4ce7-a0be-df91d9f5aa04', orderId: order.id, mode: 'live', analyticsDistinctId: 'visitor-1', journeyVersion: 'sales-v3' }
+  await captureGeneratedPlan(plan)
+  await captureGeneratedPlan(plan)
+  const first = JSON.parse(send.mock.calls[0][1].body)
+  expect(first.uuid).not.toBe(order.id)
+  expect(first).toEqual(JSON.parse(send.mock.calls[1][1].body))
+  expect(first).toMatchObject({ event: 'plan_generated', distinct_id: 'visitor-1', properties: { journey_version: 'sales-v3', order_id: order.id } })
+  expect(await captureGeneratedPlan({ ...plan, mode: 'test' })).toBe(false)
+  expect(send).toHaveBeenCalledTimes(2)
 })

@@ -92,3 +92,10 @@ it('captures without an advertising choice and respects the analytics opt-out', 
   expect(captureProductEvent('screen_view')).toBe(true)
   expect(posthog.capture).toHaveBeenCalledTimes(2)
 })
+
+it('preserves the explicit journey version for comparison with historical events', async () => {
+  vi.stubGlobal('window', { location: new URL('https://mandalart.com.br') })
+  const { captureProductEvent } = await import('./posthog')
+  captureProductEvent('landing_view', { journey_version: 'sales-v3' })
+  expect(posthog.capture).toHaveBeenCalledWith('landing_view', expect.objectContaining({ journey_version: 'sales-v3', site_environment: 'production' }))
+})

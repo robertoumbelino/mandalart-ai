@@ -59,4 +59,12 @@ it('does not check account access until payment is confirmed', async () => {
     expect(firstQuery).toContain('p.session_id=')
     expect(firstQuery).toContain('o.provider=')
   })
+  it('returns the paid four-question goal and persisted journey version without a generated preview', async () => {
+    const query = vi.fn().mockResolvedValueOnce([{ id: 'order', preview_id: 'intent', journey_version: 'sales-v3', answers: { journeyVersion: 'sales-v3', category: 'money', dream: 'Sair das dívidas', obstacle: 'time', horizon: 'month' } }])
+      .mockResolvedValueOnce([{ status: 'paid', user_id: 'buyer', amount: 3700, credits: 1 }])
+    vi.mocked(getDb).mockReturnValue(query as never)
+    vi.mocked(getCurrentUser).mockResolvedValue(null)
+    vi.mocked(registrationPending).mockResolvedValue(true)
+    expect(await (await GET(request())).json()).toMatchObject({ status: 'paid', journeyVersion: 'sales-v3', dream: 'Sair das dívidas', authenticated: false })
+  })
 })

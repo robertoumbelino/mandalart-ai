@@ -75,7 +75,7 @@ export function ProductMethod() {
     <div className="method-flow" aria-label="Objetivo, oito caminhos, ações, execução">{['Objetivo', '8 caminhos', 'Ações', 'Execução'].map((label, index) => <span key={label}>{label}{index < 3 && <ArrowRight size={16} aria-hidden="true" />}</span>)}</div>
     <h3>Mais do que um plano gerado por IA.</h3><p>O Mandalart transforma seu objetivo em caminhos e ações que você consegue visualizar e executar. A personalização acontece a partir das suas respostas.</p>
     <details><summary>Por que não simplesmente pedir um plano para uma IA?</summary><p>Você pode usar um chat para criar um bom plano. No Mandalart, você recebe uma estrutura pronta: oito caminhos, ações com checklists, próximo passo e progresso salvo em um só lugar. O valor está em organizar e usar o plano, sem precisar montar esse sistema por conta própria.</p></details>
-    <details><summary>O que é gratuito e o que custa R$37?</summary><p>A prévia mostra seus oito caminhos e libera um primeiro passo com três ações. Por R$37, em pagamento único, você recebe o Mandalart completo desse objetivo, com 64 tarefas, checklists e progresso salvo. Sem assinatura.</p></details>
+    <details><summary>O que recebo por R$37?</summary><p>Por R$37, em pagamento único, você cria um Mandalart personalizado para seu objetivo, com 8 pilares, 64 etapas, checklists e progresso salvo. O plano é gerado após o pagamento e as perguntas específicas. Sem assinatura.</p></details>
     <details><summary>Isso garante que vou realizar meu objetivo?</summary><p>Não. O Mandalart organiza um caminho para começar e continuar. O resultado depende da execução e das suas circunstâncias; use o plano como ponto de partida e adapte a execução conforme aprende.</p></details>
   </section>
 }

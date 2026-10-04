@@ -7,7 +7,7 @@ import { sendPreviewAndScheduleRecovery } from '@/lib/transactional-email'
 
 export const runtime = 'nodejs'
 
-const names = z.enum(['landing_view','quiz_started','quiz_question','quiz_completed','preview_viewed','unlock_clicked','offer_viewed','email_block_viewed','preview_resumed','preview_first_step_completed'])
+const names = z.enum(['landing_view','quiz_started','quiz_question','quiz_completed','preview_viewed','unlock_clicked','offer_viewed','email_block_viewed','preview_resumed','preview_first_step_completed','quiz_complete','closing_view','stack_view','example_view','offer_view','checkout_click','checkout_view','pix_qr_shown','card_redirect','payment_error','screen_view','screen_completed','checkout_redirect'])
 const schema = z.object({ name: names, previewId: z.uuid().optional(), leadId: z.uuid().optional(), properties: z.record(z.string(), z.union([z.string(),z.number(),z.boolean()])).optional(), attribution: z.record(z.string(),z.unknown()).optional() })
 
 export async function POST(request: Request) {
@@ -28,7 +28,7 @@ export async function POST(request: Request) {
   }
   const attribution = cleanAttribution(parsed.data.attribution)
   await sql`INSERT INTO onboarding_events(session_id,lead_id,name,properties,attribution,preview_id)
-    VALUES(${sessionId}::uuid,${leadId || null}::uuid,${parsed.data.name},${JSON.stringify({ ...parsed.data.properties, journey_version: 'conversion-v2' })}::jsonb,${JSON.stringify(attribution)}::jsonb,${parsed.data.previewId || null}::uuid)`
+    VALUES(${sessionId}::uuid,${leadId || null}::uuid,${parsed.data.name},${JSON.stringify({ ...parsed.data.properties, journey_version: parsed.data.properties?.journey_version === 'sales-v3' ? 'sales-v3' : 'conversion-v2' })}::jsonb,${JSON.stringify(attribution)}::jsonb,${parsed.data.previewId || null}::uuid)`
   if (parsed.data.name === 'preview_viewed' && leadId) {
     await sql`UPDATE onboarding_leads SET preview_viewed_at=COALESCE(preview_viewed_at,now()) WHERE id=${leadId}::uuid`
     try { await sendPreviewAndScheduleRecovery(leadId) }

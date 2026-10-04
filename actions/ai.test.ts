@@ -96,6 +96,16 @@ describe('goal safety screening', () => {
     expect(generateTextMock).toHaveBeenCalledTimes(1)
     expect(generateTextMock.mock.calls[0][0].prompt).toContain('Resposta proibida')
   })
+  it('uses the four-question purchase as context and still asks a specific interview question', async () => {
+    generateTextMock.mockResolvedValueOnce({ output: { classification: 'allowed' } } as never)
+      .mockResolvedValueOnce({ output: { text: 'Qual valor total você precisa organizar?', options: ['Já tenho esse valor', 'Preciso levantar'] } } as never)
+    const sales = { journeyVersion: 'sales-v3' as const, category: 'money' as const, dream: 'Sair das dívidas', obstacle: 'time' as const, horizon: 'month' as const, customDream: '' }
+    expect((await discoverGoal(sales.dream, [], sales)).status).toBe('question')
+    const prompt = generateTextMock.mock.calls[1][0].prompt as string
+    expect(prompt).toContain('quizContext')
+    expect(prompt).toContain('sales-obstacle')
+    expect(prompt).not.toContain('sales-stage')
+  })
 
   it('finishes with a proposal after six answers instead of looping', async () => {
     const proposal = {

@@ -7,12 +7,17 @@ import { kiwifyCheckoutLink, kiwifyCheckoutPreviewLink } from '@/lib/kiwify-chec
 import { kiwifyLocalDemoEnabled, kiwifyOnboardingEnabled } from '@/lib/kiwify'
 import { billingMode, paymentProvider } from '@/lib/stripe'
 import { z } from 'zod'
+import { salesAnswersSchema, SALES_JOURNEY_VERSION } from '@/lib/sales-journey'
 import { previewProgressSchema } from '@/lib/preview-progress'
 import { idSchema } from '@/lib/validation'
 import { cleanAttribution, type Attribution } from '@/lib/attribution'
 import { getPreviewSession } from '@/lib/onboarding-server'
 import { billingOrigin, getStripe } from '@/lib/stripe'
 import { createAsaasCheckout, asaasCheckoutUrl, createAsaasPixQr, directAsaasPixEnabled } from '@/lib/asaas'
+
+function checkoutJourneyVersion(preview: { answers?: unknown }) {
+  return salesAnswersSchema.safeParse(preview.answers).success ? SALES_JOURNEY_VERSION : 'conversion-v2'
+}
 
 const guestContextSchema = z.object({ checked: previewProgressSchema.optional(), bump: z.boolean().default(false), marketingConsent: z.boolean().default(false), analyticsDistinctId: z.string().min(1).max(200).optional() })
 
@@ -23,7 +28,7 @@ export async function startGuestCheckout(rawPreviewId: string, rawOrderId: strin
   const orderId = idSchema.parse(rawOrderId)
   const sessionId = await getPreviewSession()
   const sql = getDb()
-  const [preview] = await sql`SELECT p.id,p.attribution,l.id AS lead_id,l.email
+  const [preview] = await sql`SELECT p.id,p.attribution,p.answers,l.id AS lead_id,l.email
     FROM onboarding_previews p
     LEFT JOIN LATERAL (
       SELECT id,email FROM onboarding_leads
@@ -32,18 +37,19 @@ export async function startGuestCheckout(rawPreviewId: string, rawOrderId: strin
     ) l ON true
     WHERE p.id=${previewId}::uuid AND p.status='ready'
       AND p.expires_at>now() AND p.session_id=${sessionId}::uuid`
-  if (!preview) throw new Error('Abra sua prévia antes de continuar para o pagamento.')
+  if (!preview) throw new Error('Suas respostas expiraram. Volte ao início para continuar.')
+  const journeyVersion = checkoutJourneyVersion(preview)
   if (provider === 'kiwify')
-    return startKiwifyGuestCheckout({ preview: preview as { lead_id: string | null; email: string | null; attribution: unknown }, previewId, orderId, sessionId, context })
+    return startKiwifyGuestCheckout({ preview: preview as { lead_id: string | null; email: string | null; attribution: unknown; answers?: unknown }, previewId, orderId, sessionId, context })
   if (paymentProvider() === 'asaas')
-    return startAsaasGuestCheckout({ preview: preview as { lead_id: string | null; email: string | null; attribution: unknown }, previewId, orderId, sessionId, context })
+    return startAsaasGuestCheckout({ preview: preview as { lead_id: string | null; email: string | null; attribution: unknown; answers?: unknown }, previewId, orderId, sessionId, context })
   const mode = billingMode()
   const price = process.env.STRIPE_PRICE_ONE
   if (!price) throw new Error('Checkout indisponível no momento.')
   const [count] = await sql`SELECT count(*)::int AS n FROM dream_orders WHERE preview_id=${previewId}::uuid AND created_at>now()-interval '1 hour'`
   if (Number(count.n) >= 10) throw new Error('Muitas tentativas. Aguarde um pouco antes de tentar de novo.')
   await sql`INSERT INTO dream_orders(id,user_id,mode,credits,amount,price_id,lead_id,preview_id,guest_email,bump_price_id,attribution,marketing_consent,journey_version,analytics_distinct_id)
-    VALUES(${orderId}::uuid,NULL,${mode},1,3700,${price},${preview.lead_id || null}::uuid,${previewId}::uuid,${preview.email || null},${process.env.STRIPE_PRICE_BUMP || null},${JSON.stringify(cleanAttribution(preview.attribution))}::jsonb,${context.marketingConsent},'conversion-v2',${context.analyticsDistinctId || null})
+    VALUES(${orderId}::uuid,NULL,${mode},1,3700,${price},${preview.lead_id || null}::uuid,${previewId}::uuid,${preview.email || null},${process.env.STRIPE_PRICE_BUMP || null},${JSON.stringify(cleanAttribution(preview.attribution))}::jsonb,${context.marketingConsent},${journeyVersion},${context.analyticsDistinctId || null})
     ON CONFLICT DO NOTHING`
   const [order] = await sql`SELECT * FROM dream_orders WHERE id=${orderId}::uuid`
   if (!order || order.lead_id !== (preview.lead_id || null) || order.preview_id !== previewId || order.mode !== mode || order.price_id !== price || order.guest_email !== (preview.email || null)) throw new Error('Pedido inválido.')
@@ -84,12 +90,12 @@ export async function startGuestCheckout(rawPreviewId: string, rawOrderId: strin
   if (!session.url) throw new Error('Não foi possível abrir o checkout.')
   await sql`UPDATE dream_orders SET session_id=${session.id} WHERE id=${orderId}::uuid`
   await sql`INSERT INTO onboarding_events(session_id,lead_id,order_id,name,attribution,preview_id,properties)
-    VALUES(${sessionId}::uuid,${preview.lead_id || null}::uuid,${orderId}::uuid,'checkout_started',${JSON.stringify(cleanAttribution(preview.attribution))}::jsonb,${previewId}::uuid,'{"journey_version":"conversion-v2"}'::jsonb)`
+    VALUES(${sessionId}::uuid,${preview.lead_id || null}::uuid,${orderId}::uuid,'checkout_started',${JSON.stringify(cleanAttribution(preview.attribution))}::jsonb,${previewId}::uuid,${JSON.stringify({ journey_version: journeyVersion })}::jsonb)`
   return { url: session.url }
 }
 
 async function startKiwifyGuestCheckout(input: {
-  preview: { lead_id: string | null; email: string | null; attribution: unknown }
+  preview: { lead_id: string | null; email: string | null; attribution: unknown; answers?: unknown }
   previewId: string
   orderId: string
   sessionId: string
@@ -98,6 +104,7 @@ async function startKiwifyGuestCheckout(input: {
   const localDemo = kiwifyLocalDemoEnabled()
   if (!localDemo && !kiwifyOnboardingEnabled()) throw new Error('Checkout da Kiwify indisponível neste ambiente.')
   const { preview, previewId, orderId, sessionId, context } = input
+  const journeyVersion = checkoutJourneyVersion(preview)
   const credits = context.bump ? 3 : 1
   const amount = context.bump ? 9900 : 3700
   const attribution = cleanAttribution(preview.attribution)
@@ -107,7 +114,7 @@ async function startKiwifyGuestCheckout(input: {
   const [count] = await sql`SELECT count(*)::int AS n FROM dream_orders WHERE preview_id=${previewId}::uuid AND created_at>now()-interval '1 hour'`
   if (Number(count.n) >= 10) throw new Error('Muitas tentativas. Aguarde um pouco antes de tentar de novo.')
   await sql`INSERT INTO dream_orders(id,user_id,mode,provider,credits,amount,price_id,lead_id,preview_id,guest_email,attribution,marketing_consent,journey_version,analytics_distinct_id)
-    VALUES(${orderId}::uuid,NULL,${localDemo ? 'test' : 'live'},'kiwify',${credits},${amount},${checkoutCode},${preview.lead_id || null}::uuid,${previewId}::uuid,${preview.email || null},${JSON.stringify(attribution)}::jsonb,${context.marketingConsent},'conversion-v2',${context.analyticsDistinctId || null})
+    VALUES(${orderId}::uuid,NULL,${localDemo ? 'test' : 'live'},'kiwify',${credits},${amount},${checkoutCode},${preview.lead_id || null}::uuid,${previewId}::uuid,${preview.email || null},${JSON.stringify(attribution)}::jsonb,${context.marketingConsent},${journeyVersion},${context.analyticsDistinctId || null})
     ON CONFLICT DO NOTHING`
   const [order] = await sql`SELECT * FROM dream_orders WHERE id=${orderId}::uuid`
   if (!order || order.provider !== 'kiwify' || order.mode !== (localDemo ? 'test' : 'live') || order.preview_id !== previewId || order.lead_id !== (preview.lead_id || null) ||
@@ -115,7 +122,7 @@ async function startKiwifyGuestCheckout(input: {
     throw new Error('Pedido inválido.')
   if (context.checked) await sql`UPDATE onboarding_previews SET checked=${JSON.stringify(context.checked)}::jsonb WHERE id=${previewId}::uuid AND session_id=${sessionId}::uuid`
   await sql`INSERT INTO onboarding_events(session_id,lead_id,order_id,name,attribution,preview_id,properties)
-    VALUES(${sessionId}::uuid,${preview.lead_id || null}::uuid,${orderId}::uuid,'checkout_started',${JSON.stringify(attribution)}::jsonb,${previewId}::uuid,${JSON.stringify({ journey_version: 'conversion-v2', provider: 'kiwify' })}::jsonb)`
+    VALUES(${sessionId}::uuid,${preview.lead_id || null}::uuid,${orderId}::uuid,'checkout_started',${JSON.stringify(attribution)}::jsonb,${previewId}::uuid,${JSON.stringify({ journey_version: journeyVersion, provider: 'kiwify' })}::jsonb)`
   return { url: localDemo ? `/kiwify-demo?order_id=${orderId}` : url }
 }
 
@@ -127,13 +134,14 @@ export async function startGuestPix(rawPreviewId: string, rawOrderId: string, ra
   const orderId = idSchema.parse(rawOrderId)
   const sessionId = await getPreviewSession()
   const sql = getDb()
-  const [preview] = await sql`SELECT p.id,p.attribution,l.id AS lead_id,l.email
+  const [preview] = await sql`SELECT p.id,p.attribution,p.answers,l.id AS lead_id,l.email
     FROM onboarding_previews p
     LEFT JOIN LATERAL (
       SELECT id,email FROM onboarding_leads WHERE preview_id=p.id AND session_id=p.session_id ORDER BY created_at DESC LIMIT 1
     ) l ON true
     WHERE p.id=${previewId}::uuid AND p.status='ready' AND p.expires_at>now() AND p.session_id=${sessionId}::uuid`
-  if (!preview) throw new Error('Abra sua prévia antes de continuar para o pagamento.')
+  if (!preview) throw new Error('Suas respostas expiraram. Volte ao início para continuar.')
+  const journeyVersion = checkoutJourneyVersion(preview)
   const leadId = preview.email === email ? preview.lead_id : null
   const credits = context.bump ? 3 : 1
   const amount = context.bump ? 9900 : 3700
@@ -141,7 +149,7 @@ export async function startGuestPix(rawPreviewId: string, rawOrderId: string, ra
   const [count] = await sql`SELECT count(*)::int AS n FROM dream_orders WHERE preview_id=${previewId}::uuid AND created_at>now()-interval '1 hour'`
   if (Number(count.n) >= 10) throw new Error('Muitas tentativas. Aguarde um pouco antes de tentar de novo.')
   await sql`INSERT INTO dream_orders(id,user_id,mode,provider,credits,amount,price_id,lead_id,preview_id,guest_email,attribution,marketing_consent,journey_version,analytics_distinct_id)
-    VALUES(${orderId}::uuid,NULL,${billingMode()},'asaas',${credits},${amount},${price},${leadId}::uuid,${previewId}::uuid,${email},${JSON.stringify(cleanAttribution(preview.attribution))}::jsonb,${context.marketingConsent},'conversion-v2',${context.analyticsDistinctId || null})
+    VALUES(${orderId}::uuid,NULL,${billingMode()},'asaas',${credits},${amount},${price},${leadId}::uuid,${previewId}::uuid,${email},${JSON.stringify(cleanAttribution(preview.attribution))}::jsonb,${context.marketingConsent},${journeyVersion},${context.analyticsDistinctId || null})
     ON CONFLICT DO NOTHING`
   const [order] = await sql`SELECT * FROM dream_orders WHERE id=${orderId}::uuid`
   if (!order || order.provider !== 'asaas' || order.mode !== billingMode() || order.preview_id !== previewId || order.guest_email !== email || Number(order.credits) !== credits || Number(order.amount) !== amount || order.price_id !== price || order.session_id || order.status !== 'pending')
@@ -156,18 +164,19 @@ export async function startGuestPix(rawPreviewId: string, rawOrderId: string, ra
     WHERE id=${orderId}::uuid AND asaas_pix_qr_id IS NULL AND status='pending' RETURNING id`
   if (!saved) throw new Error('O Pix já foi iniciado. Atualize a página e tente novamente.')
   await sql`INSERT INTO onboarding_events(session_id,lead_id,order_id,name,attribution,preview_id,properties)
-    VALUES(${sessionId}::uuid,${leadId}::uuid,${orderId}::uuid,'checkout_started',${JSON.stringify(cleanAttribution(preview.attribution))}::jsonb,${previewId}::uuid,${JSON.stringify({ journey_version: 'conversion-v2', method: 'pix' })}::jsonb)`
+    VALUES(${sessionId}::uuid,${leadId}::uuid,${orderId}::uuid,'checkout_started',${JSON.stringify(cleanAttribution(preview.attribution))}::jsonb,${previewId}::uuid,${JSON.stringify({ journey_version: journeyVersion, method: 'pix' })}::jsonb)`
   return { url: `/pix?order_id=${orderId}` }
 }
 
 async function startAsaasGuestCheckout(input: {
-  preview: { lead_id: string | null; email: string | null; attribution: unknown }
+  preview: { lead_id: string | null; email: string | null; attribution: unknown; answers?: unknown }
   previewId: string
   orderId: string
   sessionId: string
   context: { bump: boolean; checked?: z.infer<typeof previewProgressSchema>; marketingConsent: boolean; analyticsDistinctId?: string }
 }) {
   const { preview, previewId, orderId, sessionId, context } = input
+  const journeyVersion = checkoutJourneyVersion(preview)
   const sql = getDb()
   const mode = billingMode()
   const credits = context.bump ? 3 : 1
@@ -176,7 +185,7 @@ async function startAsaasGuestCheckout(input: {
   const [count] = await sql`SELECT count(*)::int AS n FROM dream_orders WHERE preview_id=${previewId}::uuid AND created_at>now()-interval '1 hour'`
   if (Number(count.n) >= 10) throw new Error('Muitas tentativas. Aguarde um pouco antes de tentar de novo.')
   await sql`INSERT INTO dream_orders(id,user_id,mode,provider,credits,amount,price_id,lead_id,preview_id,guest_email,attribution,marketing_consent,journey_version,analytics_distinct_id)
-    VALUES(${orderId}::uuid,NULL,${mode},'asaas',${credits},${amount},${price},${preview.lead_id || null}::uuid,${previewId}::uuid,${preview.email || null},${JSON.stringify(cleanAttribution(preview.attribution))}::jsonb,${context.marketingConsent},'conversion-v2',${context.analyticsDistinctId || null})
+    VALUES(${orderId}::uuid,NULL,${mode},'asaas',${credits},${amount},${price},${preview.lead_id || null}::uuid,${previewId}::uuid,${preview.email || null},${JSON.stringify(cleanAttribution(preview.attribution))}::jsonb,${context.marketingConsent},${journeyVersion},${context.analyticsDistinctId || null})
     ON CONFLICT DO NOTHING`
   const [order] = await sql`SELECT * FROM dream_orders WHERE id=${orderId}::uuid`
   if (!order || order.provider !== 'asaas' || order.lead_id !== (preview.lead_id || null) || order.preview_id !== previewId || order.mode !== mode || order.price_id !== price || order.guest_email !== (preview.email || null) || order.status !== 'pending')
@@ -198,7 +207,7 @@ async function startAsaasGuestCheckout(input: {
   })
   await sql`UPDATE dream_orders SET session_id=${checkout.id} WHERE id=${orderId}::uuid AND session_id IS NULL`
   await sql`INSERT INTO onboarding_events(session_id,lead_id,order_id,name,attribution,preview_id,properties)
-    VALUES(${sessionId}::uuid,${preview.lead_id || null}::uuid,${orderId}::uuid,'checkout_started',${JSON.stringify(cleanAttribution(preview.attribution))}::jsonb,${previewId}::uuid,'{"journey_version":"conversion-v2"}'::jsonb)`
+    VALUES(${sessionId}::uuid,${preview.lead_id || null}::uuid,${orderId}::uuid,'checkout_started',${JSON.stringify(cleanAttribution(preview.attribution))}::jsonb,${previewId}::uuid,${JSON.stringify({ journey_version: journeyVersion })}::jsonb)`
   return { url: checkout.url }
 }
 

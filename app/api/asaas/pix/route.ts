@@ -13,7 +13,7 @@ export async function GET(request: Request) {
   const parsed = idSchema.safeParse(new URL(request.url).searchParams.get('order_id'))
   if (!parsed.success) return new Response(null, { status: 400 })
   const sql = getDb()
-  const [order] = await sql`SELECT o.id,o.user_id,o.status,o.amount,o.credits,o.guest_email,o.preview_id,
+  const [order] = await sql`SELECT o.id,o.user_id,o.status,o.amount,o.credits,o.guest_email,o.preview_id,o.journey_version,
       o.asaas_pix_qr_id,o.asaas_pix_payload,o.asaas_pix_image,o.asaas_pix_expires_at,p.session_id AS preview_session
     FROM dream_orders o LEFT JOIN onboarding_previews p ON p.id=o.preview_id
     WHERE o.id=${parsed.data}::uuid AND o.provider='asaas' AND o.mode=${billingMode()} AND o.asaas_pix_qr_id IS NOT NULL`
@@ -29,7 +29,7 @@ export async function GET(request: Request) {
   const expired = new Date(order.asaas_pix_expires_at as string).getTime() <= Date.now()
   const status = fresh.status === 'pending' && expired ? 'expired' : fresh.status
   return NextResponse.json({
-    id: String(order.id), status: String(status), amount: Number(order.amount), credits: Number(order.credits),
+    journeyVersion: order.journey_version || undefined, id: String(order.id), status: String(status), amount: Number(order.amount), credits: Number(order.credits),
     email: order.preview_id ? String(order.guest_email || '') : undefined,
     source: order.preview_id ? 'comecar' : 'account',
     expiresAt: new Date(order.asaas_pix_expires_at as string).toISOString(),

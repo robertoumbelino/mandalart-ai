@@ -50,7 +50,7 @@ export async function fulfillOrder(input: {
     try { await sendMetaPurchase({ id: order.id, email: order.guest_email, amount: order.amount, consent: order.journey_version ? order.marketing_consent === true : lead?.marketing_consent === true }) }
     catch { console.error('meta_purchase_send_failed', { orderId: order.id }) }
     await sql`INSERT INTO onboarding_events(session_id,lead_id,order_id,name,properties,attribution)
-      VALUES(${preview?.session_id || null}::uuid,${order.lead_id || null}::uuid,${order.id}::uuid,'purchase_completed',${JSON.stringify({ amount: order.amount, credits: order.credits })}::jsonb,${JSON.stringify(preview?.attribution || order.attribution || {})}::jsonb)
+      VALUES(${preview?.session_id || null}::uuid,${order.lead_id || null}::uuid,${order.id}::uuid,'purchase_completed',${JSON.stringify({ amount: order.amount, credits: order.credits, journey_version: order.journey_version || 'conversion-v2' })}::jsonb,${JSON.stringify(preview?.attribution || order.attribution || {})}::jsonb)
       ON CONFLICT DO NOTHING`
     if (bump) await sql`INSERT INTO onboarding_events(session_id,lead_id,order_id,name,properties,attribution)
       VALUES(${preview?.session_id || null}::uuid,${order.lead_id || null}::uuid,${order.id}::uuid,'order_bump_accepted',${JSON.stringify({ amount: 6200 })}::jsonb,${JSON.stringify(preview?.attribution || order.attribution || {})}::jsonb)

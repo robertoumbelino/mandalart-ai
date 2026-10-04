@@ -53,7 +53,7 @@ export default function KiwifyDemoPage() {
         <button type="button" className="brand-button mt-7 w-full rounded-xl px-5 py-4 text-center font-bold text-white" disabled={busy || order.status !== 'pending' || !email.trim()} onClick={complete}>{busy ? 'Concluindo simulação…' : 'Simular compra aprovada'}</button>
         {order.status !== 'pending' && <p className="mt-4 text-sm">Este pedido de teste já foi concluído.</p>}
       </> : <p className="mt-6 text-slate-600">{error || 'Carregando pedido de teste…'}</p>}
-      <Link href="/comecar?kiwify" className="mt-6 block text-center text-sm font-semibold text-[#5134be]">Voltar à prévia</Link>
+      <Link href="/comecar?kiwify" className="mt-6 block text-center text-sm font-semibold text-[#5134be]">Voltar ao meu objetivo</Link>
     </div>
   </main>
 }

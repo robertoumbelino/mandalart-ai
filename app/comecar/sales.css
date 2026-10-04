@@ -1,0 +1,80 @@
+.sales-shell { background: #f7f7fd; min-height: 100dvh; }
+.sales-shell .begin-header { border-bottom: 1px solid #e7e5f4; }
+.sales-shell .entry-page { padding-top: 40px; }
+.sales-shell .entry-choice-text strong { font-size: 15px; }
+.sales-question-aside { display: flex; flex-direction: column; justify-content: center; gap: 24px; }
+.sales-question-aside > svg { color: #6435ff; }
+.sales-processing { max-width: 560px; min-height: 65dvh; margin: 0 auto; padding: 70px 24px; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; gap: 22px; }
+.sales-processing > svg, .sales-processing em { color: #6435ff; }
+.sales-processing h1 { font-size: clamp(30px, 5vw, 42px); font-weight: 700; line-height: 1.25; }
+.sales-processing p { color: #636078; }
+.sales-closing { width: min(100%, 620px); margin: 0 auto; padding: 38px 0 100px; }
+.sales-closing section { margin-bottom: 44px; }
+.sales-closing h1 { color: #38246d; font-size: clamp(29px, 5vw, 40px); line-height: 1.3; font-weight: 700; margin: 18px 0 22px; letter-spacing: -.8px; }
+.sales-title-goal { display: block; color: #6435ff; }
+.sales-closing h2 { font-size: 25px; line-height: 1.3; font-weight: 700; letter-spacing: -.5px; margin-bottom: 18px; }
+.sales-intro-heading { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+.sales-intro-heading .begin-eyebrow { display: flex; gap: 8px; align-items: center; }
+.sales-promise { display: flex; align-items: center; gap: 12px; background: white; border: 1px solid #e2e2ec; border-radius: 18px; padding: 14px 16px; }
+.sales-promise-icon { display: grid; place-items: center; width: 40px; height: 40px; flex-shrink: 0; border-radius: 13px; background: #eeebff; color: #5935ef; }
+.sales-promise small { display: block; color: #7d8093; font-size: 13px; line-height: 1.4; margin-bottom: 3px; }
+.sales-promise strong { display: block; font-size: 16px; font-weight: 700; line-height: 1.35; }
+.sales-closing .sales-after { color: #68627b; font-size: 14px; line-height: 1.7; margin: 18px 0 24px; }
+.sales-phases { border-radius: 22px; background: linear-gradient(125deg, #4b2df5, #8907fa); color: white; padding: 28px; box-shadow: 0 12px 26px #6634ee25; }
+.sales-phases h2 { color: white; font-size: 29px; margin-bottom: 12px; }
+.sales-phases p { opacity: .9; line-height: 1.6; font-size: 14px; }
+.sales-numbers { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin: 24px 0 18px; }
+.sales-numbers > div { background: #ffffff1c; border: 1px solid #ffffff40; border-radius: 14px; padding: 14px 6px; display: flex; flex-direction: column; align-items: center; }
+.sales-numbers strong { font-size: 28px; line-height: 1.3; }
+.sales-numbers span { font-size: 12px; text-align: center; }
+.sales-phase-progress { display: flex; gap: 5px; margin-bottom: 8px; }
+.sales-phase-progress span { height: 5px; flex: 1; border-radius: 9px; background: #ffffff40; }
+.sales-phase-progress span:first-child { background: white; }
+.sales-phases > small { display: block; text-align: right; font-size: 11px; }
+.sales-stack > div { display: grid; gap: 12px; }
+.sales-stack article { display: flex; gap: 18px; align-items: center; background: white; border: 1px solid #e5dff0; border-radius: 18px; padding: 12px; }
+.sales-stack article > div { min-width: 0; }
+.sales-stack h3 { font-size: 16px; font-weight: 600; margin-bottom: 5px; }
+.sales-stack p { font-size: 13px; line-height: 1.6; color: #68627b; }
+.sales-example > p { color: #787087; font-size: 13px; line-height: 1.6; margin: -6px 0 20px; }
+.sales-task { background: white; border: 1px solid #e6e0f2; border-radius: 22px; overflow: hidden; box-shadow: 0 12px 30px #3224520d; }
+.sales-task header { padding: 25px; background: linear-gradient(115deg, #4e2cf4, #8808fa); color: white; }
+.sales-task header span { display: flex; align-items: center; gap: 6px; font-size: 10px; letter-spacing: 1.5px; font-weight: 600; }
+.sales-task h3 { font-size: 23px; font-weight: 700; margin-top: 10px; }
+.sales-task-body { padding: 24px; }
+.sales-task h4 { font-size: 14px; font-weight: 600; margin-bottom: 10px; }
+.sales-task-description { background: #f5f4fa; padding: 16px; border-radius: 13px; font-size: 14px; line-height: 1.7; color: #565168; margin-bottom: 20px; }
+.sales-checklist-label { display: flex; justify-content: space-between; }
+.sales-checklist-label span { color: #77718d; font-size: 12px; }
+.sales-checklist { display: grid; gap: 8px; margin-bottom: 24px; }
+.sales-task blockquote { border: 1px solid #f2dea0; background: #fff8e2; padding: 16px; border-radius: 14px; color: #7b5c18; font-size: 13px; line-height: 1.7; }
+.sales-offer { background: white; border: 1px solid #ddd4f6; border-radius: 24px; text-align: center; padding: 28px; scroll-margin-top: 20px; }
+.sales-offer h2 { margin-top: 18px; }
+.sales-offer-goal { display: flex; flex-direction: column; gap: 6px; padding: 18px; border: 1px solid #e5dff0; border-radius: 16px; }
+.sales-offer-goal span { color: #77718d; font-size: 13px; }
+.sales-offer-goal strong { font-size: 17px; }
+.sales-offer .sales-guarantee-title { color: #10633f; font-size: 17px; font-weight: 700; margin: 24px 0 10px; }
+.sales-price { display: flex; flex-direction: column; margin: 26px 0; }
+.sales-price span, .sales-price small { color: #77718d; font-size: 13px; }
+.sales-price strong { font-size: 52px; font-weight: 700; color: #5325e9; }
+.sales-cta { width: 100%; justify-content: center; min-height: 56px; }
+.sales-shell .sales-guarantee { display: flex; align-items: center; justify-content: center; gap: 8px; font-size: 12px; line-height: 1.5; color: #68627b; margin: 16px 0 0; }
+.sales-guarantee > svg { flex-shrink: 0; }
+.sales-offer > p:last-child { font-size: 12px; color: #837b94; line-height: 1.6; }
+.sales-faq details { border-bottom: 1px solid #e3deee; padding: 18px 0; }
+.sales-faq summary { font-size: 15px; font-weight: 600; cursor: pointer; }
+.sales-faq details p { font-size: 14px; line-height: 1.7; color: #68627b; padding-top: 12px; }
+.sales-sticky { position: fixed; bottom: 0; left: 0; right: 0; z-index: 30; background: #f7f7fdf5; border-top: 1px solid #e3dfee; padding: 12px 20px max(12px, env(safe-area-inset-bottom)); backdrop-filter: blur(10px); }
+.sales-sticky .sales-cta { max-width: 620px; margin: 0 auto; }
+.sales-sticky[hidden] { display: none; }
+.sales-checkout { max-width: 510px; min-height: 65dvh; margin: 0 auto; padding: 38px 24px; }
+.sales-checkout > .back-button { margin-bottom: 30px; }
+.sales-checkout > .begin-eyebrow { display: block; }
+.sales-checkout h1 { font-size: 32px; font-weight: 700; margin: 14px 0 10px; }
+.sales-checkout > p { color: #68627b; font-size: 14px; margin-bottom: 28px; }
+.sales-method { display: flex; gap: 18px; flex-wrap: wrap; margin-bottom: 22px; }
+.sales-method legend { font-size: 14px; font-weight: 600; margin-bottom: 14px; }
+.sales-method label { border: 1px solid #d8d0eb; border-radius: 12px; background: white; padding: 16px 24px; display: flex; align-items: center; gap: 10px; }
+.sales-email { display: flex; flex-direction: column; gap: 10px; font-size: 14px; margin-bottom: 24px; }
+.sales-email input { background: white; border: 1px solid #d8d0eb; border-radius: 12px; padding: 16px; }
+@media (max-width: 640px) { .sales-shell .begin-header { padding: 20px; } .sales-shell .entry-page { padding-top: 15px; } .sales-question-aside { display: none; } .sales-phases { padding: 24px 20px; } .sales-stack article { --feature-preview-size: 72px; gap: 12px; } .sales-stack h3 { font-size: 14px; } .sales-closing { padding-top: 24px; } }

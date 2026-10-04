@@ -1,14 +1,16 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { ArrowLeft, ArrowRight, Check, Copy, Loader2, ShieldCheck } from 'lucide-react'
 import { BrandLogo } from '@/app/components/Brand'
+import { captureProductEvent } from '@/lib/posthog'
 import { PaymentSupport } from '@/app/components/PaymentSupport'
 
 type PixState = {
   id: string
+  journeyVersion?: string
   status: string
   amount: number
   credits: number
@@ -23,6 +25,7 @@ type PixState = {
 }
 
 export function PixPayment() {
+  const tracked = useRef(new Set<string>())
   const [payment, setPayment] = useState<PixState | null>(null)
   const [error, setError] = useState('')
   const [copied, setCopied] = useState(false)
@@ -61,6 +64,15 @@ export function PixPayment() {
     const initial = setTimeout(tick, 0)
     return () => { clearInterval(timer); clearTimeout(initial) }
   }, [payment?.expiresAt, payment?.status])
+
+  useEffect(() => {
+    if (!payment || payment.source !== 'comecar') return
+    const properties = { order_id: payment.id, journey_version: payment.journeyVersion || 'conversion-v2', method: 'pix' }
+    const name = payment.status === 'pending' && payment.image ? 'pix_qr_shown' : ['failed', 'expired'].includes(payment.status) ? 'payment_error' : null
+    if (!name || tracked.current.has(name)) return
+    tracked.current.add(name)
+    captureProductEvent(name, properties)
+  }, [payment])
 
   const returnUrl = payment?.source === 'comecar'
     ? `/compra?order_id=${encodeURIComponent(payment.id)}`

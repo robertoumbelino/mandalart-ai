@@ -16,9 +16,10 @@ import { getHistory, updateMandalart, deleteMandalart } from '@/actions/mandalar
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { generateDream, getDreamGeneration, getDreamWallet } from '@/actions/dreams';
-import { DRAFT_STORAGE_KEY, restoreDraft, answersSchema, getAnswerContext } from '@/lib/onboarding';
+import { DRAFT_STORAGE_KEY, restoreDraft, answersSchema, getAnswerContext, getDream } from '@/lib/onboarding';
 import { getJourneyProgress } from '@/lib/journey';
 import { DREAM_PACKS } from '@/lib/dream-packs';
+import { salesAnswersSchema, type SalesAnswers } from '@/lib/sales-journey';
 import { getPurchasedPreviewContext } from '@/actions/purchased-preview';
 import { sendGoogleAnalyticsEvent } from './components/GoogleAnalytics'
 import { captureAttribution } from '@/lib/attribution'
@@ -64,6 +65,8 @@ export default function Home({ loginIntent = false, initialVisitor = false, onbo
   const [authMode, setAuthMode] = useState<'login' | 'register'>(loginIntent ? 'login' : 'register');
   const [step, setStep] = useState<AppStep>('input');
   const [mainGoal, setMainGoal] = useState('');
+  const [salesContext, setSalesContext] = useState<SalesAnswers | null>(null);
+  const [salesOrderId, setSalesOrderId] = useState<string | undefined>(undefined);
   const [previewId, setPreviewId] = useState<string | undefined>(undefined);
   const [safetyCategory, setSafetyCategory] = useState<GoalSafetyCategory | null>(null);
   const [questions, setQuestions] = useState<Question[]>([]);
@@ -86,7 +89,7 @@ export default function Home({ loginIntent = false, initialVisitor = false, onbo
   const [history, setHistory] = useState<HistoryItem[]>([]);
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
-  const generationRecoveryRef = useRef<{ id: string; goal: string; answers: InterviewAnswer[]; proposal: GoalProposal; previewId?: string } | null>(null);
+  const generationRecoveryRef = useRef<{ id: string; goal: string; answers: InterviewAnswer[]; proposal: GoalProposal; previewId?: string; salesOrderId?: string } | null>(null);
   const activeUserIdRef = useRef<string | null>(null);
   const userMenuRef = useRef<HTMLDivElement>(null);
   const historyButtonRef = useRef<HTMLButtonElement>(null);
@@ -195,15 +198,42 @@ export default function Home({ loginIntent = false, initialVisitor = false, onbo
         if (pending) {
           const saved = JSON.parse(pending);
           if (typeof saved.id === 'string' && typeof saved.goal === 'string' && Array.isArray(saved.answers)) {
-            setMainGoal(saved.goal); setAnswers(saved.answers); setPreviewId(saved.previewId);
+            setMainGoal(saved.goal); setAnswers(saved.answers); setPreviewId(saved.previewId); setSalesOrderId(saved.salesOrderId);
             setProposal(saved.proposal ?? { goal: saved.goal, successSignal: 'Avançar no objetivo escolhido', firstPhase: 'Definir os próximos passos' });
             setStep('generating'); setProcessing(true); void recover(saved.id);
           }
         } else if (new URLSearchParams(window.location.search).get('continuar') === 'sonho') {
-          const raw = localStorage.getItem(DRAFT_STORAGE_KEY);
-          const draft = raw ? restoreDraft(JSON.parse(raw)) : null;
+          let draft = null;
+          try {
+            const raw = localStorage.getItem(DRAFT_STORAGE_KEY);
+            draft = raw ? restoreDraft(JSON.parse(raw)) : null;
+          } catch { /* A compra pode ser restaurada pelo servidor sem rascunho local. */ }
           const parsed = answersSchema.safeParse(draft?.answers);
           const purchased = await getPurchasedPreviewContext();
+          if (purchased?.journeyVersion === 'sales-v3') {
+            const goal = getDream(purchased.answers);
+            setSalesContext(purchased.answers); setSalesOrderId(purchased.orderId);
+            setMainGoal(goal); setAnswers([]); setPreviewId(undefined);
+            try {
+              const savedInterview = sessionStorage.getItem(`mandalart.interview.${user.id}`);
+              if (savedInterview) {
+                const interview = JSON.parse(savedInterview);
+                if (interview.version === 2 && interview.salesOrderId === purchased.orderId && interview.goal === goal && Array.isArray(interview.answers) && Array.isArray(interview.questions)) {
+                  setAnswers(interview.answers); setQuestions(interview.questions); setProposal(interview.proposal ?? null);
+                  setStep(interview.proposal ? 'confirm' : interview.questions.length > interview.answers.length ? 'interview' : 'input');
+                  setInterviewRestored(true);
+                  return;
+                }
+              }
+            } catch { /* Sem armazenamento, inicia a entrevista com as respostas da compra. */ }
+            const discovery = await discoverGoal(goal, [], purchased.answers);
+            if (!active) return;
+            if (discovery.status === 'question') { setQuestions([discovery.question]); setStep('interview'); }
+            else if (discovery.status === 'blocked') { setSafetyCategory(discovery.category); setStep('safety'); }
+            else { setProposal(discovery.proposal); setStep('confirm'); }
+            if (active) setInterviewRestored(true);
+            return;
+          }
           const savedAnswers = purchased?.answers || (parsed.success ? parsed.data : null);
           const savedPreview = purchased?.preview || draft?.result?.preview;
           const savedPreviewId = purchased?.id || draft?.result?.id;
@@ -253,7 +283,7 @@ export default function Home({ loginIntent = false, initialVisitor = false, onbo
           if (saved) {
             const interview = JSON.parse(saved);
             if (interview.version === 2 && typeof interview.goal === 'string' && Array.isArray(interview.answers) && Array.isArray(interview.questions)) {
-              setMainGoal(interview.goal); setAnswers(interview.answers); setPreviewId(interview.previewId);
+              setMainGoal(interview.goal); setAnswers(interview.answers); setPreviewId(interview.previewId); setSalesOrderId(interview.salesOrderId); const restoredSales = salesAnswersSchema.safeParse(interview.salesContext); if (restoredSales.success) setSalesContext(restoredSales.data);
               setQuestions(interview.questions); setProposal(interview.proposal ?? null);
               setStep(interview.proposal ? 'confirm' : interview.questions.length > interview.answers.length ? 'interview' : 'input');
             } else if (typeof interview.goal === 'string') {
@@ -270,8 +300,8 @@ export default function Home({ loginIntent = false, initialVisitor = false, onbo
 
   useEffect(() => {
     if (!user || !interviewRestored || !mainGoal.trim() || !['input', 'interview', 'confirm'].includes(step)) return;
-    try { sessionStorage.setItem(`mandalart.interview.${user.id}`, JSON.stringify({ version: 2, goal: mainGoal, answers, questions, proposal, previewId })); } catch {}
-  }, [user, interviewRestored, mainGoal, answers, questions, proposal, step, previewId]);
+    try { sessionStorage.setItem(`mandalart.interview.${user.id}`, JSON.stringify({ version: 2, goal: mainGoal, answers, questions, proposal, previewId, salesContext, salesOrderId })); } catch {}
+  }, [user, interviewRestored, mainGoal, answers, questions, proposal, step, previewId, salesContext, salesOrderId]);
 
   useEffect(() => {
     if (step !== 'generating') return;
@@ -377,7 +407,7 @@ export default function Home({ loginIntent = false, initialVisitor = false, onbo
     setWallet(null);
     setUser(null);
     setInterviewRestored(false);
-    setMainGoal('');
+    setMainGoal(''); setSalesContext(null); setSalesOrderId(undefined);
     setAnswers([]);
     setQuestions([]);
     setProposal(null);
@@ -496,7 +526,7 @@ export default function Home({ loginIntent = false, initialVisitor = false, onbo
       setProposal(null);
       setSelectedAnswer('');
       setCustomAnswer('');
-      const result = await discoverGoal(mainGoal, []);
+      const result = await discoverGoal(mainGoal, [], salesContext || undefined);
       if (result.status === 'blocked') {
         setSafetyCategory(result.category);
         setStep('safety');
@@ -524,7 +554,7 @@ export default function Home({ loginIntent = false, initialVisitor = false, onbo
     const nextAnswers = [...answers, { questionId: question.id, questionText: question.text, answer }];
     setProcessing(true); setError(null);
     try {
-      const result = await discoverGoal(mainGoal, nextAnswers);
+      const result = await discoverGoal(mainGoal, nextAnswers, salesContext || undefined);
       setAnswers(nextAnswers);
       setSelectedAnswer('');
       setCustomAnswer('');
@@ -570,16 +600,16 @@ export default function Home({ loginIntent = false, initialVisitor = false, onbo
 
   const handleGenerate = async () => {
     if (processing || !user || !proposal || step !== 'confirm') return;
-    try { sessionStorage.setItem(`mandalart.interview.${user.id}`, JSON.stringify({ version: 2, goal: mainGoal, answers, questions, proposal, previewId })); } catch {}
+    try { sessionStorage.setItem(`mandalart.interview.${user.id}`, JSON.stringify({ version: 2, goal: mainGoal, answers, questions, proposal, previewId, salesContext, salesOrderId })); } catch {}
     if (!wallet || wallet.balance < 1) { router.push('/sonhos'); return; }
     captureProductEvent('planner_generation_requested');
     const id = crypto.randomUUID();
     const key = `mandalart.generation.${user.id}`;
-    generationRecoveryRef.current = { id, goal: mainGoal, answers, proposal, previewId };
-    try { sessionStorage.setItem(key, JSON.stringify({ id, goal: mainGoal, answers, proposal, previewId })); } catch {}
+    generationRecoveryRef.current = { id, goal: mainGoal, answers, proposal, previewId, salesOrderId };
+    try { sessionStorage.setItem(key, JSON.stringify({ id, goal: mainGoal, answers, proposal, previewId, salesOrderId })); } catch {}
     setGenerationMessageIndex(0); setStep('generating'); setProcessing(true); setError(null);
     try {
-      const result = await generateDream(id, mainGoal, answers, previewId, previewId ? undefined : proposal);
+      const result = await generateDream(id, mainGoal, answers, previewId, previewId ? undefined : proposal, salesOrderId);
       if (activeUserIdRef.current !== user.id) return;
       if (result.status === 'completed') {
         captureProductEvent('planner_generation_completed');
@@ -606,7 +636,7 @@ export default function Home({ loginIntent = false, initialVisitor = false, onbo
     if (user) { try { sessionStorage.removeItem(`mandalart.interview.${user.id}`); } catch {} }
     window.history.replaceState({}, '', '/');
     pendingMandalartUpdateRef.current = null;
-    setMainGoal('');
+    setMainGoal(''); setSalesContext(null); setSalesOrderId(undefined);
     setPreviewId(undefined);
     setSafetyCategory(null);
     setQuestions([]);
@@ -790,10 +820,10 @@ export default function Home({ loginIntent = false, initialVisitor = false, onbo
                 <p className="home-lead">{visitorHome ? 'Você entra com um sonho. Sai com um caminho estruturado para executar. Responda 6 perguntas e experimente seu primeiro passo, de graça.' : 'Dê nome ao que você quer viver. A gente ajuda a organizar o caminho em passos claros, no seu ritmo.'}</p>
 
                 {visitorHome ? <div className="home-visitor-card">
-                  <Link href={onboardingHref} className="home-visitor-cta brand-button" onClick={() => { const properties = { ...captureAttribution(), journey_version: 'conversion-v2' }; captureProductEvent('home_start_clicked', properties); sendGoogleAnalyticsEvent('home_start_clicked', properties); }}>
-                    Ver meu primeiro passo grátis <ArrowRight size={20} aria-hidden="true" />
+                  <Link href={onboardingHref} className="home-visitor-cta brand-button" onClick={() => { const properties = { ...captureAttribution(), journey_version: 'sales-v3' }; captureProductEvent('home_start_clicked', properties); sendGoogleAnalyticsEvent('home_start_clicked', properties); }}>
+                    Conhecer meu plano <ArrowRight size={20} aria-hidden="true" />
                   </Link>
-                  <p><Check size={16} aria-hidden="true" /> Prévia personalizada, sem e-mail e sem cartão.</p>
+                  <p><Check size={16} aria-hidden="true" /> 4 perguntas · sem cadastro para conhecer seu plano.</p>
                   <p>Plano completo por R$37 · pagamento único · garantia de 7 dias.</p>
                 </div> : <div className="home-form-card">
                   <form onSubmit={handleStart}>
@@ -805,6 +835,7 @@ export default function Home({ loginIntent = false, initialVisitor = false, onbo
                       value={mainGoal}
                       onChange={(e) => {
                         setMainGoal(e.target.value);
+                        setSalesContext(null); setSalesOrderId(undefined);
                         if (!e.target.value.trim()) {
                           try { sessionStorage.removeItem(GUEST_GOAL_KEY); } catch {}
                           if (user) {
@@ -834,7 +865,7 @@ export default function Home({ loginIntent = false, initialVisitor = false, onbo
                   <span>Precisa de inspiração?</span>
                   <div className="home-example-list">
                     {['Correr uma maratona', 'Mudar de carreira', 'Morar no exterior'].map(example => (
-                      <button key={example} type="button" onClick={() => { setMainGoal(example); goalInputRef.current?.focus(); }}>
+                      <button key={example} type="button" onClick={() => { setMainGoal(example); setSalesContext(null); setSalesOrderId(undefined); goalInputRef.current?.focus(); }}>
                         {example}<ArrowRight size={14} aria-hidden="true" />
                       </button>
                     ))}
@@ -869,11 +900,11 @@ export default function Home({ loginIntent = false, initialVisitor = false, onbo
               <ol>
                 <li><span className="home-how-icon"><Compass size={21} /></span><div><span className="home-how-number">01</span><h3>{visitorHome ? 'Escolha um sonho' : 'Conte seu objetivo'}</h3><p>{visitorHome ? 'Comece pelo que você mais quer realizar agora.' : 'Escreva do seu jeito, mesmo que a ideia ainda esteja tomando forma.'}</p></div></li>
                 <li><span className="home-how-icon"><BrainCircuit size={21} /></span><div><span className="home-how-number">02</span><h3>Escolha o que faz sentido</h3><p>Responda só às perguntas que ajudam a definir seu caminho.</p></div></li>
-                <li><span className="home-how-icon"><ListChecks size={21} /></span><div><span className="home-how-number">03</span><h3>{visitorHome ? 'Veja seu primeiro caminho' : 'Avance no seu ritmo'}</h3><p>{visitorHome ? 'Receba uma prévia pessoal antes de decidir se quer o plano completo.' : 'Veja seus próximos passos e acompanhe cada conquista.'}</p></div></li>
+                <li><span className="home-how-icon"><ListChecks size={21} /></span><div><span className="home-how-number">03</span><h3>{visitorHome ? 'Conheça seu plano' : 'Avance no seu ritmo'}</h3><p>{visitorHome ? 'Veja o que você recebe e escolha começar seu plano personalizado.' : 'Veja seus próximos passos e acompanhe cada conquista.'}</p></div></li>
               </ol>
-              <p className="home-how-note">{visitorHome ? 'A prévia é gratuita. Se quiser continuar, o plano completo custa R$ 37, em pagamento único e sem assinatura.' : 'Cada plano é criado para um sonho. Quer planejar mais de um? Você pode comprar pacotes depois. O pagamento é único, sem assinatura.'}</p>
+              <p className="home-how-note">{visitorHome ? 'O plano completo custa R$ 37, em pagamento único e sem assinatura. A geração acontece depois do pagamento.' : 'Cada plano é criado para um sonho. Quer planejar mais de um? Você pode comprar pacotes depois. O pagamento é único, sem assinatura.'}</p>
             </section>
-            {visitorHome && <><Testimonials /><ProductMethod /><div className="home-visitor-card home-final-cta"><Link href={onboardingHref} className="home-visitor-cta brand-button" onClick={() => { const properties = { ...captureAttribution(), journey_version: 'conversion-v2', cta_location: 'after_method' }; captureProductEvent('home_start_clicked', properties); sendGoogleAnalyticsEvent('home_start_clicked', properties); }}>Ver meu primeiro passo grátis <ArrowRight size={20} aria-hidden="true" /></Link><p>Prévia gratuita · completo por R$37 · sem assinatura.</p></div></>}
+            {visitorHome && <><Testimonials /><ProductMethod /><div className="home-visitor-card home-final-cta"><Link href={onboardingHref} className="home-visitor-cta brand-button" onClick={() => { const properties = { ...captureAttribution(), journey_version: 'sales-v3', cta_location: 'after_method' }; captureProductEvent('home_start_clicked', properties); sendGoogleAnalyticsEvent('home_start_clicked', properties); }}>Conhecer meu plano <ArrowRight size={20} aria-hidden="true" /></Link><p>Plano completo por R$ 37 · sem assinatura · garantia de 7 dias.</p></div></>}
           </div>
         )}
 

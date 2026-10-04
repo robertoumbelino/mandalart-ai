@@ -1,19 +1,19 @@
 import type { Metadata } from 'next'
-import { Onboarding } from './Onboarding'
+import { SalesJourney } from './SalesJourney'
 
 export const metadata: Metadata = {
   title: 'Seu sonho merece um primeiro passo | Mandalart',
   description:
-    'Responda 6 perguntas simples e descubra um primeiro passo para o seu sonho. Sem cartão para descobrir seu primeiro caminho.',
+    'Responda 4 perguntas e conheça seu plano personalizado: 8 pilares, 64 etapas e progresso salvo. R$ 37, pagamento único.',
   openGraph: {
     title: 'Seu sonho merece um primeiro passo.',
     description:
-      'Descubra por onde começar com o Mandalart. Sem cartão para descobrir seu primeiro caminho.',
+      'Transforme seu objetivo em um plano completo. Pagamento único de R$ 37 e garantia de 7 dias.',
     locale: 'pt_BR',
     type: 'website'
   }
 }
 
 export default function BeginPage() {
-  return <Onboarding />
+  return <SalesJourney />
 }
