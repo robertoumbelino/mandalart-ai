@@ -827,13 +827,13 @@ export default function Home({ loginIntent = false, initialVisitor = false, onbo
               <div className="home-hero-copy">
                 <span className="home-eyebrow"><Sparkles size={16} /> {visitorHome ? 'UM PRIMEIRO PASSO PARA O SEU SONHO' : 'SEU ESPAÇO PARA COMEÇAR'}</span>
                 <h1 id="home-title">Saiba por onde começar. <span className="brand-text">E como continuar.</span></h1>
-                <p className="home-lead">{visitorHome ? 'Você entra com um sonho. Sai com um caminho estruturado para executar. Responda 4 perguntas e conheça a proposta do seu plano, sem cadastro.' : 'Dê nome ao que você quer viver. A gente ajuda a organizar o caminho em passos claros, no seu ritmo.'}</p>
+                <p className="home-lead">{visitorHome ? 'Transforme seu objetivo em um plano visual, com ações práticas e progresso salvo.' : 'Dê nome ao que você quer viver. A gente ajuda a organizar o caminho em passos claros, no seu ritmo.'}</p>
 
                 {visitorHome ? <div className="home-visitor-card">
                   <Link href={onboardingHref} className="home-visitor-cta brand-button" onClick={() => { const properties = { ...captureAttribution(), journey_version: 'sales-v3' }; captureProductEvent('home_start_clicked', properties); sendGoogleAnalyticsEvent('home_start_clicked', properties); }}>
-                    Conhecer meu plano <ArrowRight size={20} aria-hidden="true" />
+                    Planejar meu objetivo <ArrowRight size={20} aria-hidden="true" />
                   </Link>
-                  <p><Check size={16} aria-hidden="true" /> 4 perguntas · sem cadastro para conhecer seu plano.</p>
+                  <p><Check size={16} aria-hidden="true" /> Conheça a proposta em 4 perguntas, sem cadastro.</p>
                   <p>Plano completo por R$37 · pagamento único · garantia de 7 dias.</p>
                 </div> : <div className="home-form-card">
                   <form onSubmit={handleStart}>
@@ -909,12 +909,12 @@ export default function Home({ loginIntent = false, initialVisitor = false, onbo
               </div>
               <ol>
                 <li><span className="home-how-icon"><Compass size={21} /></span><div><span className="home-how-number">01</span><h3>{visitorHome ? 'Escolha um sonho' : 'Conte seu objetivo'}</h3><p>{visitorHome ? 'Comece pelo que você mais quer realizar agora.' : 'Escreva do seu jeito, mesmo que a ideia ainda esteja tomando forma.'}</p></div></li>
-                <li><span className="home-how-icon"><BrainCircuit size={21} /></span><div><span className="home-how-number">02</span><h3>Escolha o que faz sentido</h3><p>Responda só às perguntas que ajudam a definir seu caminho.</p></div></li>
-                <li><span className="home-how-icon"><ListChecks size={21} /></span><div><span className="home-how-number">03</span><h3>{visitorHome ? 'Conheça seu plano' : 'Avance no seu ritmo'}</h3><p>{visitorHome ? 'Veja o que você recebe e escolha começar seu plano personalizado.' : 'Veja seus próximos passos e acompanhe cada conquista.'}</p></div></li>
+                <li><span className="home-how-icon"><BrainCircuit size={21} /></span><div><span className="home-how-number">02</span><h3>{visitorHome ? 'Conte seu momento' : 'Escolha o que faz sentido'}</h3><p>{visitorHome ? 'Conte o que dificulta seu próximo passo e quando quer avançar.' : 'Responda só às perguntas que ajudam a definir seu caminho.'}</p></div></li>
+                <li><span className="home-how-icon"><ListChecks size={21} /></span><div><span className="home-how-number">03</span><h3>{visitorHome ? 'Conheça a proposta' : 'Avance no seu ritmo'}</h3><p>{visitorHome ? 'Veja o que você recebe e escolha começar seu plano personalizado.' : 'Veja seus próximos passos e acompanhe cada conquista.'}</p></div></li>
               </ol>
               <p className="home-how-note">{visitorHome ? 'O plano completo custa R$ 37, em pagamento único e sem assinatura. A geração acontece depois do pagamento.' : 'Cada plano é criado para um sonho. Quer planejar mais de um? Você pode comprar pacotes depois. O pagamento é único, sem assinatura.'}</p>
             </section>
-            {visitorHome && <><Testimonials /><ProductMethod /><div className="home-visitor-card home-final-cta"><Link href={onboardingHref} className="home-visitor-cta brand-button" onClick={() => { const properties = { ...captureAttribution(), journey_version: 'sales-v3', cta_location: 'after_method' }; captureProductEvent('home_start_clicked', properties); sendGoogleAnalyticsEvent('home_start_clicked', properties); }}>Conhecer meu plano <ArrowRight size={20} aria-hidden="true" /></Link><p>Plano completo por R$ 37 · sem assinatura · garantia de 7 dias.</p></div></>}
+            {visitorHome && <><Testimonials /><ProductMethod /><div className="home-visitor-card home-final-cta"><Link href={onboardingHref} className="home-visitor-cta brand-button" onClick={() => { const properties = { ...captureAttribution(), journey_version: 'sales-v3', cta_location: 'after_method' }; captureProductEvent('home_start_clicked', properties); sendGoogleAnalyticsEvent('home_start_clicked', properties); }}>Planejar meu objetivo <ArrowRight size={20} aria-hidden="true" /></Link><p>Plano completo por R$ 37 · sem assinatura · garantia de 7 dias.</p></div></>}
           </div>
         )}
 

@@ -8,6 +8,16 @@ import example from '@/lib/example-mandalart.json'
 import { ChecklistItem } from './ChecklistItem'
 
 const paths = example.paths
+const pathLabels: Record<string, string> = {
+  'Definir a profissão-alvo': 'Profissão-alvo',
+  'Mapear as atividades do trabalho': 'Atividades da profissão',
+  'Levantar competências necessárias': 'Competências necessárias',
+  'Reconhecer habilidades transferíveis': 'Habilidades transferíveis',
+  'Planejar o aprendizado': 'Plano de aprendizado',
+  'Conhecer a realidade da área': 'Realidade da área',
+  'Preparar a transição': 'Preparar a transição',
+  'Consolidar a mudança': 'Consolidar a mudança',
+}
 
 export function ProductDemo({ compact = false }: { compact?: boolean }) {
   const dialogRef = useRef<HTMLDialogElement>(null)
@@ -47,13 +57,13 @@ export function ProductDemo({ compact = false }: { compact?: boolean }) {
     <p>Um objetivo: <strong>mudar de carreira</strong>. Explore os caminhos e experimente marcar uma ação.</p>
     <div className="demo-paths" role="group" aria-label="Escolha um caminho do exemplo">
       <div className="demo-goal"><span>OBJETIVO</span><strong>Mudar de carreira</strong></div>
-      {paths.map((item, index) => <button type="button" aria-pressed={selected === index} data-completed={checks[index][0].every(Boolean)} aria-label={`${String(index + 1).padStart(2, '0')} ${item.title}${checks[index][0].every(Boolean) ? ' — primeira etapa concluída' : ''}`} key={item.title} onClick={() => {
+      {paths.map((item, index) => <button type="button" aria-pressed={selected === index} data-completed={checks[index][0].every(Boolean)} aria-label={`${String(index + 1).padStart(2, '0')} ${pathLabels[item.title] || item.title}${pathLabels[item.title] && pathLabels[item.title] !== item.title ? ` — ${item.title}` : ''}${checks[index][0].every(Boolean) ? ' — primeira etapa concluída' : ''}`} key={item.title} onClick={() => {
         setSelected(index)
         setSelectedTask(0)
         if (window.matchMedia('(min-width: 901px)').matches) dialogRef.current?.showModal()
-      }}><span>{String(index + 1).padStart(2, '0')}</span>{item.title}{checks[index][0].every(Boolean) && <Check className="demo-path-completed" size={14} strokeWidth={3} aria-hidden="true" />}</button>)}
+      }}><span>{String(index + 1).padStart(2, '0')}</span>{pathLabels[item.title] || item.title}{checks[index][0].every(Boolean) && <Check className="demo-path-completed" size={14} strokeWidth={3} aria-hidden="true" />}</button>)}
     </div>
-    <div className="demo-inline-details">{taskDetails}</div>
+    <div className="demo-inline-details"><p className="demo-selected-path"><strong>{path.title}</strong></p>{taskDetails}</div>
     <p className="demo-desktop-hint">Clique em um caminho para experimentar uma ação.</p>
     <dialog ref={dialogRef} className="demo-dialog" aria-labelledby={dialogTitle} onClick={event => {
       if (event.target !== event.currentTarget) return
@@ -73,7 +83,6 @@ export function ProductMethod() {
   return <section className="product-method" aria-label="Método e dúvidas sobre o Mandalart">
     <div><span className="demo-label">DO OBJETIVO À AÇÃO</span><h2>O método por trás do Mandalart</h2><p>O Mandalart parte de uma estrutura japonesa de organização de objetivos em formato 9×9: um grande objetivo é dividido em 8 caminhos, que depois se transformam em ações práticas. Esse formato ficou mundialmente conhecido também pelo quadro de metas criado por Shohei Ohtani ainda no colégio.</p><p>Você vê o conjunto, escolhe uma ação e acompanha o que já fez. A IA ajuda a personalizar os caminhos a partir das suas respostas.</p></div>
     <div className="method-flow" aria-label="Objetivo, oito caminhos, ações, execução">{['Objetivo', '8 caminhos', 'Ações', 'Execução'].map((label, index) => <span key={label}>{label}{index < 3 && <ArrowRight size={16} aria-hidden="true" />}</span>)}</div>
-    <h3>Mais do que um plano gerado por IA.</h3><p>O Mandalart transforma seu objetivo em caminhos e ações que você consegue visualizar e executar. A personalização acontece a partir das suas respostas.</p>
     <details><summary>Por que não simplesmente pedir um plano para uma IA?</summary><p>Você pode usar um chat para criar um bom plano. No Mandalart, você recebe uma estrutura pronta: oito caminhos, ações com checklists, próximo passo e progresso salvo em um só lugar. O valor está em organizar e usar o plano, sem precisar montar esse sistema por conta própria.</p></details>
     <details><summary>O que recebo por R$37?</summary><p>Por R$37, em pagamento único, você cria um Mandalart personalizado para seu objetivo, com 8 pilares, 64 etapas, checklists e progresso salvo. O plano é gerado após o pagamento e as perguntas específicas. Sem assinatura.</p></details>
     <details><summary>Isso garante que vou realizar meu objetivo?</summary><p>Não. O Mandalart organiza um caminho para começar e continuar. O resultado depende da execução e das suas circunstâncias; use o plano como ponto de partida e adapte a execução conforme aprende.</p></details>
