@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { BrandLogo } from '@/app/components/Brand';
-import { ArrowRight, Sparkles, BrainCircuit, Loader2, History, X, Trash2, Calendar, LogOut, Check, Compass, ListChecks, ShieldCheck, ReceiptText } from 'lucide-react';
+import { ArrowRight, Sparkles, BrainCircuit, Loader2, History, X, Trash2, Calendar, LogOut, Check, Compass, ListChecks, ShieldCheck, ReceiptText, Mail } from 'lucide-react';
 import { discoverGoal } from '@/actions/ai';
 import { MandalartData, Question, AppStep, GoalProposal, GoalSafetyCategory, InterviewAnswer, HistoryItem, User } from '@/types';
 import { MandalartView } from '@/app/components/MandalartView';
@@ -26,6 +26,7 @@ import { captureAttribution } from '@/lib/attribution'
 import { ProductDemo, ProductMethod } from './components/ProductDemo'
 import { Testimonials } from './components/Testimonials'
 import { CAREER_PLAN } from '@/lib/example-plan';
+import { SUPPORT_EMAIL, getSupportHref } from '@/lib/support';
 import './home.css';
 
 const GENERATION_MESSAGES = [
@@ -724,6 +725,15 @@ export default function Home({ loginIntent = false, initialVisitor = false, onbo
                   <ReceiptText size={16} />
                   Minhas compras
                 </Link>
+                <a
+                  href={getSupportHref()}
+                  role="menuitem"
+                  onClick={() => setIsUserMenuOpen(false)}
+                  className="mt-1 w-full flex items-center gap-2 rounded-xl px-3 py-2.5 text-sm font-medium text-gray-700 hover:bg-violet-50 hover:text-violet-700 transition-colors"
+                >
+                  <Mail size={16} aria-hidden="true" />
+                  Falar com suporte
+                </a>
                 <button
                   type="button"
                   role="menuitem"
@@ -817,7 +827,7 @@ export default function Home({ loginIntent = false, initialVisitor = false, onbo
               <div className="home-hero-copy">
                 <span className="home-eyebrow"><Sparkles size={16} /> {visitorHome ? 'UM PRIMEIRO PASSO PARA O SEU SONHO' : 'SEU ESPAÇO PARA COMEÇAR'}</span>
                 <h1 id="home-title">Saiba por onde começar. <span className="brand-text">E como continuar.</span></h1>
-                <p className="home-lead">{visitorHome ? 'Você entra com um sonho. Sai com um caminho estruturado para executar. Responda 6 perguntas e experimente seu primeiro passo, de graça.' : 'Dê nome ao que você quer viver. A gente ajuda a organizar o caminho em passos claros, no seu ritmo.'}</p>
+                <p className="home-lead">{visitorHome ? 'Você entra com um sonho. Sai com um caminho estruturado para executar. Responda 4 perguntas e conheça a proposta do seu plano, sem cadastro.' : 'Dê nome ao que você quer viver. A gente ajuda a organizar o caminho em passos claros, no seu ritmo.'}</p>
 
                 {visitorHome ? <div className="home-visitor-card">
                   <Link href={onboardingHref} className="home-visitor-cta brand-button" onClick={() => { const properties = { ...captureAttribution(), journey_version: 'sales-v3' }; captureProductEvent('home_start_clicked', properties); sendGoogleAnalyticsEvent('home_start_clicked', properties); }}>
@@ -1016,6 +1026,30 @@ export default function Home({ loginIntent = false, initialVisitor = false, onbo
           </div>
         )}
       </main>
+
+      {step === 'input' && <footer className="home-footer">
+        <div className="home-footer-inner">
+          <div className="home-footer-brand">
+            <BrandLogo iconSize={32} />
+            <p>Um passo de cada vez.</p>
+          </div>
+          <nav className="home-footer-links" aria-label="Informações do Mandalart">
+            <h2>Mandalart</h2>
+            <div>
+              <Link href="/privacidade">Privacidade</Link>
+              <Link href="/termos">Termos de uso</Link>
+            </div>
+          </nav>
+          <section className="home-footer-help" aria-labelledby="home-footer-help-title">
+            <h2 id="home-footer-help-title">Precisa de ajuda?</h2>
+            <p>Nossa equipe está por aqui para te apoiar na sua jornada.</p>
+            <a className="home-footer-email" href={getSupportHref()}>
+              <Mail size={19} aria-hidden="true" />
+              <span>{SUPPORT_EMAIL}</span>
+            </a>
+          </section>
+        </div>
+      </footer>}
 
     </div>
   );

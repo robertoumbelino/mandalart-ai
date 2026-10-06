@@ -6,10 +6,10 @@ import { Check, CreditCard, Loader2, RotateCcw } from 'lucide-react'
 import { PixMark } from '@/app/components/PixMark'
 import { getPurchaseHistory, requestDreamRefund } from '@/actions/refunds'
 import { formatBRL } from '@/lib/dream-packs'
+import { SUPPORT_EMAIL, getSupportHref } from '@/lib/support'
 
 type Purchase = NonNullable<Awaited<ReturnType<typeof getPurchaseHistory>>>[number]
-const supportEmail = 'ola@mail.mandalart.com.br'
-const supportHref = `mailto:${supportEmail}?subject=${encodeURIComponent('Ajuda com uma compra no Mandalart')}`
+const supportHref = getSupportHref('Ajuda com uma compra no Mandalart')
 
 function purchaseDate(value: string) {
   return new Date(value).toLocaleDateString('pt-BR', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'America/Sao_Paulo' }).replace('.', '')
@@ -71,7 +71,7 @@ export function PurchaseHistory({ purchases }: { purchases: Purchase[] }) {
             }
           }}>{busy === purchase.id && <Loader2 size={16} className="animate-spin" />}{busy === purchase.id ? 'Solicitando…' : 'Confirmar reembolso'}</button></div>
         </div>}
-        {error?.id === purchase.id && <p className="purchase-error" role="alert">{error.message} Se precisar, escreva para <a href={supportHref}>{supportEmail}</a>.</p>}
+        {error?.id === purchase.id && <p className="purchase-error" role="alert">{error.message} Se precisar, escreva para <a href={supportHref}>{SUPPORT_EMAIL}</a>.</p>}
       </article>
     })}
     <p className="purchase-footnote"><span />Compras feitas com sua conta Mandalart.<span /></p>
