@@ -6,6 +6,16 @@ A jornada `/comecar` vende um Mandalart completo por R$ 37,00 em pagamento únic
 
 Depois que o provedor confirma o pagamento, a conciliação cria ou vincula a conta ao e-mail do checkout e credita a carteira. Se o e-mail já pertencia a uma conta, o retorno exige confirmação pelo link enviado àquele endereço. Para uma conta nova, o retorno cria acesso no navegador atual e envia um link de uso único para outro aparelho. O primeiro plano é gerado automaticamente usando o ID do pedido como chave de geração. Cada plano completo consome um crédito.
 
+## Promoção de outubro de 2026
+
+De 19/10 até 25/10/2026 às 23h59 (America/Sao_Paulo), a compra pública de um Mandalart custa R$ 19,90 nos fluxos Asaas e Kiwify. A regra de `lib/sales-offer.ts` encerra em `2026-10-26T03:00:00Z` e retorna R$ 37 automaticamente para novos pedidos. O pacote público de três continua em R$ 99; a loja autenticada mantém seu catálogo. O fallback Stripe permanece com o preço normal e não anuncia esta promoção.
+
+A página `/comecar` recebe o horário do servidor em cada requisição. O mesmo prazo governa banner, contador, preço, botões e mensuração. Se a oferta mudar antes do envio do checkout, o servidor rejeita o preço desatualizado antes de gravar o pedido. Checkouts e Pix Asaas já emitidos mantêm seu valor e validade normal de uma hora. Confirmações, estornos e eventos Purchase usam o valor salvo no pedido, inclusive depois do prazo.
+
+Na Kiwify, editar o preço principal do produto existente, sem criar produto, oferta ou link novos. O checkout individual permanece `https://pay.kiwify.com.br/osJOzQM`; o link Sales Page e a afiliação continuam os mesmos. A comissão segue a configuração da Kiwify e seu valor em reais acompanha o preço promocional. O webhook também reconhece a redução autorizada de R$ 37 para R$ 19,90 em pedidos antigos ainda não pagos da mesma oferta; pedidos já pagos e valores arbitrários não são alterados.
+
+O encerramento na Kiwify exige restaurar o preço principal para R$ 37 no painel. A automação Codex `encerrar-desconto-mandalart-na-kiwify` está agendada para 26/10/2026 às 00h00 (Brasília), para restaurar e verificar o preço. Ela depende de execução local e sessão autenticada; se falhar, deve avisar para intervenção manual. O encerramento do site e do Asaas independe dessa automação.
+
 ## Confirmação e integridade
 
 `POST /api/asaas/webhook` valida o cabeçalho `asaas-access-token` e consulta o pagamento novamente no Asaas. A conciliação confere checkout ou ID do QR Code, método e valor. Para Stripe, `POST /api/stripe/webhook` continua validando a assinatura do corpo bruto e consultando a Stripe; a conciliação também confere modo, pedido, preço, moeda, quantidade e valor. A URL de sucesso não concede créditos. `GET /api/onboarding/payment` exige a sessão anônima que iniciou a compra e consulta o estado autoritativo antes de liberar o retorno.

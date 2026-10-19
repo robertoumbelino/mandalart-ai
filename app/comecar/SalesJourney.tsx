@@ -20,6 +20,7 @@ import { purchasedPreview } from '@/lib/onboarding-storage'
 import { getOnboardingPaymentOptions } from '@/actions/onboarding-checkout'
 import { startSalesCheckout } from '@/actions/sales-checkout'
 import { OBSTACLE_PROMISES, restoreSalesDraft, SALES_DRAFT_KEY, SALES_FIELDS, SALES_JOURNEY_VERSION, salesAnswersSchema, salesStepComplete, salesTitle, type SalesDraft, type SalesDraftAnswers } from '@/lib/sales-journey'
+import { PromotionBanner, PromotionCountdown, PromotionPrice, useSalesOffer } from './SalesPromotion'
 import './sales.css'
 
 const LegacyOnboarding = dynamic(() => import('./Onboarding').then(module => module.Onboarding))
@@ -44,6 +45,7 @@ function marketingConsent() {
 const EXAMPLE_CHECKLIST = ['Pesquise provas de 21,1 km.', 'Anote a data e o local de cada opção.', 'Registre o link da página oficial.']
 
 export function SalesJourney() {
+  const offer = useSalesOffer()
   const [draft, setDraft] = useState<SalesDraft>(EMPTY)
   const [hydrated, setHydrated] = useState(false)
   const [legacy, setLegacy] = useState(false)
@@ -176,7 +178,7 @@ export function SalesJourney() {
     else advanceRef.current = setTimeout(() => advance(answers), 180)
   }
   function beginCheckout(location: string) {
-    analytics('checkout_click', { cta_location: location, value: 37 })
+    analytics('checkout_click', { cta_location: location, value: offer.amount / 100 })
     navigate('checkout')
     analytics('checkout_view', { provider: kiwify ? 'kiwify' : 'default', checkout_stage: 'payment_selection' })
   }
@@ -206,7 +208,7 @@ export function SalesJourney() {
     setError('')
     const orderId = crypto.randomUUID()
     try {
-      const result = await startSalesCheckout({ answers: parsed.data, attemptId: draft.attemptId, orderId, method: kiwify ? 'kiwify' : directPix ? method : 'card', ...(directPix && method === 'pix' && !kiwify ? { email: email.trim() } : {}), attribution: captureAttribution(), analyticsDistinctId: getProductDistinctId(), marketingConsent: marketingConsent() })
+      const result = await startSalesCheckout({ answers: parsed.data, attemptId: draft.attemptId, orderId, method: kiwify ? 'kiwify' : directPix ? method : 'card', expectedAmount: offer.amount, ...(directPix && method === 'pix' && !kiwify ? { email: email.trim() } : {}), attribution: captureAttribution(), analyticsDistinctId: getProductDistinctId(), marketingConsent: marketingConsent() })
       setDraft(current => ({ ...current, intentId: result.intentId }))
       try {
         localStorage.setItem(SALES_DRAFT_KEY, JSON.stringify({ ...draft, intentId: result.intentId, savedAt: Date.now() }))
@@ -214,7 +216,7 @@ export function SalesJourney() {
       } catch {}
       analytics('checkout_redirect', { order_id: orderId, method: kiwify ? 'kiwify' : directPix ? method : 'card' })
       if (!kiwify && (!directPix || method === 'card')) analytics('card_redirect', { order_id: orderId })
-      trackMetaEvent({ name: 'InitiateCheckout', data: { value: 37, currency: 'BRL' }, onceKey: `checkout.${orderId}`, eventId: `checkout-${orderId}` })
+      trackMetaEvent({ name: 'InitiateCheckout', data: { value: offer.amount / 100, currency: 'BRL' }, onceKey: `checkout.${orderId}`, eventId: `checkout-${orderId}` })
       window.location.assign(result.url)
     } catch (cause) {
       analytics('payment_error', { method: kiwify ? 'kiwify' : method, stage: 'create_checkout' })
@@ -234,14 +236,15 @@ export function SalesJourney() {
   const titleGoalIndex = title.indexOf(' para ')
   const offerPeriod = { month: 'em 30 dias', quarter: 'em 3 meses', semester: 'em 6 meses', open: '' }[draft.answers.horizon || 'open']
   const entry = draft.screen === 'questions' && draft.question === 0
-  const cta = (location: string) => <button type="button" className="begin-primary sales-cta" onClick={() => beginCheckout(location)}>Quero meu plano · R$ 37 <ArrowRight size={19} /></button>
-  return <div className={`begin-shell sales-shell ${entry ? 'has-welcome' : ''}`}>
+  const cta = (location: string) => <button type="button" className="begin-primary sales-cta" onClick={() => beginCheckout(location)}>{offer.active ? 'Aproveitar por' : 'Quero meu plano ·'} {offer.price} <ArrowRight size={19} /></button>
+  return <div className={`begin-shell sales-shell ${entry ? 'has-welcome' : ''} ${offer.active ? 'has-promotion' : ''}`}>
     <a href="#begin-main" className="begin-skip">Pular para o conteúdo</a>
     <header className="begin-header"><Link href="/" aria-label="Mandalart, início"><BrandLogo iconSize={29} /></Link><span className="header-assurance"><span className="live-dot" /> No seu ritmo.</span></header>
+    <PromotionBanner />
     {!storageAvailable && <p className="storage-notice" role="status">Seu navegador não permitiu salvar suas respostas. Mantenha esta página aberta para continuar.</p>}
     {draft.screen === 'questions' && <main id="begin-main" className={entry ? 'entry-page begin-enter' : 'questions-page sales-questions'}>
       {entry ? <div className="entry-layout">
-        <header className="entry-copy"><span className="begin-eyebrow">DO OBJETIVO AO PRÓXIMO PASSO</span><h1 data-step-heading tabIndex={-1}>Tire seu objetivo <em>do papel.</em></h1><p>Transforme o que você quer realizar em um plano com etapas, tarefas e progresso salvo.</p><span className="entry-duration">4 perguntas · sem cadastro · plano completo por R$ 37</span></header>
+        <header className="entry-copy"><span className="begin-eyebrow">DO OBJETIVO AO PRÓXIMO PASSO</span><h1 data-step-heading tabIndex={-1}>Tire seu objetivo <em>do papel.</em></h1><p>Transforme o que você quer realizar em um plano com etapas, tarefas e progresso salvo.</p><span className="entry-duration">4 perguntas · sem cadastro · feito para o seu objetivo</span><div className="entry-promotion">{offer.active && <span className="promotion-eyebrow">UM NOVO COMEÇO POR MENOS</span>}<PromotionPrice hero />{offer.active && <p className="entry-promotion-deadline">Até 25/10, às 23h59 · horário de Brasília</p>}</div></header>
         <section className="entry-selection" aria-labelledby="entry-question-title"><div className="entry-question-heading"><h2 id="entry-question-title">{copy.title}</h2><span className="entry-step">1 de 4</span></div><fieldset className="entry-categories"><legend className="sr-only">{copy.title}</legend>{CATEGORIES.map(item => <label key={item.id} className={`entry-choice tone-${item.id} ${draft.answers.category === item.id ? 'selected' : ''}`}><input type="radio" name="category" checked={draft.answers.category === item.id} value={item.id} onChange={() => select(item.id)} onClick={() => { if (draft.answers.category === item.id) select(item.id) }} disabled={!hydrated} /><span className="entry-choice-icon"><DreamIcon name={item.icon} size={23} /></span><span className="entry-choice-text"><strong>{item.title}</strong><small>{item.hint}</small></span><ArrowRight size={15} /></label>)}</fieldset><p className="entry-next">Escolha uma área para começar.</p></section>
       </div> : <>
         <aside className="question-aside sales-question-aside"><Sparkles size={38} /><span className="begin-eyebrow">UM SONHO, UM PRÓXIMO PASSO</span><p className="aside-quote">Um plano começa com o que importa para você.</p><div className="aside-dream">{getDream(draft.answers) || category?.title}</div></aside>
@@ -257,16 +260,16 @@ export function SalesJourney() {
       <section className="sales-intro" data-sales-event="closing_view"><div className="sales-intro-heading"><span className="begin-eyebrow"><Sparkles size={17} /> SEU PLANO</span><button type="button" className="guided-restart" onClick={restartFromBeginning} disabled={busy} aria-label="Refazer do início" title="Refazer do início"><RotateCcw size={20} aria-hidden="true" /></button></div><h1 data-step-heading tabIndex={-1}>{title.slice(0, titleGoalIndex)} <span className="sales-title-goal">{title.slice(titleGoalIndex + 1)}.</span></h1><div className="sales-promise"><span className="sales-promise-icon" aria-hidden="true"><Timer size={23} strokeWidth={2} /></span><div><small>{draft.answers.obstacle === 'time' ? 'Feito para rotina cheia' : 'Feito para o seu momento'}</small><strong>{OBSTACLE_PROMISES[draft.answers.obstacle as keyof typeof OBSTACLE_PROMISES]}</strong></div></div><p className="sales-after">Seu plano é criado depois da liberação, com base nas suas respostas.</p><div className="sales-phases"><h2>Seu objetivo vira<br />um jogo de fases.</h2><p>Uma etapa de cada vez. Você só precisa fazer a próxima.</p><div className="sales-numbers">{[['8', 'pilares'], ['64', 'etapas'], ['192', 'ações']].map(([number, label]) => <div key={number}><strong>{number}</strong><span>{label}</span></div>)}</div><div className="sales-phase-progress" aria-hidden="true">{Array.from({ length: 8 }, (_, i) => <span key={i} />)}</div><small>Fase 1 de 8</small></div></section>
       <section className="sales-stack" data-sales-event="stack_view"><h2>O que você recebe</h2><div>{STACK.map(([title, description, feature]) => <article key={title}><PlanFeaturePreview feature={feature} /><div><h3>{title}</h3><p>{description}</p></div></article>)}</div></section>
       <section className="sales-example" data-sales-event="example_view"><h2>Como é uma tarefa por dentro</h2><p>Exemplo real do plano de quem quer correr uma meia maratona.</p><article className="sales-task"><header><span><Sparkles size={16} /> SEU FOCO AGORA</span><h3>Buscar provas no período</h3></header><div className="sales-task-body"><h4>Como fazer</h4><p className="sales-task-description">Faça uma busca inicial por meias maratonas previstas para os próximos 6 meses.</p><div className="sales-checklist-label"><h4>Checklist</h4><span>{checked.filter(Boolean).length}/3</span></div><div className="sales-checklist">{EXAMPLE_CHECKLIST.map((text, i) => <ChecklistItem key={text} text={text} checked={checked[i]} onToggle={() => setChecked(current => current.map((value, index) => index === i ? !value : value))} />)}</div><h4>Dica de Ouro</h4><blockquote>Use calendários oficiais de organizadores e confirme as informações diretamente.</blockquote></div></article></section>
-      <section className="sales-offer" data-sales-event="offer_view"><h2>Libere seu plano.</h2><div className="sales-offer-goal"><span>Plano para</span><strong>{getDream(draft.answers)}{offerPeriod ? ` ${offerPeriod}` : ''}</strong></div><div className="sales-price"><span>Pagamento único</span><strong>R$ 37</strong><small>Sem assinatura.</small></div>{cta('offer')}<p className="sales-guarantee"><ShieldCheck size={18} /> Pix ou cartão · 7 dias de garantia</p><h3 className="sales-guarantee-title">7 dias de garantia</h3><p>Se o plano não fizer sentido para você, peça o reembolso em até 7 dias. Você recebe todo o valor de volta, sem precisar explicar o motivo.</p></section>
-      <section className="sales-faq"><h2>Dúvidas</h2><details><summary>É assinatura?</summary><p>Não. Os R$ 37 são um pagamento único para criar um plano completo e acompanhar seu progresso.</p></details><details><summary>Funciona no celular?</summary><p>Sim. Você acessa o Mandalart pelo navegador do celular ou do computador e continua de onde parou.</p></details><details><summary>Como recebo o acesso?</summary><p>Após a confirmação do pagamento, você recebe o acesso por e-mail. Seu objetivo já estará preenchido. Responda às perguntas específicas para gerar seu plano.</p></details></section>
-      <div className="sales-sticky" hidden={offerVisible}>{cta('sticky')}</div>
+      <section className={`sales-offer ${offer.active ? 'sales-offer--promotion' : ''}`} data-sales-event="offer_view">{offer.active && <span className="promotion-eyebrow">OFERTA POR TEMPO LIMITADO</span>}<h2>{offer.active ? 'Seu sonho merece esse começo.' : 'Libere seu plano.'}</h2><div className="sales-offer-goal"><span>Plano para</span><strong>{getDream(draft.answers)}{offerPeriod ? ` ${offerPeriod}` : ''}</strong></div><PromotionPrice />{offer.active && <div className="sales-offer-deadline"><PromotionCountdown /><p>Até 25/10, às 23h59. Depois, volta para R$ 37.</p></div>}{cta('offer')}<p className="sales-guarantee"><ShieldCheck size={18} /> Pix ou cartão · 7 dias de garantia</p><h3 className="sales-guarantee-title">7 dias de garantia</h3><p>Se o plano não fizer sentido para você, peça o reembolso em até 7 dias. Você recebe todo o valor de volta, sem precisar explicar o motivo.</p></section>
+      <section className="sales-faq"><h2>Dúvidas</h2><details><summary>É assinatura?</summary><p>Não. {offer.price} é um pagamento único para criar um plano completo e acompanhar seu progresso.</p></details><details><summary>Funciona no celular?</summary><p>Sim. Você acessa o Mandalart pelo navegador do celular ou do computador e continua de onde parou.</p></details><details><summary>Como recebo o acesso?</summary><p>Após a confirmação do pagamento, você recebe o acesso por e-mail. Seu objetivo já estará preenchido. Responda às perguntas específicas para gerar seu plano.</p></details></section>
+      <div className="sales-sticky" hidden={offerVisible}>{offer.active && <p className="sales-sticky-deadline"><Timer size={13} aria-hidden="true" /> R$ 17,10 de desconto · só até 25/10</p>}{cta('sticky')}</div>
     </main>}
     {draft.screen === 'checkout' && <main id="begin-main" className="sales-checkout begin-enter">
       <button className="back-button" type="button" disabled={busy} onClick={() => navigate('closing')}><ArrowLeft size={16} /> Voltar ao plano</button>
       <div className="sales-checkout-layout">
       <div className="sales-checkout-summary">
       <span className="begin-eyebrow sales-checkout-badge"><LockKeyhole size={14} aria-hidden="true" /> PAGAMENTO SEGURO</span>
-      <h1 data-step-heading tabIndex={-1}>Seu plano, por R$ 37.</h1>
+      <h1 data-step-heading tabIndex={-1}>Seu próximo passo<br />começa aqui.</h1><PromotionPrice />{offer.active && <PromotionCountdown />}
       <p>Pagamento único · garantia de 7 dias.</p>
       <div className="sales-checkout-goal"><span className="sales-promise-icon" aria-hidden="true"><Sparkles size={22} /></span><div><small>Seu plano para</small><strong>{getDream(draft.answers)}</strong></div></div>
       </div>
@@ -290,7 +293,7 @@ export function SalesJourney() {
           <span className="sales-email-field"><Mail size={18} aria-hidden="true" /><input className="ph-mask" type="email" autoComplete="email" placeholder="voce@exemplo.com" maxLength={254} required value={email} onChange={event => setEmail(event.target.value)} disabled={busy} /></span>
         </label>}
         {error && <p className="begin-error" role="alert">{error}</p>}
-        <button className="begin-primary sales-cta" type="submit" disabled={busy}>{busy ? <><LoaderCircle className="animate-spin" size={18} /> Preparando pagamento…</> : <>{directPix && method === 'pix' && !kiwify ? 'Gerar Pix' : 'Continuar para pagamento'} · R$ 37 <ArrowRight size={18} /></>}</button>
+        <button className="begin-primary sales-cta" type="submit" disabled={busy}>{busy ? <><LoaderCircle className="animate-spin" size={18} /> Preparando pagamento…</> : <>{directPix && method === 'pix' && !kiwify ? 'Gerar Pix' : 'Continuar para pagamento'} · {offer.price} <ArrowRight size={18} /></>}</button>
         <p className="sales-guarantee"><ShieldCheck size={16} aria-hidden="true" /> Seu acesso é enviado após a confirmação.</p>
       </form>
       </div>

@@ -108,3 +108,68 @@
   .sales-checkout-form { padding: 24px; }
 }
 @media (max-width: 640px) { .sales-shell .begin-header { padding: 20px; } .sales-shell .entry-page { padding-top: 15px; } .sales-question-aside { display: none; } .sales-phases { padding: 24px 20px; } .sales-stack article { --feature-preview-size: 72px; gap: 12px; } .sales-stack h3 { font-size: 14px; } .sales-closing { padding-top: 24px; } }
+
+/* A real deadline, shared by the offer, checkout and server pricing. */
+.has-promotion { background: radial-gradient(ellipse at 8% 30%, #f4edff 0, transparent 48%), #faf9fd; }
+.promotion-banner { display: flex; align-items: center; justify-content: space-between; gap: 24px; width: min(calc(100% - 48px), 1040px); margin: 22px auto 0; padding: 18px 24px; border: 1px solid #f3d3b8; border-radius: 18px; background: #fff3e7; color: #502817; }
+.promotion-banner-copy { display: flex; align-items: center; gap: 13px; }
+.promotion-banner-icon { display: grid; place-items: center; flex-shrink: 0; width: 42px; height: 42px; color: #a74013; border-radius: 13px; background: #ffe1c5; transform: rotate(-8deg); }
+.promotion-banner-copy strong { display: block; font-size: 15px; font-weight: 750; letter-spacing: -.25px; }
+.promotion-banner-copy > div > span { display: block; margin-top: 4px; font-size: 12px; color: #80553c; }
+.promotion-countdown { display: flex; flex-direction: column; align-items: center; gap: 10px; }
+.promotion-clock-label { display: flex; align-items: center; justify-content: center; gap: 6px; font-size: 11px; font-weight: 600; color: #80553c; }
+.promotion-digits { display: flex; align-items: center; gap: 6px; font-variant-numeric: tabular-nums; }
+.promotion-digits > span { display: flex; flex-direction: column; align-items: center; gap: 5px; }
+.promotion-digits strong { display: grid; place-items: center; min-width: 49px; padding: 10px 8px; border: 1px solid #e9dce5; border-radius: 10px; background: #fff; color: #39234c; font-size: 25px; line-height: 1; letter-spacing: -.5px; font-weight: 750; }
+.promotion-digits small { font-size: 9px; color: #80553c; }
+.promotion-countdown--compact { flex-direction: row; gap: 14px; }
+.promotion-countdown--compact .promotion-clock-label { max-width: 85px; justify-content: flex-start; line-height: 1.4; }
+.promotion-countdown--compact .promotion-clock-label svg { flex-shrink: 0; }
+.promotion-countdown--compact .promotion-digits strong { min-width: 36px; padding: 7px 6px; font-size: 18px; border-color: #f0d8c7; }
+.promotion-countdown--compact .promotion-digits > span { gap: 3px; }
+.promotion-eyebrow { display: inline-flex; color: #a74013; font-size: 10px; font-weight: 750; letter-spacing: 1.6px; }
+.entry-promotion { margin-top: 25px; padding-top: 22px; border-top: 1px solid #e6dfef; }
+.promotion-price { margin: 24px 0; }
+.promotion-price-before { display: flex; align-items: center; justify-content: center; gap: 10px; margin-bottom: 5px; }
+.promotion-price-before s { color: #80758c; font-size: 15px; }
+.promotion-price-before > span { padding: 4px 7px; border-radius: 6px; background: #ffdfc4; color: #94390d; font-size: 10px; font-weight: 800; letter-spacing: .4px; }
+.promotion-price > strong { display: block; color: #5427dd; font-size: clamp(50px, 7vw, 64px); font-weight: 800; letter-spacing: -3px; line-height: 1.15; white-space: nowrap; }
+.promotion-price > small { display: block; margin-top: 7px; color: #71697e; font-size: 12px; }
+.promotion-price > p { font-size: 12px; line-height: 1.6; margin-top: 13px; color: #73647b; }
+.promotion-price > p b { color: #4f3960; font-weight: 650; }
+.entry-promotion .promotion-price { margin: 10px 0 0; }
+.entry-promotion .promotion-price-before { justify-content: flex-start; }
+.entry-promotion .promotion-price > p { display: none; }
+.entry-promotion-deadline { margin: 12px 0 0; font-size: 11px; color: #95603f; }
+.has-promotion .entry-layout { margin-top: 24px; }
+.has-promotion .entry-copy h1 { font-size: clamp(36px, 4.4vw, 54px); }
+.sales-offer--promotion { position: relative; overflow: hidden; border: 1px solid #dbbdae; background: radial-gradient(ellipse at 50% 0, #ffecd8 0, transparent 60%), #fffdfb; box-shadow: 0 18px 60px #6c3b7b12; padding-top: 32px; }
+.sales-offer--promotion::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 4px; background: linear-gradient(90deg, #6334ff, #b77adf, #eea161); }
+.sales-offer--promotion h2 { max-width: 360px; margin: 15px auto 22px; font-size: 29px; color: #382349; }
+.sales-offer-deadline { padding: 18px 14px; border-radius: 16px; background: #fff2e5; margin: 20px 0; border: 1px solid #f4dfc9; }
+.sales-offer-deadline > p { margin: 11px 0 0; color: #80553c; font-size: 11px; line-height: 1.5; }
+.sales-sticky-deadline { display: flex; align-items: center; justify-content: center; gap: 5px; color: #9b481d; font-size: 11px; margin-bottom: 8px; }
+.sales-checkout-summary .promotion-price-before { justify-content: flex-start; }
+.sales-checkout-summary .promotion-countdown { align-items: flex-start; padding: 16px; background: #fff2e5; border: 1px solid #f4dfc9; border-radius: 14px; margin: 20px 0; width: fit-content; }
+@media (max-width: 700px) {
+  .promotion-banner { width: calc(100% - 32px); gap: 14px; margin-top: 12px; padding: 16px; flex-direction: column; align-items: stretch; border-radius: 16px; }
+  .promotion-banner-copy { justify-content: center; gap: 10px; }
+  .promotion-banner-copy strong { font-size: 14px; }
+  .sales-checkout-summary .promotion-countdown { display: none; }
+  .promotion-banner-icon { width: 34px; height: 34px; border-radius: 10px; }
+  .promotion-countdown--compact { justify-content: center; padding-top: 12px; border-top: 1px solid #f0dccb; }
+  .promotion-countdown--compact .promotion-clock-label { max-width: none; font-size: 10px; }
+  .has-promotion .entry-layout { margin-top: 8px; gap: 28px; }
+  .has-promotion .entry-copy h1 { font-size: clamp(32px, 8vw, 40px); }
+  .entry-promotion { margin-top: 18px; padding-top: 17px; }
+  .entry-promotion .promotion-price-before { justify-content: center; }
+  .entry-promotion .promotion-price > strong { font-size: 48px; letter-spacing: -2px; }
+  .entry-promotion .promotion-price > small { font-size: 11px; }
+  .entry-promotion-deadline { font-size: 10px; margin-top: 9px; }
+}
+@media (max-width: 360px) {
+  .promotion-banner-copy strong { font-size: 12px; }
+  .promotion-banner-copy > div > span { font-size: 10px; }
+  .promotion-countdown--compact { gap: 8px; }
+  .promotion-countdown--compact .promotion-clock-label { max-width: 72px; }
+}

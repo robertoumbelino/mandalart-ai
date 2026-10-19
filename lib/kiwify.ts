@@ -6,6 +6,7 @@ import { billingMode } from '@/lib/stripe'
 import { idSchema } from '@/lib/validation'
 import { fulfillOrder } from '@/lib/order-fulfillment'
 import type { DreamOrder } from '@/lib/payments'
+import { SALES_PROMOTION } from '@/lib/sales-offer'
 
 type KiwifyEvent = {
   order_id?: unknown
@@ -118,21 +119,36 @@ export async function processKiwifyEvent(raw: unknown) {
   const [order] = (await sql`
     SELECT *
     FROM dream_orders WHERE id=${event.id}::uuid
-  `) as (DreamOrder & { provider: string; external_order_id: string | null })[]
+  `) as (DreamOrder & { provider: string; external_order_id: string | null; paid: boolean; created_at: string | Date })[]
   if (!order) return 'ignored' as const
   const credits = Number(order.credits) as DreamPack
   if (
     order.provider !== 'kiwify' ||
     order.mode !== billingMode() ||
     !DREAM_PACKS[credits] ||
-    event.amount !== Number(order.amount) ||
-    event.basePrice !== Number(order.amount) ||
     event.checkoutLink !== checkoutCode(credits) ||
     order.price_id !== event.checkoutLink ||
     (order.external_order_id && order.external_order_id !== event.externalOrderId)
   ) {
     throw new Error('Evento Kiwify não corresponde ao pedido.')
   }
+
+  // The existing offer keeps its URL. A checkout opened at R$ 37 can therefore
+  // be paid at R$ 19.90 after the producer changes that offer's price.
+  const repriced = event.eventType === 'order_approved' && order.paid === false &&
+    order.status === 'pending' && !order.external_order_id && credits === 1 &&
+    Number(order.amount) === SALES_PROMOTION.regularAmount &&
+    new Date(order.created_at).getTime() < Date.parse(SALES_PROMOTION.endsAt) &&
+    event.amount === SALES_PROMOTION.amount && event.basePrice === SALES_PROMOTION.amount
+  if (repriced) {
+    const [updated] = await sql`UPDATE dream_orders SET amount=${event.amount}
+      WHERE id=${order.id}::uuid AND paid=false AND status='pending' AND external_order_id IS NULL AND amount=${SALES_PROMOTION.regularAmount}
+      RETURNING id`
+    if (!updated) throw new Error('O pedido foi atualizado. Tente novamente.')
+    order.amount = event.amount
+  }
+  if (event.amount !== Number(order.amount) || event.basePrice !== Number(order.amount))
+    throw new Error('Evento Kiwify não corresponde ao pedido.')
 
   const linked = await sql`
     UPDATE dream_orders SET external_order_id=${event.externalOrderId},payment_method=COALESCE(payment_method,${event.paymentMethod})

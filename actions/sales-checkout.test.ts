@@ -1,9 +1,10 @@
-import { beforeEach, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, expect, it, vi } from 'vitest'
 import { startSalesCheckout } from './sales-checkout'
 const mocks = vi.hoisted(() => ({ sql: vi.fn(), pix: vi.fn(), checkout: vi.fn(), session: vi.fn() }))
 vi.mock('@/lib/db', () => ({ getDb: () => mocks.sql }))
 vi.mock('@/lib/onboarding-server', () => ({ getPreviewSession: mocks.session }))
 vi.mock('./onboarding-checkout', () => ({ startGuestPix: mocks.pix, startGuestCheckout: mocks.checkout }))
+vi.mock('@/lib/stripe', () => ({ paymentProvider: () => 'asaas' }))
 const intentId = '492ee5d0-9598-4d4d-a4ba-60c6af2b1ad0'
 const input = { answers: { journeyVersion: 'sales-v3', category: 'money', dream: 'Sair das dívidas', obstacle: 'time', horizon: 'month' }, attemptId: 'b7a6a430-bb53-4e2d-ad12-bbe2ba19f390', orderId: '60e62b8f-e9ac-4f97-94e8-6d27732fbd5e', method: 'kiwify' }
 beforeEach(() => {
@@ -13,6 +14,7 @@ beforeEach(() => {
   mocks.checkout.mockResolvedValue({ url: '/kiwify-demo' })
   mocks.pix.mockResolvedValue({ url: '/pix' })
 })
+afterEach(() => vi.useRealTimers())
 it('stores only the four answers and uses the existing checkout without a generated preview', async () => {
   expect(await startSalesCheckout(input)).toEqual({ url: '/kiwify-demo', intentId })
   const [strings, ...values] = mocks.sql.mock.calls[1]
@@ -36,4 +38,19 @@ it('rejects incomplete answers and excessive attempts before opening checkout', 
   mocks.sql.mockResolvedValue([{ n: 20 }])
   await expect(startSalesCheckout(input)).rejects.toThrow('Aguarde')
   expect(mocks.checkout).not.toHaveBeenCalled()
+})
+
+it('rejects a stale promotional price after the deadline before writing an order', async () => {
+  vi.useFakeTimers()
+  vi.setSystemTime(new Date('2026-10-26T00:00:00-03:00'))
+  await expect(startSalesCheckout({ ...input, expectedAmount: 1990 })).rejects.toThrow('preço da oferta mudou')
+  expect(mocks.sql).not.toHaveBeenCalled()
+})
+
+it('accepts R$ 19.90 during the campaign and R$ 37 after it', async () => {
+  vi.useFakeTimers()
+  vi.setSystemTime(new Date('2026-10-25T23:59:59-03:00'))
+  await expect(startSalesCheckout({ ...input, expectedAmount: 1990 })).resolves.toHaveProperty('intentId', intentId)
+  vi.setSystemTime(new Date('2026-10-26T00:00:00-03:00'))
+  await expect(startSalesCheckout({ ...input, expectedAmount: 3700 })).resolves.toHaveProperty('intentId', intentId)
 })

@@ -88,3 +88,29 @@ it('delivers the public three-pack at R$ 99 and reverses a refund', async () => 
   expect(await processKiwifyEvent({ ...three, order_status: 'refunded', webhook_event_type: 'order_refunded' })).toBe('processed')
   expect(mocks.fulfill).toHaveBeenCalledWith(expect.objectContaining({ paid: false, refunded: 9900 }))
 })
+
+it.each([1990, 3700])('keeps approval and refunds tied to the stored price of %i, including after the campaign', async (amount) => {
+  const purchase = { ...event, Commissions: { ...event.Commissions, charge_amount: String(amount), product_base_price: String(amount) } }
+  mocks.db.mockImplementation(async (strings: TemplateStringsArray) => strings.join('?').includes('SELECT *')
+    ? [{ id, mode: 'live', provider: 'kiwify', credits: 1, amount, price_id: 'offer123', external_order_id: saleId, preview_id: 'preview' }]
+    : [{ id }])
+  expect(await processKiwifyEvent(purchase)).toBe('processed')
+  expect(await processKiwifyEvent({ ...purchase, order_status: 'refunded', webhook_event_type: 'order_refunded' })).toBe('processed')
+  expect(mocks.fulfill).toHaveBeenLastCalledWith(expect.objectContaining({ refunded: amount }))
+})
+
+it('honors the discount when the same Kiwify offer reprices an unpaid older checkout', async () => {
+  const purchase = { ...event, Commissions: { ...event.Commissions, charge_amount: '1990', product_base_price: '1990' } }
+  mocks.db.mockImplementation(async (strings: TemplateStringsArray) => strings.join('?').includes('SELECT *')
+    ? [{ id, mode: 'live', provider: 'kiwify', credits: 1, amount: 3700, price_id: 'offer123', paid: false, status: 'pending', external_order_id: null, created_at: '2026-10-18T12:00:00Z', preview_id: 'preview' }]
+    : [{ id }])
+  expect(await processKiwifyEvent(purchase)).toBe('processed')
+  expect(mocks.db.mock.calls.some(([strings]) => (strings as TemplateStringsArray).join('?').includes('SET amount='))).toBe(true)
+  expect(mocks.fulfill).toHaveBeenCalledWith(expect.objectContaining({ paid: true, order: expect.objectContaining({ amount: 1990 }) }))
+})
+
+it('does not reprice a previously paid order or accept an arbitrary discounted amount', async () => {
+  mocks.db.mockImplementation(async () => [{ id, mode: 'live', provider: 'kiwify', credits: 1, amount: 3700, price_id: 'offer123', paid: true, status: 'paid', external_order_id: saleId, created_at: '2026-10-18T12:00:00Z' }])
+  await expect(processKiwifyEvent({ ...event, Commissions: { ...event.Commissions, charge_amount: '1990', product_base_price: '1990' } })).rejects.toThrow('não corresponde')
+  expect(mocks.fulfill).not.toHaveBeenCalled()
+})

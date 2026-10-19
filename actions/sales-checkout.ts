@@ -7,18 +7,24 @@ import { cleanAttribution } from '@/lib/attribution'
 import { getPreviewSession } from '@/lib/onboarding-server'
 import { salesAnswersSchema } from '@/lib/sales-journey'
 import { startGuestCheckout, startGuestPix } from './onboarding-checkout'
+import { salesOffer } from '@/lib/sales-offer'
+import { paymentProvider } from '@/lib/stripe'
 
 const schema = z.object({
   answers: salesAnswersSchema, attemptId: z.uuid(), orderId: z.uuid(),
   method: z.enum(['pix', 'card', 'kiwify']), email: z.email().max(254).optional(),
   attribution: z.record(z.string(), z.unknown()).default({}),
   analyticsDistinctId: z.string().min(1).max(200).optional(), marketingConsent: z.boolean().default(false),
+  expectedAmount: z.number().int().positive().optional(),
 })
 
 // Reuse payment/session ownership and fulfillment; this record contains quiz answers only.
 // No AI, generated preview, or credit is created before payment.
 export async function startSalesCheckout(raw: unknown) {
   const input = schema.parse(raw)
+  const amount = salesOffer(Date.now(), input.method === 'kiwify' || paymentProvider() === 'asaas').amount
+  if (input.expectedAmount !== undefined && input.expectedAmount !== amount)
+    throw new Error('O preço da oferta mudou. Confira o valor atualizado e tente novamente.')
   if (input.method === 'pix' && !input.email) throw new Error('Informe um e-mail para receber seu acesso.')
   const sessionId = await getPreviewSession()
   const sql = getDb()

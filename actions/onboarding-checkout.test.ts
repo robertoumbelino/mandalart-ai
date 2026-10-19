@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, expect, it, vi } from 'vitest'
-import { startGuestCheckout } from './onboarding-checkout'
+import { startGuestCheckout, startGuestPix } from './onboarding-checkout'
+import { createAsaasCheckout, createAsaasPixQr, directAsaasPixEnabled } from '@/lib/asaas'
 
 const mocks = vi.hoisted(() => ({ db: vi.fn(), kiwifyEnabled: vi.fn(), kiwifyLocalDemo: vi.fn() }))
 vi.mock('server-only', () => ({}))
@@ -28,7 +29,7 @@ beforeEach(() => {
     return []
   })
 })
-afterEach(() => vi.unstubAllEnvs())
+afterEach(() => { vi.unstubAllEnvs(); vi.useRealTimers() })
 
 it('routes the public three-pack to Kiwify without invoking Asaas', async () => {
   const result = await startGuestCheckout(previewId, orderId, { bump: true }, 'kiwify')
@@ -56,4 +57,35 @@ it('keeps a local test order inside the demo instead of opening a live checkout'
     return []
   })
   expect(await startGuestCheckout(previewId, orderId, { bump: true }, 'kiwify')).toEqual({ url: `/kiwify-demo?order_id=${orderId}` })
+})
+
+it.each([
+  ['2026-10-25T23:59:59-03:00', 1990],
+  ['2026-10-26T00:00:00-03:00', 3700],
+])('charges the authoritative individual price at %s in Kiwify, Asaas card and Pix', async (date, amount) => {
+  vi.useFakeTimers()
+  vi.setSystemTime(new Date(date))
+  let provider = 'kiwify'
+  const email = 'buyer@example.com'
+  mocks.db.mockImplementation(async (strings: TemplateStringsArray) => {
+    const query = strings.join('?')
+    if (query.includes('FROM onboarding_previews p')) return [{ lead_id: null, email: null, attribution: {} }]
+    if (query.includes('SELECT count(*)')) return [{ n: 0 }]
+    if (query.includes('SELECT * FROM dream_orders')) return [{ provider, mode: 'live', preview_id: previewId, lead_id: null, guest_email: provider === 'pix' ? email : null, credits: 1, amount, price_id: provider === 'kiwify' ? 'one123' : 'asaas:guest:1', status: 'pending' }].map(order => ({ ...order, provider: provider === 'pix' ? 'asaas' : provider }))
+    if (query.includes('RETURNING id')) return [{ id: orderId }]
+    return []
+  })
+  const kiwify = await startGuestCheckout(previewId, orderId, {}, 'kiwify')
+  expect(new URL(kiwify.url).pathname).toBe('/one123')
+  const inserts = () => mocks.db.mock.calls.filter(([strings]) => (strings as TemplateStringsArray).join('?').includes('INSERT INTO dream_orders'))
+  expect(inserts()[0]).toContain(amount)
+  provider = 'asaas'
+  vi.mocked(createAsaasCheckout).mockResolvedValue({ id: 'checkout', url: 'https://asaas.test/checkout' })
+  await startGuestCheckout(previewId, orderId)
+  expect(createAsaasCheckout).toHaveBeenCalledWith(expect.objectContaining({ amount }))
+  provider = 'pix'
+  vi.mocked(directAsaasPixEnabled).mockReturnValue(true)
+  vi.mocked(createAsaasPixQr).mockResolvedValue({ id: 'qr', payload: 'payload', image: 'image' })
+  await startGuestPix(previewId, orderId, email)
+  expect(createAsaasPixQr).toHaveBeenCalledWith(orderId, amount)
 })

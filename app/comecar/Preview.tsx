@@ -7,6 +7,7 @@ import { PixMark } from '@/app/components/PixMark'
 import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { getDream, type OnboardingAnswers, type OnboardingPreview } from '@/lib/onboarding'
 import { ChecklistItem } from '@/app/components/ChecklistItem'
+import { useSalesOffer } from './SalesPromotion'
 import { JourneyTestimonial } from '@/app/components/JourneyTestimonial'
 
 type Props = {
@@ -37,6 +38,7 @@ type Props = {
 }
 
 export function Preview({ previewId, onViewed, preview, answers, checked, onCheck, onRestart, onCheckout, checkoutBusy, directPixAvailable, kiwifyCheckout, kiwifyDemo, kiwifyPreviewLinks, checkoutMethod, onCheckoutMethodChange, bumpSelected, onBumpChange, checkoutError, email, onEmailChange, onEmailSubmit, emailBusy, emailSaved, emailError }: Props) {
+  const offer = useSalesOffer()
   const offerRef = useRef<HTMLElement>(null)
   const emailRef = useRef<HTMLElement>(null)
   const emailDialogRef = useRef<HTMLDialogElement>(null)
@@ -69,7 +71,7 @@ export function Preview({ previewId, onViewed, preview, answers, checked, onChec
   const dream = getDream(answers)
   const localTest = process.env.NODE_ENV === 'development'
   const localKiwifyDemo = kiwifyCheckout && kiwifyDemo
-  const priceLabel = bumpSelected ? 'R$\u00a099' : 'R$\u00a037'
+  const priceLabel = bumpSelected ? 'R$\u00a099' : offer.price
   const paymentCta = localKiwifyDemo
     ? `Simular compra de ${priceLabel}`
     : `Liberar ${bumpSelected ? '3 Mandalarts completos' : 'meu Mandalart completo'} · ${priceLabel}`
@@ -151,7 +153,7 @@ export function Preview({ previewId, onViewed, preview, answers, checked, onChec
               <div className="guided-checkout">
                 <div className="guided-purchase-summary">
                   <p>Acesso à plataforma + {bumpSelected ? '3 planos personalizados' : 'seu plano personalizado'}</p>
-                  <div className="conversion-price"><strong>{bumpSelected ? 'R$ 99' : 'R$ 37'}</strong><span>pagamento único<br />sem assinatura</span></div>
+                  <div className="conversion-price"><strong>{bumpSelected ? 'R$ 99' : offer.price}</strong><span>pagamento único<br />sem assinatura</span></div>
                 </div>
                 {directPixAvailable && <div className="conversion-payment-choice">
                   <span>Como você quer pagar?</span>

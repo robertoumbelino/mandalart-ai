@@ -14,6 +14,7 @@ import { cleanAttribution, type Attribution } from '@/lib/attribution'
 import { getPreviewSession } from '@/lib/onboarding-server'
 import { billingOrigin, getStripe } from '@/lib/stripe'
 import { createAsaasCheckout, asaasCheckoutUrl, createAsaasPixQr, directAsaasPixEnabled } from '@/lib/asaas'
+import { guestAmount } from '@/lib/sales-offer'
 
 function checkoutJourneyVersion(preview: { answers?: unknown }) {
   return salesAnswersSchema.safeParse(preview.answers).success ? SALES_JOURNEY_VERSION : 'conversion-v2'
@@ -106,7 +107,7 @@ async function startKiwifyGuestCheckout(input: {
   const { preview, previewId, orderId, sessionId, context } = input
   const journeyVersion = checkoutJourneyVersion(preview)
   const credits = context.bump ? 3 : 1
-  const amount = context.bump ? 9900 : 3700
+  const amount = guestAmount(context.bump)
   const attribution = cleanAttribution(preview.attribution)
   const url = kiwifyCheckoutLink(credits, preview.email, orderId, attribution)
   const checkoutCode = new URL(url).pathname.slice(1).replace(/\/$/, '')
@@ -144,7 +145,7 @@ export async function startGuestPix(rawPreviewId: string, rawOrderId: string, ra
   const journeyVersion = checkoutJourneyVersion(preview)
   const leadId = preview.email === email ? preview.lead_id : null
   const credits = context.bump ? 3 : 1
-  const amount = context.bump ? 9900 : 3700
+  const amount = guestAmount(context.bump)
   const price = `asaas:guest:${credits}`
   const [count] = await sql`SELECT count(*)::int AS n FROM dream_orders WHERE preview_id=${previewId}::uuid AND created_at>now()-interval '1 hour'`
   if (Number(count.n) >= 10) throw new Error('Muitas tentativas. Aguarde um pouco antes de tentar de novo.')
@@ -180,7 +181,7 @@ async function startAsaasGuestCheckout(input: {
   const sql = getDb()
   const mode = billingMode()
   const credits = context.bump ? 3 : 1
-  const amount = context.bump ? 9900 : 3700
+  const amount = guestAmount(context.bump)
   const price = `asaas:guest:${credits}`
   const [count] = await sql`SELECT count(*)::int AS n FROM dream_orders WHERE preview_id=${previewId}::uuid AND created_at>now()-interval '1 hour'`
   if (Number(count.n) >= 10) throw new Error('Muitas tentativas. Aguarde um pouco antes de tentar de novo.')
@@ -200,7 +201,7 @@ async function startAsaasGuestCheckout(input: {
     orderId,
     name: context.bump ? 'Mandalart + 2 sonhos' : 'Mandalart completo',
     description: 'Planner digital · pagamento único · garantia de 7 dias',
-    amount,
+    amount: Number(order.amount),
     successPath: `/compra?order_id=${orderId}`,
     cancelPath: '/comecar?cancelado=1',
     expiredPath: '/comecar?expirado=1',

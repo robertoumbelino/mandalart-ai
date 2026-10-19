@@ -1,5 +1,7 @@
 'use client'
 
+import { useSalesOffer } from './SalesPromotion'
+
 import { getOnboardingPaymentOptions, startGuestCheckout, startGuestPix } from '@/actions/onboarding-checkout'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
@@ -153,6 +155,7 @@ function analytics(name: string, properties?: Record<string, string | number>) {
 }
 
 export function Onboarding() {
+  const offer = useSalesOffer()
   const [draft, setDraft] = useState<OnboardingDraft>(EMPTY)
   const [hydrated, setHydrated] = useState(false)
   const [storageAvailable, setStorageAvailable] = useState(true)
@@ -601,7 +604,7 @@ export function Onboarding() {
         try { localStorage.setItem('mandalart_kiwify_guest_order', orderId) } catch {}
       }
       analytics('checkout_started', { order_id: orderId, preview_id: draft.result.id, lead_id: draft.leadId || '' })
-      trackMetaEvent({ name: 'InitiateCheckout', data: { value: bumpSelected ? 99 : 37, currency: 'BRL' }, onceKey: `checkout.${orderId}`, eventId: `checkout-${orderId}` })
+      trackMetaEvent({ name: 'InitiateCheckout', data: { value: bumpSelected ? 99 : offer.amount / 100, currency: 'BRL' }, onceKey: `checkout.${orderId}`, eventId: `checkout-${orderId}` })
       window.location.assign(result.url)
     } catch (cause) {
       analytics('checkout_error', { preview_id: draft.result.id })
