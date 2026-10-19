@@ -36,7 +36,8 @@ export async function startSalesCheckout(raw: unknown) {
     ON CONFLICT(session_id,input_hash) DO UPDATE SET expires_at=now()+interval '7 days',updated_at=now()
     RETURNING id`
   const intentId = String(intent.id)
-  const context = { analyticsDistinctId: input.analyticsDistinctId, marketingConsent: input.marketingConsent }
+  const context = { analyticsDistinctId: input.analyticsDistinctId, marketingConsent: input.marketingConsent,
+    ...(input.expectedAmount !== undefined ? { expectedAmount: input.expectedAmount } : {}) }
   const result = input.method === 'pix'
     ? await startGuestPix(intentId, input.orderId, input.email!, context)
     : await startGuestCheckout(intentId, input.orderId, context, input.method === 'kiwify' ? 'kiwify' : 'default')

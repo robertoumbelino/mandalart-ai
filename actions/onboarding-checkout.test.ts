@@ -89,3 +89,12 @@ it.each([
   await startGuestPix(previewId, orderId, email)
   expect(createAsaasPixQr).toHaveBeenCalledWith(orderId, amount)
 })
+
+it('does not charge more if the deadline passes while an earlier request is in flight', async () => {
+  vi.useFakeTimers()
+  vi.setSystemTime(new Date('2026-10-26T00:00:00-03:00'))
+  await expect(startGuestCheckout(previewId, orderId, { expectedAmount: 1990 }, 'kiwify')).rejects.toThrow('preço da oferta mudou')
+  await expect(startGuestCheckout(previewId, orderId, { expectedAmount: 1990 })).rejects.toThrow('preço da oferta mudou')
+  expect(mocks.db.mock.calls.some(([strings]) => (strings as TemplateStringsArray).join('?').includes('INSERT INTO dream_orders'))).toBe(false)
+  expect(createAsaasCheckout).not.toHaveBeenCalled()
+})

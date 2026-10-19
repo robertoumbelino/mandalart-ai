@@ -20,7 +20,7 @@ function checkoutJourneyVersion(preview: { answers?: unknown }) {
   return salesAnswersSchema.safeParse(preview.answers).success ? SALES_JOURNEY_VERSION : 'conversion-v2'
 }
 
-const guestContextSchema = z.object({ checked: previewProgressSchema.optional(), bump: z.boolean().default(false), marketingConsent: z.boolean().default(false), analyticsDistinctId: z.string().min(1).max(200).optional() })
+const guestContextSchema = z.object({ checked: previewProgressSchema.optional(), bump: z.boolean().default(false), marketingConsent: z.boolean().default(false), analyticsDistinctId: z.string().min(1).max(200).optional(), expectedAmount: z.number().int().positive().optional() })
 
 // The preview itself is the product being purchased. No auth account exists yet.
 export async function startGuestCheckout(rawPreviewId: string, rawOrderId: string, rawContext: unknown = {}, provider: 'default' | 'kiwify' = 'default') {
@@ -107,7 +107,7 @@ async function startKiwifyGuestCheckout(input: {
   const { preview, previewId, orderId, sessionId, context } = input
   const journeyVersion = checkoutJourneyVersion(preview)
   const credits = context.bump ? 3 : 1
-  const amount = guestAmount(context.bump)
+  const amount = guestAmount(context.bump, Date.now(), context.expectedAmount)
   const attribution = cleanAttribution(preview.attribution)
   const url = kiwifyCheckoutLink(credits, preview.email, orderId, attribution)
   const checkoutCode = new URL(url).pathname.slice(1).replace(/\/$/, '')
@@ -145,7 +145,7 @@ export async function startGuestPix(rawPreviewId: string, rawOrderId: string, ra
   const journeyVersion = checkoutJourneyVersion(preview)
   const leadId = preview.email === email ? preview.lead_id : null
   const credits = context.bump ? 3 : 1
-  const amount = guestAmount(context.bump)
+  const amount = guestAmount(context.bump, Date.now(), context.expectedAmount)
   const price = `asaas:guest:${credits}`
   const [count] = await sql`SELECT count(*)::int AS n FROM dream_orders WHERE preview_id=${previewId}::uuid AND created_at>now()-interval '1 hour'`
   if (Number(count.n) >= 10) throw new Error('Muitas tentativas. Aguarde um pouco antes de tentar de novo.')
@@ -174,14 +174,14 @@ async function startAsaasGuestCheckout(input: {
   previewId: string
   orderId: string
   sessionId: string
-  context: { bump: boolean; checked?: z.infer<typeof previewProgressSchema>; marketingConsent: boolean; analyticsDistinctId?: string }
+  context: z.infer<typeof guestContextSchema>
 }) {
   const { preview, previewId, orderId, sessionId, context } = input
   const journeyVersion = checkoutJourneyVersion(preview)
   const sql = getDb()
   const mode = billingMode()
   const credits = context.bump ? 3 : 1
-  const amount = guestAmount(context.bump)
+  const amount = guestAmount(context.bump, Date.now(), context.expectedAmount)
   const price = `asaas:guest:${credits}`
   const [count] = await sql`SELECT count(*)::int AS n FROM dream_orders WHERE preview_id=${previewId}::uuid AND created_at>now()-interval '1 hour'`
   if (Number(count.n) >= 10) throw new Error('Muitas tentativas. Aguarde um pouco antes de tentar de novo.')

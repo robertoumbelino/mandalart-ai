@@ -16,6 +16,9 @@ export function salesOffer(now: number, enabled = true) {
   }
 }
 
-export function guestAmount(bump: boolean, now = Date.now()) {
-  return bump ? 9900 : salesOffer(now).amount
+export function guestAmount(bump: boolean, now = Date.now(), expectedAmount?: number) {
+  const amount = bump ? 9900 : salesOffer(now).amount
+  if (expectedAmount !== undefined && amount !== expectedAmount)
+    throw new Error('O preço da oferta mudou. Confira o valor atualizado e tente novamente.')
+  return amount
 }

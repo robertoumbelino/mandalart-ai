@@ -595,7 +595,7 @@ export function Onboarding() {
       await progressQueue.current
       let marketingConsent = false
       try { marketingConsent = localStorage.getItem(MARKETING_CONSENT_KEY) === 'accepted' } catch {}
-      const context = { checked: draft.checked, bump: bumpSelected, marketingConsent, analyticsDistinctId: getProductDistinctId() }
+      const context = { checked: draft.checked, bump: bumpSelected, marketingConsent, analyticsDistinctId: getProductDistinctId(), expectedAmount: bumpSelected ? 9900 : offer.amount }
       const result = useDirectPix
         ? await startGuestPix(draft.result.id, orderId, email, context)
         : await startGuestCheckout(draft.result.id, orderId, context, kiwifyCheckout ? 'kiwify' : 'default')
