@@ -54,9 +54,9 @@ export function PromotionBanner() {
   </aside>
 }
 
-export function PromotionPrice({ hero = false }: { hero?: boolean }) {
+export function PromotionPrice() {
   const { active, price } = useSalesOffer()
-  return <div className={`promotion-price ${hero ? 'promotion-price--hero' : ''}`}>
+  return <div className="promotion-price">
     {active && <div className="promotion-price-before"><s>{formatBRL(SALES_PROMOTION.regularAmount)}</s><span>46% OFF</span></div>}
     <strong>{price}</strong>
     <small>Pagamento único · sem assinatura</small>

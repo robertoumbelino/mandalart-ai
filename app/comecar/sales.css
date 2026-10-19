@@ -128,7 +128,6 @@
 .promotion-countdown--compact .promotion-digits strong { min-width: 36px; padding: 7px 6px; font-size: 18px; border-color: #f0d8c7; }
 .promotion-countdown--compact .promotion-digits > span { gap: 3px; }
 .promotion-eyebrow { display: inline-flex; color: #a74013; font-size: 10px; font-weight: 750; letter-spacing: 1.6px; }
-.entry-promotion { margin-top: 25px; padding-top: 22px; border-top: 1px solid #e6dfef; }
 .promotion-price { margin: 24px 0; }
 .promotion-price-before { display: flex; align-items: center; justify-content: center; gap: 10px; margin-bottom: 5px; }
 .promotion-price-before s { color: #80758c; font-size: 15px; }
@@ -137,12 +136,6 @@
 .promotion-price > small { display: block; margin-top: 7px; color: #71697e; font-size: 12px; }
 .promotion-price > p { font-size: 12px; line-height: 1.6; margin-top: 13px; color: #73647b; }
 .promotion-price > p b { color: #4f3960; font-weight: 650; }
-.entry-promotion .promotion-price { margin: 10px 0 0; }
-.entry-promotion .promotion-price-before { justify-content: flex-start; }
-.entry-promotion .promotion-price > p { display: none; }
-.entry-promotion-deadline { margin: 12px 0 0; font-size: 11px; color: #95603f; }
-.has-promotion .entry-layout { margin-top: 24px; }
-.has-promotion .entry-copy h1 { font-size: clamp(36px, 4.4vw, 54px); }
 .sales-offer--promotion { position: relative; overflow: hidden; border: 1px solid #dbbdae; background: radial-gradient(ellipse at 50% 0, #ffecd8 0, transparent 60%), #fffdfb; box-shadow: 0 18px 60px #6c3b7b12; padding-top: 32px; }
 .sales-offer--promotion::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 4px; background: linear-gradient(90deg, #6334ff, #b77adf, #eea161); }
 .sales-offer--promotion h2 { max-width: 360px; margin: 15px auto 22px; font-size: 29px; color: #382349; }
@@ -159,13 +152,6 @@
   .promotion-banner-icon { width: 34px; height: 34px; border-radius: 10px; }
   .promotion-countdown--compact { justify-content: center; padding-top: 12px; border-top: 1px solid #f0dccb; }
   .promotion-countdown--compact .promotion-clock-label { max-width: none; font-size: 10px; }
-  .has-promotion .entry-layout { margin-top: 8px; gap: 28px; }
-  .has-promotion .entry-copy h1 { font-size: clamp(32px, 8vw, 40px); }
-  .entry-promotion { margin-top: 18px; padding-top: 17px; }
-  .entry-promotion .promotion-price-before { justify-content: center; }
-  .entry-promotion .promotion-price > strong { font-size: 48px; letter-spacing: -2px; }
-  .entry-promotion .promotion-price > small { font-size: 11px; }
-  .entry-promotion-deadline { font-size: 10px; margin-top: 9px; }
 }
 @media (max-width: 360px) {
   .promotion-banner-copy strong { font-size: 12px; }
