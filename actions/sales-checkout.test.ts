@@ -42,15 +42,15 @@ it('rejects incomplete answers and excessive attempts before opening checkout', 
 
 it('rejects a stale promotional price after the deadline before writing an order', async () => {
   vi.useFakeTimers()
-  vi.setSystemTime(new Date('2026-10-26T00:00:00-03:00'))
+  vi.setSystemTime(new Date('2026-12-01T00:00:00-03:00'))
   await expect(startSalesCheckout({ ...input, expectedAmount: 1990 })).rejects.toThrow('preço da oferta mudou')
   expect(mocks.sql).not.toHaveBeenCalled()
 })
 
 it('accepts R$ 19.90 during the campaign and R$ 37 after it', async () => {
   vi.useFakeTimers()
-  vi.setSystemTime(new Date('2026-10-25T23:59:59-03:00'))
+  vi.setSystemTime(new Date('2026-11-30T23:59:59-03:00'))
   await expect(startSalesCheckout({ ...input, expectedAmount: 1990 })).resolves.toHaveProperty('intentId', intentId)
-  vi.setSystemTime(new Date('2026-10-26T00:00:00-03:00'))
+  vi.setSystemTime(new Date('2026-12-01T00:00:00-03:00'))
   await expect(startSalesCheckout({ ...input, expectedAmount: 3700 })).resolves.toHaveProperty('intentId', intentId)
 })

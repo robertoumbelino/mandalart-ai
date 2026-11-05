@@ -1,6 +1,6 @@
 export const SALES_PROMOTION = {
   startsAt: '2026-10-19T00:00:00-03:00',
-  endsAt: '2026-10-26T00:00:00-03:00',
+  endsAt: '2026-12-01T00:00:00-03:00',
   regularAmount: 3700,
   amount: 1990,
 } as const

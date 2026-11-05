@@ -60,8 +60,8 @@ it('keeps a local test order inside the demo instead of opening a live checkout'
 })
 
 it.each([
-  ['2026-10-25T23:59:59-03:00', 1990],
-  ['2026-10-26T00:00:00-03:00', 3700],
+  ['2026-11-30T23:59:59-03:00', 1990],
+  ['2026-12-01T00:00:00-03:00', 3700],
 ])('charges the authoritative individual price at %s in Kiwify, Asaas card and Pix', async (date, amount) => {
   vi.useFakeTimers()
   vi.setSystemTime(new Date(date))
@@ -92,7 +92,7 @@ it.each([
 
 it('does not charge more if the deadline passes while an earlier request is in flight', async () => {
   vi.useFakeTimers()
-  vi.setSystemTime(new Date('2026-10-26T00:00:00-03:00'))
+  vi.setSystemTime(new Date('2026-12-01T00:00:00-03:00'))
   await expect(startGuestCheckout(previewId, orderId, { expectedAmount: 1990 }, 'kiwify')).rejects.toThrow('preço da oferta mudou')
   await expect(startGuestCheckout(previewId, orderId, { expectedAmount: 1990 })).rejects.toThrow('preço da oferta mudou')
   expect(mocks.db.mock.calls.some(([strings]) => (strings as TemplateStringsArray).join('?').includes('INSERT INTO dream_orders'))).toBe(false)
