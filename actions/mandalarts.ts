@@ -19,6 +19,15 @@ const requireUser = async () => {
   return user
 }
 
+export const isMandalartActive = async (rawId: string): Promise<boolean> => {
+  const user = await getCurrentUser()
+  if (!user) return false
+  const id = idSchema.parse(rawId)
+  const [row] = await getDb()`SELECT id FROM mandalarts
+    WHERE id=${id}::uuid AND user_id=${user.id} AND status='active'`
+  return Boolean(row)
+}
+
 export const getHistory = async (): Promise<HistoryItem[]> => {
   const user = await getCurrentUser()
   if (!user) return []
@@ -27,7 +36,7 @@ export const getHistory = async (): Promise<HistoryItem[]> => {
   const rows = await sql`
     SELECT id, user_id, main_goal, sub_goals, created_at AS timestamp
     FROM mandalarts
-    WHERE user_id = ${user.id}
+    WHERE user_id = ${user.id} AND status = 'active'
     ORDER BY created_at DESC
     LIMIT 100
   ` as MandalartRow[]
@@ -59,7 +68,7 @@ export const updateMandalart = async (rawId: string, rawData: MandalartData): Pr
     SET main_goal = ${data.mainGoal},
         sub_goals = ${subGoals}::jsonb,
         updated_at = NOW()
-    WHERE id = ${id} AND user_id = ${user.id}
+    WHERE id = ${id} AND user_id = ${user.id} AND status = 'active'
     RETURNING id
   ` as Array<{ id: string }>
 

@@ -18,6 +18,7 @@
     "stripe:setup": "node scripts/setup-stripe-test.mjs",
     "stripe:listen": "node scripts/stripe-listen.mjs",
     "test:credits": "node scripts/test-credits.mjs",
+    "test:plan-access": "node scripts/test-plan-access.mjs",
     "test:kiwify": "node scripts/test-kiwify-local.mjs"
   },
   "dependencies": {

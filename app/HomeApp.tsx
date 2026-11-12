@@ -12,7 +12,7 @@ import { getCurrentUserWithCreation, logout } from '@/actions/auth';
 import { trackMetaEvent } from '@/lib/meta-events';
 import { captureProductEvent, identifyProductUser, resetProductUser } from '@/lib/posthog';
 import { authClient } from '@/lib/auth/client';
-import { getHistory, updateMandalart, deleteMandalart } from '@/actions/mandalarts';
+import { getHistory, updateMandalart, deleteMandalart, isMandalartActive } from '@/actions/mandalarts';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { generateDream, getDreamGeneration, getDreamWallet } from '@/actions/dreams';
@@ -388,6 +388,33 @@ export default function Home({ loginIntent = false, initialVisitor = false, onbo
     const userHistory = await getHistory();
     setHistory(userHistory);
   };
+
+  useEffect(() => {
+    if (!user || !currentMandalartId) return;
+    let active = true;
+    const checkAccess = async () => {
+      try {
+        const accessible = await isMandalartActive(currentMandalartId);
+        if (!active) return;
+        if (!accessible) {
+          setHistory(items => items.filter(item => item.id !== currentMandalartId));
+          pendingMandalartUpdateRef.current = null;
+          setMandalartData(null);
+          setCurrentMandalartId(null);
+          setStep('input');
+          setError('Este plano está desativado ou não está mais disponível.');
+        }
+      } catch { /* Uma falha de conexão não altera o acesso ao plano aberto. */ }
+    };
+    void checkAccess();
+    const timer = window.setInterval(() => void checkAccess(), 30_000);
+    window.addEventListener('focus', checkAccess);
+    return () => {
+      active = false;
+      window.clearInterval(timer);
+      window.removeEventListener('focus', checkAccess);
+    };
+  }, [user, currentMandalartId]);
 
   const handleLogin = async (newUser: User) => {
     identifyProductUser(newUser.id);

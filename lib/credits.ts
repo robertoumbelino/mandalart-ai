@@ -8,11 +8,11 @@ export async function creditBalance(userId: string) {
     await getDb()`SELECT dream_release_expired(${userId}::uuid,${billingMode()}) AS balance`
   return Number(row.balance)
 }
-export async function reserveDream(userId: string, id: string, hash: string) {
+export async function reserveDream(userId: string, id: string, hash: string, orderId?: string) {
   const [row] =
-    await getDb()`SELECT dream_reserve(${userId}::uuid,${billingMode()},${id}::uuid,${hash}) AS reservation`
+    await getDb()`SELECT dream_reserve(${userId}::uuid,${billingMode()},${id}::uuid,${hash},${orderId || null}::uuid) AS reservation`
   return row.reservation as {
-    status: 'reserved' | 'generating' | 'completed' | 'failed' | 'insufficient'
+    status: 'reserved' | 'generating' | 'completed' | 'failed' | 'insufficient' | 'disabled'
     result?: HistoryItem
   }
 }

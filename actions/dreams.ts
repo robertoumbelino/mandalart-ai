@@ -56,7 +56,11 @@ export async function getDreamGeneration(
   const id = idSchema.parse(rawId)
   await creditBalance(user.id)
   const [row] =
-    await getDb()`SELECT status,result FROM dream_generations WHERE id=${id}::uuid AND user_id=${user.id} AND mode=${billingMode()}`
+    await getDb()`SELECT g.status,CASE WHEN m.status='active' THEN g.result END AS result
+      FROM dream_generations g LEFT JOIN mandalarts m ON m.id::text=g.result->>'id' AND m.user_id=g.user_id
+      WHERE g.id=${id}::uuid AND g.user_id=${user.id} AND g.mode=${billingMode()}`
+  if (row?.status === 'completed' && !row.result)
+    return { status: 'failed', message: 'Este plano está desativado ou não está mais disponível.' }
   if (row?.status === 'completed')
     return { status: 'completed', item: row.result as HistoryItem }
   if (row?.status === 'generating')
@@ -100,7 +104,9 @@ export async function generateDream(
   const hash = createHash('sha256')
     .update(JSON.stringify({ goal, answers, previewId, proposal, ...(salesOrderId ? { salesOrderId } : {}) }))
     .digest('hex')
-  const reservation = await reserveDream(user.id, id, hash)
+  const reservation = await reserveDream(user.id, id, hash, salesOrderId)
+  if (reservation.status === 'disabled')
+    return { status: 'failed', message: 'Este plano está desativado ou não está mais disponível.' }
   if (reservation.status === 'completed') {
     reportGenerated()
     return { status: 'completed', item: reservation.result! }

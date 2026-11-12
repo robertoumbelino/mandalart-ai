@@ -55,7 +55,7 @@ export function PurchaseHistory({ purchases }: { purchases: Purchase[] }) {
 
         {confirming === purchase.id && canRefund && <div className="purchase-confirm">
           <strong>Confirmar reembolso de {formatBRL(purchase.amount)}?</strong>
-          <p>Ao confirmar, solicitaremos agora o estorno no mesmo meio de pagamento. Os créditos desta compra serão removidos após a confirmação; seus planos já salvos continuam acessíveis.</p>
+          <p>Ao confirmar, solicitaremos agora o estorno no mesmo meio de pagamento. Após a confirmação, os créditos desta compra serão removidos e os planos gerados com ela serão desativados.</p>
           <div><button type="button" className="purchase-cancel" disabled={busy !== null} onClick={() => setConfirming(null)}>Manter compra</button><button type="button" className="brand-button purchase-confirm-button" disabled={busy !== null} onClick={async () => {
             setBusy(purchase.id)
             setError(null)

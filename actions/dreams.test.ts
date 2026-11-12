@@ -1,5 +1,5 @@
 import { beforeEach, expect, it, vi } from 'vitest'
-import { generateDream } from './dreams'
+import { generateDream, getDreamGeneration } from './dreams'
 vi.mock('server-only', () => ({}))
 vi.mock('next/server', () => ({ after: vi.fn() }))
 vi.mock('@/lib/product-analytics-server', () => ({ captureGeneratedPlan: vi.fn() }))
@@ -61,6 +61,24 @@ it('replays an already saved planner without spending or generating again', asyn
   })
   expect(mocks.build).not.toHaveBeenCalled()
 })
+it('never replays or regenerates a disabled plan', async () => {
+  mocks.reserve.mockResolvedValue({ status: 'disabled' })
+  expect(await generateDream(id, 'Aprender inglês', answers)).toEqual({
+    status: 'failed', message: 'Este plano está desativado ou não está mais disponível.',
+  })
+  expect(mocks.build).not.toHaveBeenCalled()
+  expect(mocks.complete).not.toHaveBeenCalled()
+})
+it('does not return the cached result of a disabled or deleted plan', async () => {
+  mocks.sql.mockResolvedValue([{ status: 'completed', result: null }])
+  expect(await getDreamGeneration(id)).toEqual({
+    status: 'failed', message: 'Este plano está desativado ou não está mais disponível.',
+  })
+})
+it('returns a completed generation only when its saved plan is active', async () => {
+  mocks.sql.mockResolvedValue([{ status: 'completed', result: { id: 'saved' } }])
+  expect(await getDreamGeneration(id)).toEqual({ status: 'completed', item: { id: 'saved' } })
+})
 it('refunds a reserved credit when AI fails', async () => {
   mocks.reserve.mockResolvedValue({ status: 'reserved' })
   mocks.build.mockRejectedValue(new Error('timeout'))
@@ -88,5 +106,6 @@ it('passes the purchased four answers to the paid plan generator', async () => {
   mocks.reserve.mockResolvedValue({ status: 'reserved' })
   mocks.build.mockRejectedValue(new Error('test stop'))
   await generateDream(id, 'Sair das dívidas', answers, undefined, undefined, id)
+  expect(mocks.reserve).toHaveBeenCalledWith('user', id, expect.any(String), id)
   expect(mocks.build).toHaveBeenCalledWith('Sair das dívidas', answers, undefined, undefined, sales)
 })

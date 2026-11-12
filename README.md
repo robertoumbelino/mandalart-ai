@@ -57,9 +57,12 @@ No primeiro login Google depois da migração, o `accountId` (Google `sub`) é c
 ```bash
 pnpm check
 pnpm build
+pnpm test:credits
+pnpm test:plan-access
 ```
 
 `check` executa ESLint, TypeScript e testes Vitest.
+Os testes de créditos e acesso usam somente o Postgres local, com as migrations aplicadas. Antes de publicar a desativação de planos por reembolso, aplique `migrations/012_plan_access.sql` no ambiente de destino; veja [docs/payments.md](./docs/payments.md).
 
 ## Conteúdo local
 
